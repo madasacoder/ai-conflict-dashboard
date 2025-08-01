@@ -11,6 +11,8 @@
     <!-- Prism.js for syntax highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prismTheme" />
+    <!-- DOMPurify for XSS protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5RPh9xqtqGUfB65BWLZ/2AK+AMzR4g629V/og==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -821,7 +823,7 @@
         }
 
         async function analyzeText() {
-            const text = document.getElementById('inputText').value.trim();
+            let text = document.getElementById('inputText').value.trim();
             const openaiKey = document.getElementById('openaiKey').value.trim();
             const claudeKey = document.getElementById('claudeKey').value.trim();
             const geminiKey = document.getElementById('geminiKey').value.trim();
@@ -830,6 +832,11 @@
             const claudeModel = document.getElementById('claudeModel').value;
             const geminiModel = document.getElementById('geminiModel').value;
             const grokModel = document.getElementById('grokModel').value;
+
+            // Sanitize user input if XSS protection is available
+            if (window.XSSProtection && window.XSSProtection.sanitizeUserInput) {
+                text = window.XSSProtection.sanitizeUserInput(text);
+            }
 
             logger.debug('Starting analysis', { 
                 textLength: text.length, 
@@ -863,6 +870,14 @@
 
             try {
                 logger.info('Sending request to backend');
+                
+                // Create abort controller for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                    logger.warning('Request timeout triggered');
+                }, 120000); // 2 minute timeout
+                
                 const response = await fetch('http://localhost:8000/api/analyze', {
                     method: 'POST',
                     headers: {
@@ -878,8 +893,12 @@
                         claude_model: claudeModel,
                         gemini_model: geminiModel,
                         grok_model: grokModel
-                    })
+                    }),
+                    signal: controller.signal
                 });
+                
+                // Clear timeout on success
+                clearTimeout(timeoutId);
 
                 const requestId = response.headers.get('X-Request-ID');
                 logger.debug('Response received', { 
@@ -924,7 +943,9 @@
                     stack: error.stack 
                 });
                 
-                if (error.message.includes('Failed to fetch')) {
+                if (error.name === 'AbortError') {
+                    showError('Request timed out after 2 minutes. Please try with shorter text or check your connection.');
+                } else if (error.message.includes('Failed to fetch')) {
                     showError('Failed to connect to the server. Make sure the backend is running on http://localhost:8000');
                 } else {
                     showError(error.message);
@@ -948,24 +969,46 @@
             const claudeResponse = data.responses.find(r => r.model === 'claude');
 
             if (openaiResponse) {
+                const openaiElement = document.getElementById('openaiResponse');
                 if (openaiResponse.error) {
-                    document.getElementById('openaiResponse').innerHTML = 
-                        `<span class="error-text">Error: ${openaiResponse.error}</span>`;
+                    // Use safe innerHTML setter if available
+                    const errorHtml = `<span class="error-text">Error: ${escapeHtml(openaiResponse.error)}</span>`;
+                    if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
+                        window.XSSProtection.setInnerHTMLSafely(openaiElement, errorHtml);
+                    } else {
+                        openaiElement.innerHTML = errorHtml;
+                    }
                 } else {
-                    document.getElementById('openaiResponse').innerHTML = processTextWithHighlighting(openaiResponse.response);
+                    const processedHtml = processTextWithHighlighting(openaiResponse.response);
+                    if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
+                        window.XSSProtection.setInnerHTMLSafely(openaiElement, processedHtml);
+                    } else {
+                        openaiElement.innerHTML = processedHtml;
+                    }
                     // Re-run Prism highlighting
-                    Prism.highlightAllUnder(document.getElementById('openaiResponse'));
+                    Prism.highlightAllUnder(openaiElement);
                 }
             }
 
             if (claudeResponse) {
+                const claudeElement = document.getElementById('claudeResponse');
                 if (claudeResponse.error) {
-                    document.getElementById('claudeResponse').innerHTML = 
-                        `<span class="error-text">Error: ${claudeResponse.error}</span>`;
+                    // Use safe innerHTML setter if available
+                    const errorHtml = `<span class="error-text">Error: ${escapeHtml(claudeResponse.error)}</span>`;
+                    if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
+                        window.XSSProtection.setInnerHTMLSafely(claudeElement, errorHtml);
+                    } else {
+                        claudeElement.innerHTML = errorHtml;
+                    }
                 } else {
-                    document.getElementById('claudeResponse').innerHTML = processTextWithHighlighting(claudeResponse.response);
+                    const processedHtml = processTextWithHighlighting(claudeResponse.response);
+                    if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
+                        window.XSSProtection.setInnerHTMLSafely(claudeElement, processedHtml);
+                    } else {
+                        claudeElement.innerHTML = processedHtml;
+                    }
                     // Re-run Prism highlighting
-                    Prism.highlightAllUnder(document.getElementById('claudeResponse'));
+                    Prism.highlightAllUnder(claudeElement);
                 }
             }
 
@@ -1152,7 +1195,10 @@
             }
         }
         
-        // File upload handler - now supports multiple files
+        // Store uploaded files metadata
+        let uploadedFilesMap = new Map();
+
+        // File upload handler - now supports multiple files with duplicate filename handling
         function handleFileUpload(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -1161,6 +1207,9 @@
             
             const filesList = document.getElementById('filesList');
             filesList.innerHTML = ''; // Clear previous files list
+            
+            // Clear the map
+            uploadedFilesMap.clear();
             
             let existingContent = document.getElementById('inputText').value;
             let combinedContent = existingContent ? existingContent + '\n\n' : '';
@@ -1171,27 +1220,66 @@
             filesContainer.className = 'd-flex flex-wrap gap-2';
             filesList.appendChild(filesContainer);
             
+            // Track filenames for duplicate detection
+            const filenameCount = {};
+            
+            // First pass: count duplicates
+            Array.from(files).forEach(file => {
+                const basename = file.name;
+                filenameCount[basename] = (filenameCount[basename] || 0) + 1;
+            });
+            
+            // Track current count for each filename
+            const currentCount = {};
+            
             Array.from(files).forEach((file, index) => {
                 const reader = new FileReader();
+                const basename = file.name;
+                
+                // Generate display name with number if duplicate
+                let displayName = basename;
+                if (filenameCount[basename] > 1) {
+                    currentCount[basename] = (currentCount[basename] || 0) + 1;
+                    displayName = `${basename} (${currentCount[basename]})`;
+                }
+                
+                // Store file metadata
+                const fileId = `file-${index}-${Date.now()}`;
+                uploadedFilesMap.set(fileId, {
+                    originalName: file.name,
+                    displayName: displayName,
+                    size: file.size,
+                    type: file.type || 'text/plain',
+                    lastModified: file.lastModified
+                });
                 
                 reader.onload = function(e) {
                     const content = e.target.result;
                     
-                    // Add file separator
+                    // Add file separator with display name
                     if (index > 0 || existingContent) {
                         combinedContent += `\n\n`;
                     }
-                    combinedContent += `--- File: ${file.name} ---\n\n${content}`;
+                    combinedContent += `--- File: ${displayName} ---\n\n${content}`;
                     
-                    // Create file badge
+                    // Create file badge with enhanced info
                     const fileBadge = document.createElement('span');
-                    fileBadge.className = 'badge bg-primary';
+                    fileBadge.className = 'badge bg-primary position-relative';
+                    fileBadge.setAttribute('data-file-id', fileId);
+                    fileBadge.setAttribute('data-bs-toggle', 'tooltip');
+                    fileBadge.setAttribute('data-bs-placement', 'top');
+                    fileBadge.setAttribute('title', `Size: ${formatFileSize(file.size)}\nType: ${file.type || 'text/plain'}`);
+                    
                     fileBadge.innerHTML = `
-                        <i class="bi bi-file-text me-1"></i>${file.name}
+                        <i class="bi bi-file-text me-1"></i>${escapeHtml(displayName)}
                         <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 0.7rem;" 
-                                onclick="removeFile('${file.name.replace(/'/g, "\\'")}')"></button>
+                                onclick="removeFileFixed('${fileId}')"></button>
                     `;
+                    
                     filesContainer.appendChild(fileBadge);
+                    
+                    // Initialize tooltip
+                    new bootstrap.Tooltip(fileBadge);
                     
                     filesProcessed++;
                     
@@ -1222,14 +1310,77 @@
                 };
                 
                 reader.onerror = function() {
+                    logger.error('Error reading file:', file.name);
                     showError(`Failed to read file: ${file.name}`);
+                    filesProcessed++;
                 };
                 
                 reader.readAsText(file);
             });
         }
         
-        // Remove file content from textarea
+        /**
+         * Remove a file from the combined content
+         * @param {string} fileId - The unique file ID
+         */
+        function removeFileFixed(fileId) {
+            const fileInfo = uploadedFilesMap.get(fileId);
+            if (!fileInfo) return;
+            
+            const displayName = fileInfo.displayName;
+            const textarea = document.getElementById('inputText');
+            const content = textarea.value;
+            
+            // Remove the file section from content
+            const fileHeader = `--- File: ${displayName} ---`;
+            const startIndex = content.indexOf(fileHeader);
+            
+            if (startIndex !== -1) {
+                // Find the next file header or end of content
+                const nextFileIndex = content.indexOf('\n--- File:', startIndex + 1);
+                const endIndex = nextFileIndex !== -1 ? nextFileIndex : content.length;
+                
+                // Remove the file section and clean up extra newlines
+                let newContent = content.substring(0, startIndex) + content.substring(endIndex);
+                newContent = newContent.replace(/\n{3,}/g, '\n\n').trim();
+                
+                textarea.value = newContent;
+                updateCounts();
+            }
+            
+            // Remove the badge
+            const badge = document.querySelector(`[data-file-id="${fileId}"]`);
+            if (badge) {
+                // Dispose tooltip
+                const tooltip = bootstrap.Tooltip.getInstance(badge);
+                if (tooltip) {
+                    tooltip.dispose();
+                }
+                badge.remove();
+            }
+            
+            // Remove from map
+            uploadedFilesMap.delete(fileId);
+            
+            logger.info('File removed:', displayName);
+        }
+
+        /**
+         * Format file size in human-readable format
+         * @param {number} bytes - File size in bytes
+         * @returns {string} Formatted file size
+         */
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Keep the old removeFile function for backward compatibility
         function removeFile(fileName) {
             const textarea = document.getElementById('inputText');
             const content = textarea.value;
@@ -1238,7 +1389,9 @@
             updateCounts();
             
             // Remove the badge
-            event.target.closest('.badge').remove();
+            if (event && event.target) {
+                event.target.closest('.badge').remove();
+            }
         }
         
         // Drag and drop handlers
@@ -1296,8 +1449,14 @@
             });
         }
         
-        // Process text to highlight code blocks
+        // Use XSS-safe text processing if available
         function processTextWithHighlighting(text) {
+            // Use the safe version if XSS protection is loaded
+            if (window.XSSProtection && window.XSSProtection.processTextWithHighlightingSafe) {
+                return window.XSSProtection.processTextWithHighlightingSafe(text);
+            }
+            
+            // Fallback to original implementation with basic escaping
             // Regular expression to match code blocks with optional language
             const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
             
@@ -1321,8 +1480,10 @@
                 return `<pre><code class="language-${language}">${escapeHtml(code.trim())}</code></pre>`;
             });
             
-            // Convert inline code
-            processedText = processedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+            // Convert inline code with escaping
+            processedText = processedText.replace(/`([^`]+)`/g, (match, code) => {
+                return `<code>${escapeHtml(code)}</code>`;
+            });
             
             // Convert line breaks to <br> for non-code sections
             processedText = processedText.split('\n').map(line => {
@@ -1496,6 +1657,8 @@
         }
     </script>
     
+    <!-- Load XSS protection first -->
+    <script src="js/xss-protection.js"></script>
     <!-- Load comparison engine -->
     <script src="comparison-engine.js"></script>
     <!-- Load history manager -->

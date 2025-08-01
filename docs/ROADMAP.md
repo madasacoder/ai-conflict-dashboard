@@ -199,8 +199,9 @@ Multiple LLMs reviewing each other's work produces better results than any singl
 | 0 | 1 | <10s | N/A | 0% | $0 | ✅ Complete |
 | 1 | 5-10 | <5s | 95% | 60% | $0 | ✅ Complete |
 | 2 | 100+ | <2s | 99.9% | 90.10% | Ready to pay | ✅ Complete |
-| 3 | 500+ | <1s | 99.99% | 95% | $10K+ MRR | 🚀 Next |
-| 4 | 5000+ | <500ms | 99.999% | 98% | $100K+ MRR | 📅 Future |
+| 3 | 100+ | <2s | 99.9% | 92.23% | Ready to pay | ✅ Complete |
+| 4 | 500+ | <1s | 99.99% | 95% | $10K+ MRR | 🚀 Next |
+| 5 | 5000+ | <500ms | 99.999% | 98% | $100K+ MRR | 📅 Future |
 
 ---
 

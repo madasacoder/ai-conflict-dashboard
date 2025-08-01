@@ -14,7 +14,7 @@ Phase 2 has been successfully completed, transforming the AI Conflict Dashboard 
 | Security Scanning | Pass Bandit | Zero issues | ✅ |
 | Code Quality | Professional | Black/Ruff/Docstrings | ✅ |
 | Response Time | <2s | Consistent <2s | ✅ |
-| Model Selection | Multiple models | GPT-3.5/4, Claude variants | ✅ |
+| Model Selection | Multiple models | GPT-3.5/4, Claude, Gemini, Grok | ✅ |
 
 ## 🏗️ Technical Implementation Details
 

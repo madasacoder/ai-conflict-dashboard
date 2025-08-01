@@ -36,11 +36,11 @@ app.add_middleware(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Middleware to log all incoming HTTP requests and responses.
-    
+
     Args:
         request: The incoming FastAPI request object.
         call_next: The next middleware or endpoint in the chain.
-        
+
     Returns:
         The response object with added X-Request-ID header.
     """
@@ -77,8 +77,12 @@ class AnalyzeRequest(BaseModel):
     text: str
     openai_key: Optional[str] = None
     claude_key: Optional[str] = None
+    gemini_key: Optional[str] = None
+    grok_key: Optional[str] = None
     openai_model: Optional[str] = "gpt-3.5-turbo"  # Default model
     claude_model: Optional[str] = "claude-3-haiku-20240307"  # Default model
+    gemini_model: Optional[str] = "gemini-1.5-flash"  # Default model
+    grok_model: Optional[str] = "grok-2-latest"  # Default model
 
 
 class ModelResponse(BaseModel):
@@ -98,7 +102,7 @@ class AnalyzeResponse(BaseModel):
 @app.get("/")
 async def root():
     """Root endpoint providing API information.
-    
+
     Returns:
         dict: API name and version information.
     """
@@ -108,7 +112,7 @@ async def root():
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for monitoring.
-    
+
     Returns:
         dict: Health status of the API.
     """
@@ -118,16 +122,16 @@ async def health_check():
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 async def analyze_text(request: AnalyzeRequest):
     """Analyze text using multiple AI models and return all responses.
-    
+
     This endpoint accepts text input and optionally API keys for OpenAI and Claude.
     It handles text chunking for large inputs and returns responses from all available models.
-    
+
     Args:
         request: AnalyzeRequest object containing text and optional API keys.
-        
+
     Returns:
         AnalyzeResponse: Contains request ID, original text, and model responses.
-        
+
     Raises:
         HTTPException: If text is empty (400) or analysis fails (500).
     """
@@ -187,6 +191,8 @@ async def analyze_text(request: AnalyzeRequest):
             "text_length": len(request.text),
             "has_openai_key": bool(request.openai_key),
             "has_claude_key": bool(request.claude_key),
+            "has_gemini_key": bool(request.gemini_key),
+            "has_grok_key": bool(request.grok_key),
         },
     )
 
@@ -196,8 +202,12 @@ async def analyze_text(request: AnalyzeRequest):
             request.text,
             request.openai_key,
             request.claude_key,
+            request.gemini_key,
+            request.grok_key,
             request.openai_model,
             request.claude_model,
+            request.gemini_model,
+            request.grok_model,
         )
 
         # Log model responses

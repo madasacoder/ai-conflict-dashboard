@@ -1,8 +1,7 @@
 """Tests for main application module."""
 
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 
 from main import app
 
@@ -18,7 +17,7 @@ class TestMainApp:
         assert response.status_code == 200
         assert response.json() == {
             "message": "AI Conflict Dashboard API",
-            "version": "0.1.0"
+            "version": "0.1.0",
         }
 
     def test_health_endpoint(self):
@@ -32,15 +31,11 @@ class TestMainApp:
         with patch("main.log_level", "DEBUG"):
             with patch("llm_providers.analyze_with_models") as mock_analyze:
                 mock_analyze.side_effect = ValueError("Test error")
-                
+
                 response = client.post(
-                    "/api/analyze",
-                    json={
-                        "text": "Test text",
-                        "openai_key": "test-key"
-                    }
+                    "/api/analyze", json={"text": "Test text", "openai_key": "test-key"}
                 )
-                
+
                 assert response.status_code == 500
                 assert "ValueError: Test error" in response.json()["detail"]
 
@@ -49,14 +44,10 @@ class TestMainApp:
         with patch("main.log_level", "INFO"):
             with patch("llm_providers.analyze_with_models") as mock_analyze:
                 mock_analyze.side_effect = ValueError("Test error")
-                
+
                 response = client.post(
-                    "/api/analyze",
-                    json={
-                        "text": "Test text",
-                        "openai_key": "test-key"
-                    }
+                    "/api/analyze", json={"text": "Test text", "openai_key": "test-key"}
                 )
-                
+
                 assert response.status_code == 500
                 assert response.json()["detail"] == "Analysis failed"

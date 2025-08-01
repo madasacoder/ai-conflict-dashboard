@@ -5,18 +5,18 @@ Compare responses from multiple AI models side-by-side to get better insights an
 ## ✨ Features
 
 ### Core Functionality
-- **Multi-Model Comparison**: Send queries to OpenAI and Claude simultaneously
+- **Multi-Model Comparison**: Send queries to OpenAI, Claude, Gemini, and Grok simultaneously
 - **Side-by-Side Display**: Visual comparison with syntax highlighting for code
 - **Smart Token Management**: Automatic text chunking for large documents
 - **Searchable History**: Find and reuse previous queries with real-time search
-- **File Upload Support**: Drag-and-drop or click to upload text files
+- **Multiple File Upload**: Upload and combine multiple files at once
 - **Dark Mode**: Easy on the eyes with automatic theme switching
 
 ### Advanced Features
 - **Circuit Breakers**: Automatic API failure handling with PyBreaker
 - **Structured Logging**: Comprehensive observability with structlog
 - **Request Tracking**: Every API call is logged with unique request IDs
-- **Model Selection**: Choose between different GPT and Claude models
+- **Model Selection**: Always-visible model selection with support for all providers
 - **Collapsible UI**: Space-efficient interface with collapsible API settings
 
 ## 🚀 Quick Start
@@ -66,6 +66,8 @@ python3 -m http.server 8080
 1. Get your API keys:
    - OpenAI: https://platform.openai.com/api-keys
    - Claude: https://console.anthropic.com/account/keys
+   - Gemini: https://makersuite.google.com/app/apikey
+   - Grok: https://console.x.ai
 
 2. Enter them in the collapsible API Settings section
    - Keys are stored locally in your browser (localStorage)
@@ -123,21 +125,21 @@ What are the pros and cons of using microservices vs monolithic architecture for
 ## 📊 Current Status
 
 ### Completed Features (Phase 1 & 2)
-- ✅ Multi-model API integration (OpenAI, Claude)
+- ✅ Multi-model API integration (OpenAI, Claude, Gemini, Grok)
 - ✅ Parallel request processing
 - ✅ Token counting and validation
 - ✅ Text chunking for large documents
 - ✅ Searchable conversation history
-- ✅ File upload with drag-and-drop
+- ✅ Multiple file upload with drag-and-drop
 - ✅ Syntax highlighting for code
 - ✅ Dark/light theme support
 - ✅ Circuit breakers for fault tolerance
 - ✅ Structured logging system
 - ✅ Collapsible API settings
-- ✅ Model selection (GPT-3.5, GPT-4, Claude variants)
+- ✅ Always-visible model selection with sync across UI
 
 ### Quality Metrics
-- **Backend Test Coverage**: 90.10% ✅
+- **Backend Test Coverage**: 92.23% ✅
 - **Code Quality**: Black, Ruff, Bandit all passing ✅
 - **Documentation**: Google-style docstrings throughout ✅
 - **Performance**: <2s response time for most queries

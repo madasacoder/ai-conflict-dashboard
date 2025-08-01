@@ -326,7 +326,125 @@
                                 </div>
                             </div>
                         </div>
-                        <small class="text-muted">Keys and preferences are stored locally in your browser</small>
+                        
+                        <!-- Gemini and Grok Row -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label for="geminiKey" class="form-label">Gemini API Key</label>
+                                <input type="password" class="form-control" id="geminiKey" placeholder="AI...">
+                                <div class="mt-2">
+                                    <label for="geminiModel" class="form-label">Model</label>
+                                    <select class="form-select" id="geminiModel">
+                                        <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash (Fast)</option>
+                                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (Fastest)</option>
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Most Capable)</option>
+                                        <option value="gemini-1.0-pro">Gemini 1.0 Pro (Previous Gen)</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="Flash: Fast and efficient. Flash-8B: Fastest. Pro: Most capable with larger context."></i>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="grokKey" class="form-label">Grok API Key</label>
+                                <input type="password" class="form-control" id="grokKey" placeholder="xai-...">
+                                <div class="mt-2">
+                                    <label for="grokModel" class="form-label">Model</label>
+                                    <select class="form-select" id="grokModel">
+                                        <option value="grok-2-latest" selected>Grok 2 (Latest)</option>
+                                        <option value="grok-2-mini">Grok 2 Mini (Fast)</option>
+                                        <option value="grok-beta">Grok Beta (Experimental)</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="Grok 2: Most capable. Mini: Faster, lighter. Beta: Latest experimental features."></i>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <small class="text-muted mt-3 d-block">Keys and preferences are stored locally in your browser</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Selection Section - Always Visible -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-robot me-2"></i>Model Selection</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="d-flex align-items-center mb-3">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="OpenAI" style="width: 24px; height: 24px;" class="me-2">
+                                        OpenAI
+                                    </h6>
+                                    <select class="form-select" id="openaiModelDisplay">
+                                        <option value="" disabled>Select OpenAI Model</option>
+                                        <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo</option>
+                                        <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                                        <option value="gpt-4">GPT-4</option>
+                                        <option value="gpt-3.5-turbo-16k">GPT-3.5 Turbo 16K</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2">Fast & economical or powerful & capable</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="d-flex align-items-center mb-3">
+                                        <span class="me-2" style="font-size: 24px;">🤖</span>
+                                        Anthropic Claude
+                                    </h6>
+                                    <select class="form-select" id="claudeModelDisplay">
+                                        <option value="" disabled>Select Claude Model</option>
+                                        <option value="claude-3-haiku-20240307" selected>Claude 3 Haiku</option>
+                                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                                        <option value="claude-2.1">Claude 2.1</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2">Fast, balanced, or most capable</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="d-flex align-items-center mb-3">
+                                        <img src="https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png" alt="Gemini" style="width: 24px; height: 24px;" class="me-2">
+                                        Google Gemini
+                                    </h6>
+                                    <select class="form-select" id="geminiModelDisplay">
+                                        <option value="" disabled>Select Gemini Model</option>
+                                        <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash</option>
+                                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B</option>
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2">Ultra-fast with huge context</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="d-flex align-items-center mb-3">
+                                        <span class="me-2" style="font-size: 24px;">🚀</span>
+                                        xAI Grok
+                                    </h6>
+                                    <select class="form-select" id="grokModelDisplay">
+                                        <option value="" disabled>Select Grok Model</option>
+                                        <option value="grok-2-latest" selected>Grok 2 Latest</option>
+                                        <option value="grok-2-mini">Grok 2 Mini</option>
+                                        <option value="grok-beta">Grok Beta</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2">Witty & real-time aware</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Only models with configured API keys will be used. Set your API keys in the settings above.
                         </div>
                     </div>
                 </div>
@@ -340,12 +458,13 @@
                     <div class="card-body">
                         <label for="inputText" class="form-label">Enter your text:</label>
                         <textarea class="form-control" id="inputText" rows="6" 
-                                  placeholder="Enter text to analyze"></textarea>
+                                  placeholder="Enter text to analyze or combine multiple files"></textarea>
                         <div class="mt-2">
-                            <label for="fileInput" class="form-label">Or upload a text file:</label>
-                            <input type="file" class="form-control" id="fileInput" accept=".txt,.md,.json,.js,.py,.html,.css" onchange="handleFileUpload(event)">
-                            <small class="text-muted">Supported formats: .txt, .md, .json, .js, .py, .html, .css</small>
+                            <label for="fileInput" class="form-label">Upload files:</label>
+                            <input type="file" class="form-control" id="fileInput" accept=".txt,.md,.json,.js,.py,.html,.css" multiple onchange="handleFileUpload(event)">
+                            <small class="text-muted">Supported formats: .txt, .md, .json, .js, .py, .html, .css (multiple files allowed)</small>
                         </div>
+                        <div id="filesList" class="mt-2"></div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <span class="char-count">
                                 <span id="charCount">0</span> characters | ~<span id="tokenCount">0</span> tokens
@@ -487,6 +606,28 @@
             logger.info('App loaded');
             document.getElementById('openaiKey').value = localStorage.getItem('openaiKey') || '';
             document.getElementById('claudeKey').value = localStorage.getItem('claudeKey') || '';
+            document.getElementById('geminiKey').value = localStorage.getItem('geminiKey') || '';
+            document.getElementById('grokKey').value = localStorage.getItem('grokKey') || '';
+            
+            // Load model selections
+            const openaiModel = localStorage.getItem('openaiModel') || 'gpt-3.5-turbo';
+            const claudeModel = localStorage.getItem('claudeModel') || 'claude-3-haiku-20240307';
+            const geminiModel = localStorage.getItem('geminiModel') || 'gemini-1.5-flash';
+            const grokModel = localStorage.getItem('grokModel') || 'grok-2-latest';
+            
+            document.getElementById('openaiModel').value = openaiModel;
+            document.getElementById('claudeModel').value = claudeModel;
+            document.getElementById('geminiModel').value = geminiModel;
+            document.getElementById('grokModel').value = grokModel;
+            
+            // Also set the display dropdowns
+            document.getElementById('openaiModelDisplay').value = openaiModel;
+            document.getElementById('claudeModelDisplay').value = claudeModel;
+            document.getElementById('geminiModelDisplay').value = geminiModel;
+            document.getElementById('grokModelDisplay').value = grokModel;
+            
+            // Sync model selections between display and settings
+            syncModelSelections();
             
             // Initialize Bootstrap tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -499,7 +640,8 @@
             const apiSettingsChevron = document.getElementById('apiSettingsChevron');
             
             // Check if API settings should be expanded (if keys are not set)
-            const hasKeys = localStorage.getItem('openaiKey') || localStorage.getItem('claudeKey');
+            const hasKeys = localStorage.getItem('openaiKey') || localStorage.getItem('claudeKey') || 
+                           localStorage.getItem('geminiKey') || localStorage.getItem('grokKey');
             if (!hasKeys) {
                 // Expand by default if no keys are set
                 apiSettingsCollapse.classList.add('show');
@@ -580,20 +722,43 @@
         }
         
         // Enable debug mode with: localStorage.setItem('debugMode', 'true')
-
-        // Update character and token count
-        document.getElementById('inputText').addEventListener('input', function() {
-            const length = this.value.length;
+        
+        // Sync model selections between display and settings dropdowns
+        function syncModelSelections() {
+            // Sync from settings to display on load
+            ['openai', 'claude', 'gemini', 'grok'].forEach(provider => {
+                const settingsDropdown = document.getElementById(`${provider}Model`);
+                const displayDropdown = document.getElementById(`${provider}ModelDisplay`);
+                
+                // Settings dropdown changes update display dropdown
+                settingsDropdown.addEventListener('change', function() {
+                    displayDropdown.value = this.value;
+                    localStorage.setItem(`${provider}Model`, this.value);
+                });
+                
+                // Display dropdown changes update settings dropdown
+                displayDropdown.addEventListener('change', function() {
+                    settingsDropdown.value = this.value;
+                    localStorage.setItem(`${provider}Model`, this.value);
+                });
+            });
+        }
+        
+        // Update character and token counts
+        function updateCounts() {
+            const text = document.getElementById('inputText').value;
+            const length = text.length;
             const tokens = Math.ceil(length / 4);
             
             document.getElementById('charCount').textContent = length;
             document.getElementById('tokenCount').textContent = tokens;
             
-            // Show warning if approaching GPT-3.5 limit (4096 tokens total, ~3000 for input to leave room for response)
+            // Show warning if approaching GPT-3.5 limit
             const tokenWarning = document.getElementById('tokenWarning');
             if (tokens > 3000) {
                 tokenWarning.style.display = 'inline';
                 tokenWarning.innerHTML = '<i class="bi bi-exclamation-triangle"></i> May exceed GPT-3.5 limit (3000 tokens)';
+                tokenWarning.className = 'text-warning ms-2';
             } else if (tokens > 2500) {
                 tokenWarning.style.display = 'inline';
                 tokenWarning.innerHTML = '<i class="bi bi-info-circle"></i> Approaching GPT-3.5 limit';
@@ -601,7 +766,10 @@
             } else {
                 tokenWarning.style.display = 'none';
             }
-        });
+        }
+
+        // Update character and token count
+        document.getElementById('inputText').addEventListener('input', updateCounts);
 
         // Save API keys to localStorage when they change
         document.getElementById('openaiKey').addEventListener('change', function() {
@@ -610,6 +778,28 @@
 
         document.getElementById('claudeKey').addEventListener('change', function() {
             localStorage.setItem('claudeKey', this.value);
+        });
+
+        document.getElementById('geminiKey').addEventListener('change', function() {
+            localStorage.setItem('geminiKey', this.value);
+        });
+
+        document.getElementById('grokKey').addEventListener('change', function() {
+            localStorage.setItem('grokKey', this.value);
+        });
+
+        // Save model selections to localStorage when they change
+        document.getElementById('openaiModel').addEventListener('change', function() {
+            localStorage.setItem('openaiModel', this.value);
+        });
+        document.getElementById('claudeModel').addEventListener('change', function() {
+            localStorage.setItem('claudeModel', this.value);
+        });
+        document.getElementById('geminiModel').addEventListener('change', function() {
+            localStorage.setItem('geminiModel', this.value);
+        });
+        document.getElementById('grokModel').addEventListener('change', function() {
+            localStorage.setItem('grokModel', this.value);
         });
 
         function showError(message) {
@@ -634,15 +824,23 @@
             const text = document.getElementById('inputText').value.trim();
             const openaiKey = document.getElementById('openaiKey').value.trim();
             const claudeKey = document.getElementById('claudeKey').value.trim();
+            const geminiKey = document.getElementById('geminiKey').value.trim();
+            const grokKey = document.getElementById('grokKey').value.trim();
             const openaiModel = document.getElementById('openaiModel').value;
             const claudeModel = document.getElementById('claudeModel').value;
+            const geminiModel = document.getElementById('geminiModel').value;
+            const grokModel = document.getElementById('grokModel').value;
 
             logger.debug('Starting analysis', { 
                 textLength: text.length, 
                 hasOpenAI: !!openaiKey, 
                 hasClaude: !!claudeKey,
+                hasGemini: !!geminiKey,
+                hasGrok: !!grokKey,
                 openaiModel: openaiModel,
-                claudeModel: claudeModel
+                claudeModel: claudeModel,
+                geminiModel: geminiModel,
+                grokModel: grokModel
             });
 
             // Validation
@@ -651,7 +849,7 @@
                 return;
             }
 
-            if (!openaiKey && !claudeKey) {
+            if (!openaiKey && !claudeKey && !geminiKey && !grokKey) {
                 showError('Please provide at least one API key');
                 return;
             }
@@ -674,8 +872,12 @@
                         text: text,
                         openai_key: openaiKey,
                         claude_key: claudeKey,
+                        gemini_key: geminiKey,
+                        grok_key: grokKey,
                         openai_model: openaiModel,
-                        claude_model: claudeModel
+                        claude_model: claudeModel,
+                        gemini_model: geminiModel,
+                        grok_model: grokModel
                     })
                 });
 
@@ -950,53 +1152,93 @@
             }
         }
         
-        // File upload handler
+        // File upload handler - now supports multiple files
         function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
             
-            logger.info('File selected', { name: file.name, size: file.size, type: file.type });
+            logger.info('Files selected', { count: files.length });
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
-                
-                // Set the content in the textarea
-                document.getElementById('inputText').value = content;
-                document.getElementById('charCount').textContent = content.length;
-                const tokens = Math.ceil(content.length / 4);
-                document.getElementById('tokenCount').textContent = tokens;
-                
-                // Trigger token warning check
-                const event = new Event('input');
-                document.getElementById('inputText').dispatchEvent(event);
-                
-                logger.info('File loaded successfully', { 
-                    name: file.name, 
-                    contentLength: content.length 
-                });
-                
-                // Show file name in a small notification
-                const notification = document.createElement('div');
-                notification.className = 'alert alert-info alert-dismissible fade show mt-2';
-                notification.innerHTML = `
-                    <strong>File loaded:</strong> ${file.name}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.getElementById('fileInput').parentElement.appendChild(notification);
-                
-                // Auto-dismiss after 3 seconds
-                setTimeout(() => {
-                    notification.remove();
-                }, 3000);
-            };
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = ''; // Clear previous files list
             
-            reader.onerror = function() {
-                showError('Failed to read file. Please try again.');
-                event.target.value = '';
-            };
+            let existingContent = document.getElementById('inputText').value;
+            let combinedContent = existingContent ? existingContent + '\n\n' : '';
+            let filesProcessed = 0;
             
-            reader.readAsText(file);
+            // Create a container for file badges
+            const filesContainer = document.createElement('div');
+            filesContainer.className = 'd-flex flex-wrap gap-2';
+            filesList.appendChild(filesContainer);
+            
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    
+                    // Add file separator
+                    if (index > 0 || existingContent) {
+                        combinedContent += `\n\n`;
+                    }
+                    combinedContent += `--- File: ${file.name} ---\n\n${content}`;
+                    
+                    // Create file badge
+                    const fileBadge = document.createElement('span');
+                    fileBadge.className = 'badge bg-primary';
+                    fileBadge.innerHTML = `
+                        <i class="bi bi-file-text me-1"></i>${file.name}
+                        <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 0.7rem;" 
+                                onclick="removeFile('${file.name.replace(/'/g, "\\'")}')"></button>
+                    `;
+                    filesContainer.appendChild(fileBadge);
+                    
+                    filesProcessed++;
+                    
+                    // Update textarea when all files are processed
+                    if (filesProcessed === files.length) {
+                        document.getElementById('inputText').value = combinedContent;
+                        updateCounts();
+                        
+                        logger.info('All files loaded successfully', { 
+                            totalFiles: files.length, 
+                            totalLength: combinedContent.length 
+                        });
+                        
+                        // Show notification
+                        const notification = document.createElement('div');
+                        notification.className = 'alert alert-success alert-dismissible fade show mt-2';
+                        notification.innerHTML = `
+                            <strong>${files.length} file(s) loaded successfully!</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        filesList.appendChild(notification);
+                        
+                        // Auto-dismiss after 3 seconds
+                        setTimeout(() => {
+                            notification.remove();
+                        }, 3000);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    showError(`Failed to read file: ${file.name}`);
+                };
+                
+                reader.readAsText(file);
+            });
+        }
+        
+        // Remove file content from textarea
+        function removeFile(fileName) {
+            const textarea = document.getElementById('inputText');
+            const content = textarea.value;
+            const regex = new RegExp(`\\n\\n--- File: ${fileName.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&')} ---\\n\\n[^\\n]*(?:\\n(?!--- File:)[^\\n]*)*`, 'g');
+            textarea.value = content.replace(regex, '');
+            updateCounts();
+            
+            // Remove the badge
+            event.target.closest('.badge').remove();
         }
         
         // Drag and drop handlers
@@ -1022,23 +1264,33 @@
                 
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
-                    const file = files[0];
-                    
-                    // Check if file type is supported
+                    // Check if all files are supported
                     const supportedTypes = ['.txt', '.md', '.json', '.js', '.py', '.html', '.css'];
-                    const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                    const dataTransfer = new DataTransfer();
+                    let hasUnsupported = false;
                     
-                    if (supportedTypes.includes(fileExt)) {
-                        // Set the file in the file input
+                    Array.from(files).forEach(file => {
+                        const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                        if (supportedTypes.includes(fileExt)) {
+                            dataTransfer.items.add(file);
+                        } else {
+                            hasUnsupported = true;
+                        }
+                    });
+                    
+                    if (dataTransfer.files.length > 0) {
+                        // Set the files in the file input
                         const fileInput = document.getElementById('fileInput');
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
                         fileInput.files = dataTransfer.files;
                         
                         // Trigger the file upload handler
                         handleFileUpload({ target: fileInput });
+                        
+                        if (hasUnsupported) {
+                            showError('Some files were skipped. Supported types: ' + supportedTypes.join(', '));
+                        }
                     } else {
-                        showError('Unsupported file type. Please use: ' + supportedTypes.join(', '));
+                        showError('No supported files found. Please use: ' + supportedTypes.join(', '));
                     }
                 }
             });

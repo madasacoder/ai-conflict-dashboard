@@ -104,7 +104,9 @@ Multiple LLMs reviewing each other's work produces better results than any singl
   - Batch processing
 
 - **Integrations**:
-  - Additional models (Gemini, Cohere, Mistral, Llama)
+  - ✅ Google Gemini (Completed)
+  - ✅ Grok (xAI) (Completed)
+  - Additional models (Cohere, Mistral, Llama)
   - API access for programmatic use
   - Slack/Discord notifications
   - GitHub/GitLab integration

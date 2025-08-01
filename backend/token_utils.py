@@ -19,14 +19,14 @@ MODEL_LIMITS = {
 
 def estimate_tokens(text: str) -> int:
     """Estimate token count for a given text.
-    
+
     Uses a conservative estimation approach:
     - 1 token ≈ 4 characters
     - 1 token ≈ 0.75 words
-    
+
     Args:
         text: The input text to estimate tokens for.
-        
+
     Returns:
         int: Estimated number of tokens (conservative/higher estimate).
     """
@@ -44,13 +44,13 @@ def estimate_tokens(text: str) -> int:
 
 def check_token_limits(text: str) -> dict:
     """Check if text exceeds token limits for each model.
-    
+
     Evaluates text against known model token limits and provides
     warnings and recommendations if limits are exceeded.
-    
+
     Args:
         text: The input text to check.
-        
+
     Returns:
         dict: Dictionary containing:
             - estimated_tokens: Estimated token count
@@ -135,7 +135,7 @@ def chunk_text(
             if para_tokens > max_tokens:
                 # Split by sentences
                 sentences = para.replace(". ", ".|").split("|")
-                
+
                 # Handle edge case where we have no sentence boundaries
                 if len(sentences) == 1 and para_tokens > max_tokens:
                     # Force split very long single words/sentences
@@ -144,7 +144,7 @@ def chunk_text(
                     while sent:
                         chunk_size = min(len(sent), max_chars)
                         chunk_part = sent[:chunk_size]
-                        
+
                         if current_chunk:
                             chunk_text = "\n\n".join(current_chunk)
                             chunks.append(
@@ -160,7 +160,7 @@ def chunk_text(
                         else:
                             current_chunk = [chunk_part]
                             current_tokens = estimate_tokens(chunk_part)
-                        
+
                         sent = sent[chunk_size:]
                         char_position += chunk_size
                 else:

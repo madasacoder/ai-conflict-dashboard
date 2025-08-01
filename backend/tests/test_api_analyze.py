@@ -145,7 +145,9 @@ class TestAnalyzeEndpoint:
                 "Test text for both providers", "test-openai-key", "gpt-3.5-turbo"
             )
             mock_claude.assert_called_once_with(
-                "Test text for both providers", "test-claude-key", "claude-3-haiku-20240307"
+                "Test text for both providers",
+                "test-claude-key",
+                "claude-3-haiku-20240307",
             )
 
     def test_analyze_long_text_triggers_chunking(self, client, mock_openai_response):

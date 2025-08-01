@@ -62,11 +62,11 @@ ai-conflict-dashboard/
 │   └── prism.css           # Syntax themes
 ├── backend/
 │   ├── main.py             # FastAPI app (100% coverage)
-│   ├── llm_providers.py    # API integrations + circuit breakers
+│   ├── llm_providers.py    # API integrations (OpenAI, Claude, Gemini, Grok)
 │   ├── token_utils.py      # Text chunking (93% coverage)
 │   ├── structured_logging.py # Logging config (100% coverage)
 │   ├── requirements.txt    # Python dependencies
-│   └── tests/              # Test suite (59 tests)
+│   └── tests/              # Test suite (72 tests)
 ├── docs/                   # Comprehensive documentation
 ├── CLAUDE.md              # This file
 └── README.md              # User documentation
@@ -81,7 +81,7 @@ ai-conflict-dashboard/
 - **Coverage**: 90.10% achieved ✅
 - **Test Files**: 
   - test_api_analyze.py (15 tests)
-  - test_llm_providers.py (16 tests)
+  - test_llm_providers.py (29 tests)
   - test_structured_logging.py (9 tests)
   - test_token_utils.py (15 tests)
   - test_main.py (4 tests)
@@ -159,7 +159,7 @@ ai-conflict-dashboard/
 | Area             | Tools and Standards                                    |
 |------------------|--------------------------------------------------------|
 | Frontend         | HTML5, Vanilla JS, Bootstrap 5, Prism.js              |
-| Backend          | FastAPI, Python 3.11+, pytest, PyBreaker, structlog   |
+| Backend          | FastAPI, Python 3.11+, pytest, PyBreaker, structlog, google-generativeai |
 | Security         | Bandit (zero issues), input validation                |
 | Code Quality     | Black, Ruff (all passing), 90%+ coverage             |
 | Documentation    | Google docstrings, Markdown, inline comments          |

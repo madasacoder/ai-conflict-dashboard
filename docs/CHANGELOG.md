@@ -2,6 +2,65 @@
 
 All notable changes to the AI Conflict Dashboard project will be documented in this file.
 
+## [v0.4.0] - 2025-08-01 - Ollama Integration & Enhanced Management
+
+### Major Features
+- **Ollama Integration**: Full support for local LLMs through Ollama
+  - Dynamic model discovery and selection
+  - Real-time progress indicators during model loading
+  - Automatic retry with exponential backoff
+  - Model size display in dropdown (e.g., "deepseek-r1:8b (5.1GB)")
+  - "Don't use" option to disable Ollama without removing selection
+
+- **Backend Restart Button**: GUI-based backend restart capability
+  - Confirmation dialog to prevent accidental restarts
+  - Visual progress feedback during restart
+  - Health check monitoring to detect when backend is online
+  - Automatic Ollama model reload after restart
+  - Spinning animation and color-coded status
+
+- **Enhanced Debugging Tools**: localStorage persistence debugging
+  - `checkLocalStoragePersistence()` utility function
+  - Detailed logging of save/load operations
+  - Origin and hostname tracking for debugging cross-origin issues
+
+### Bug Fixes
+- **BUG-014**: Fixed Ollama frontend URL issue
+  - Frontend was using relative URL instead of absolute
+  - Changed from `/api/ollama/models` to `http://localhost:8000/api/ollama/models`
+  
+- **BUG-015**: Fixed missing Bootstrap JavaScript
+  - All dropdowns and collapsible sections were non-functional
+  - Added Bootstrap bundle script to enable interactive components
+  
+- **BUG-016**: Investigated localStorage persistence
+  - Added comprehensive debugging for API key storage
+  - Identified potential causes (different domains, privacy settings)
+  - Added workaround documentation
+
+### Technical Improvements
+- **Code Cleanup**: Merged all `_fixed` files back into originals
+  - Eliminated duplicate files (llm_providers_fixed.py, etc.)
+  - Consolidated code into proper modules
+  
+- **Startup Scripts**: Added comprehensive management scripts
+  - `start_app.sh`: Production startup with full logging
+  - `start_dev.sh`: Quick development startup
+  - `stop_app.sh`: Graceful shutdown
+  - `view_logs.sh`: Easy log viewing
+  
+- **Plugin Architecture**: Created OllamaProvider plugin
+  - Proper async/await patterns
+  - Context manager support
+  - Comprehensive error handling
+  - Structured logging integration
+
+### Performance & Reliability
+- Added memory usage tracking in logs
+- Improved error messages with recovery suggestions
+- Enhanced timeout handling for long-running operations
+- Better CORS error handling
+
 ## [2025-08-01] - Selective Model Usage Added
 
 ### New Features

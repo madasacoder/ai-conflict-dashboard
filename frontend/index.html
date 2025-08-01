@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Conflict Dashboard - Phase 0</title>
+    <!-- Bootstrap CSS from CDN for quick styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .response-column {
+            height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            display: none;
+        }
+        .char-count {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        #errorAlert {
+            display: none;
+        }
+        .response-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .error-text {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <h1 class="text-center mb-4">AI Conflict Dashboard</h1>
+        <p class="text-center text-muted mb-4">Compare responses from multiple AI models side-by-side</p>
+        
+        <!-- Settings Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">API Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="openaiKey" class="form-label">OpenAI API Key</label>
+                                <input type="password" class="form-control" id="openaiKey" placeholder="sk-...">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="claudeKey" class="form-label">Claude API Key</label>
+                                <input type="password" class="form-control" id="claudeKey" placeholder="sk-ant-...">
+                            </div>
+                        </div>
+                        <small class="text-muted">Keys are stored locally in your browser</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <label for="inputText" class="form-label">Enter your text:</label>
+                        <textarea class="form-control" id="inputText" rows="6" maxlength="4000" 
+                                  placeholder="Enter text to analyze (max 4000 characters)"></textarea>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="char-count"><span id="charCount">0</span> / 4000 characters</span>
+                            <div>
+                                <button class="btn btn-secondary me-2" onclick="clearAll()">Clear</button>
+                                <button class="btn btn-primary" onclick="analyzeText()">
+                                    <span class="spinner-border spinner-border-sm loading" role="status"></span>
+                                    Analyze
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-danger" id="errorAlert" role="alert">
+            <strong>Error:</strong> <span id="errorMessage"></span>
+        </div>
+
+        <!-- Results Section -->
+        <div class="row" id="resultsSection" style="display: none;">
+            <div class="col-md-4">
+                <div class="response-column">
+                    <div class="response-header">Original Text</div>
+                    <div id="originalText"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="response-column">
+                    <div class="response-header">OpenAI Response</div>
+                    <div id="openaiResponse"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="response-column">
+                    <div class="response-header">Claude Response</div>
+                    <div id="claudeResponse"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple logging utility
+        const logger = {
+            debug: (...args) => {
+                if (localStorage.getItem('debugMode') === 'true') {
+                    console.log('[DEBUG]', new Date().toISOString(), ...args);
+                }
+            },
+            info: (...args) => console.log('[INFO]', new Date().toISOString(), ...args),
+            error: (...args) => console.error('[ERROR]', new Date().toISOString(), ...args),
+            
+            // Log to localStorage for debugging
+            saveLog: (level, message, data = {}) => {
+                const logs = JSON.parse(localStorage.getItem('appLogs') || '[]');
+                logs.push({
+                    timestamp: new Date().toISOString(),
+                    level,
+                    message,
+                    data
+                });
+                // Keep last 50 logs
+                if (logs.length > 50) logs.shift();
+                localStorage.setItem('appLogs', JSON.stringify(logs));
+            }
+        };
+
+        // Load API keys from localStorage on page load
+        window.onload = function() {
+            logger.info('App loaded');
+            document.getElementById('openaiKey').value = localStorage.getItem('openaiKey') || '';
+            document.getElementById('claudeKey').value = localStorage.getItem('claudeKey') || '';
+            
+            // Add debug mode toggle
+            if (localStorage.getItem('debugMode') === 'true') {
+                addDebugUI();
+            }
+        };
+        
+        // Debug UI helper
+        function addDebugUI() {
+            const debugDiv = document.createElement('div');
+            debugDiv.innerHTML = `
+                <div style="position: fixed; bottom: 10px; right: 10px; background: #f0f0f0; padding: 10px; border-radius: 5px; font-size: 12px;">
+                    <strong>Debug Mode</strong> | 
+                    <a href="#" onclick="showLogs(); return false;">View Logs</a> | 
+                    <a href="#" onclick="clearLogs(); return false;">Clear Logs</a>
+                </div>
+            `;
+            document.body.appendChild(debugDiv);
+        }
+        
+        function showLogs() {
+            const logs = JSON.parse(localStorage.getItem('appLogs') || '[]');
+            console.table(logs);
+            alert(`${logs.length} logs in console (F12)`);
+        }
+        
+        function clearLogs() {
+            localStorage.removeItem('appLogs');
+            logger.info('Logs cleared');
+        }
+        
+        // Enable debug mode with: localStorage.setItem('debugMode', 'true')
+
+        // Update character count
+        document.getElementById('inputText').addEventListener('input', function() {
+            document.getElementById('charCount').textContent = this.value.length;
+        });
+
+        // Save API keys to localStorage when they change
+        document.getElementById('openaiKey').addEventListener('change', function() {
+            localStorage.setItem('openaiKey', this.value);
+        });
+
+        document.getElementById('claudeKey').addEventListener('change', function() {
+            localStorage.setItem('claudeKey', this.value);
+        });
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('errorAlert').style.display = 'none';
+            }, 5000);
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('charCount').textContent = '0';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+
+        async function analyzeText() {
+            const text = document.getElementById('inputText').value.trim();
+            const openaiKey = document.getElementById('openaiKey').value.trim();
+            const claudeKey = document.getElementById('claudeKey').value.trim();
+
+            logger.debug('Starting analysis', { 
+                textLength: text.length, 
+                hasOpenAI: !!openaiKey, 
+                hasClaude: !!claudeKey 
+            });
+
+            // Validation
+            if (!text) {
+                showError('Please enter some text to analyze');
+                return;
+            }
+
+            if (!openaiKey && !claudeKey) {
+                showError('Please provide at least one API key');
+                return;
+            }
+
+            // Show loading state
+            document.querySelector('.loading').style.display = 'inline-block';
+            document.querySelector('button[onclick="analyzeText()"]').disabled = true;
+            document.getElementById('errorAlert').style.display = 'none';
+
+            const startTime = Date.now();
+
+            try {
+                logger.info('Sending request to backend');
+                const response = await fetch('http://localhost:8000/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        openai_key: openaiKey,
+                        claude_key: claudeKey
+                    })
+                });
+
+                const requestId = response.headers.get('X-Request-ID');
+                logger.debug('Response received', { 
+                    status: response.status, 
+                    requestId,
+                    duration: Date.now() - startTime + 'ms'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    logger.error('API error', { status: response.status, error });
+                    logger.saveLog('error', 'API request failed', { 
+                        status: response.status, 
+                        error,
+                        requestId 
+                    });
+                    throw new Error(error.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                logger.info('Analysis successful', { 
+                    requestId: data.request_id,
+                    modelCount: data.responses.length,
+                    duration: Date.now() - startTime + 'ms'
+                });
+                
+                displayResults(data);
+
+            } catch (error) {
+                logger.error('Analysis failed', error);
+                logger.saveLog('error', 'Analysis failed', { 
+                    error: error.message,
+                    stack: error.stack 
+                });
+                
+                if (error.message.includes('Failed to fetch')) {
+                    showError('Failed to connect to the server. Make sure the backend is running on http://localhost:8000');
+                } else {
+                    showError(error.message);
+                }
+            } finally {
+                // Hide loading state
+                document.querySelector('.loading').style.display = 'none';
+                document.querySelector('button[onclick="analyzeText()"]').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Show results section
+            document.getElementById('resultsSection').style.display = 'flex';
+
+            // Display original text
+            document.getElementById('originalText').textContent = data.original_text;
+
+            // Display responses
+            const openaiResponse = data.responses.find(r => r.model === 'openai');
+            const claudeResponse = data.responses.find(r => r.model === 'claude');
+
+            if (openaiResponse) {
+                if (openaiResponse.error) {
+                    document.getElementById('openaiResponse').innerHTML = 
+                        `<span class="error-text">Error: ${openaiResponse.error}</span>`;
+                } else {
+                    document.getElementById('openaiResponse').textContent = openaiResponse.response;
+                }
+            }
+
+            if (claudeResponse) {
+                if (claudeResponse.error) {
+                    document.getElementById('claudeResponse').innerHTML = 
+                        `<span class="error-text">Error: ${claudeResponse.error}</span>`;
+                } else {
+                    document.getElementById('claudeResponse').textContent = claudeResponse.response;
+                }
+            }
+
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

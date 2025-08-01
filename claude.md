@@ -16,6 +16,7 @@ The AI Conflict Dashboard transparently orchestrates multiple AI models, providi
 ### 1. No Duplicate or Temporary Files
 - ❌ No file names with `_backup`, `_old`, numbered versions (`component_v2.tsx`, `api_fixed.py`)
 - ✅ Modify existing files directly and use git for version control.
+- ✅ **FIXED**: All `_fixed` files have been merged back into original files and imports updated.
 
 ### 2. Temporary Files Handling
 - Temporary files must be stored in `temporary_files/`.
@@ -36,18 +37,18 @@ The AI Conflict Dashboard transparently orchestrates multiple AI models, providi
 
 ## 💻 Technical Guidelines
 
-### Frontend (Vanilla JS + Bootstrap)
-- **Current Stack**: HTML5, Vanilla JavaScript, Bootstrap 5, Prism.js
-- **Key Features**: Dark mode, keyboard shortcuts, IndexedDB storage
-- **Testing**: Jest setup pending (Phase 3)
+### Frontend (Vanilla JavaScript + Bootstrap)
+- **Current Stack**: HTML5, Vanilla JavaScript, Bootstrap 5, Prism.js, DOMPurify
+- **Key Features**: Dark mode, file upload, model selection, Ollama support, checkboxes
+- **Testing**: Vitest + Playwright for e2e tests
 - **Code Style**: Modular JS, semantic HTML, accessible components
 
 ### Backend (FastAPI Python 3.11+)
 - **Modern type hints**: `str | None`, `list[str]`, full annotations
-- **Circuit Breakers**: PyBreaker on all external API calls
+- **Circuit Breakers**: PyBreaker per-API-key isolation
 - **Logging**: Structured logging with `structlog` (JSON format)
-- **Testing**: pytest with 90.10% coverage achieved ✅
-- **Security**: Input validation, Bandit scanning (zero issues)
+- **Testing**: pytest with 92.23% coverage achieved ✅
+- **Security**: Rate limiting, CORS, XSS protection, timeout handling
 
 ---
 
@@ -55,21 +56,30 @@ The AI Conflict Dashboard transparently orchestrates multiple AI models, providi
 ```
 ai-conflict-dashboard/
 ├── frontend/
-│   ├── index.html          # Main UI (Bootstrap + Vanilla JS)
-│   ├── comparison-engine.js # Diff algorithm
-│   ├── history-manager.js   # IndexedDB storage
-│   ├── prism.js            # Syntax highlighting
-│   └── prism.css           # Syntax themes
+│   ├── index.html          # Main UI (Vanilla JS + Bootstrap)
+│   ├── js/
+│   │   ├── xss-protection.js
+│   │   └── file-upload-fix.js
+│   ├── e2e/               # Playwright tests
+│   └── tests/             # Vitest tests
 ├── backend/
-│   ├── main.py             # FastAPI app (100% coverage)
-│   ├── llm_providers.py    # API integrations (OpenAI, Claude, Gemini, Grok)
-│   ├── token_utils.py      # Text chunking (93% coverage)
-│   ├── structured_logging.py # Logging config (100% coverage)
-│   ├── requirements.txt    # Python dependencies
-│   └── tests/              # Test suite (72 tests)
-├── docs/                   # Comprehensive documentation
-├── CLAUDE.md              # This file
-└── README.md              # User documentation
+│   ├── main.py            # FastAPI app with Ollama support
+│   ├── llm_providers.py   # API integrations (OpenAI, Claude, Gemini, Grok, Ollama)
+│   ├── token_utils.py     # Text chunking
+│   ├── structured_logging.py # Logging config
+│   ├── cors_config.py     # CORS security
+│   ├── rate_limiting.py   # Rate limiter
+│   ├── memory_management.py # Memory controls
+│   ├── timeout_handler.py # Timeout handling
+│   ├── smart_chunking.py  # Smart text splitting
+│   ├── plugins/
+│   │   └── ollama_provider.py # Ollama integration
+│   └── tests/             # Test suite (100+ tests)
+├── logs/                  # Application logs
+├── temporary_files/       # For temporary work (per rule #2)
+├── docs/                  # Comprehensive documentation
+├── CLAUDE.md             # This file
+└── README.md             # User documentation
 ```
 
 ---
@@ -78,13 +88,17 @@ ai-conflict-dashboard/
 
 ### Backend (Current)
 - **Framework**: pytest + pytest-cov + pytest-asyncio
-- **Coverage**: 90.10% achieved ✅
+- **Coverage**: 92.23% achieved ✅
 - **Test Files**: 
-  - test_api_analyze.py (15 tests)
-  - test_llm_providers.py (29 tests)
-  - test_structured_logging.py (9 tests)
-  - test_token_utils.py (15 tests)
-  - test_main.py (4 tests)
+  - test_api_analyze.py
+  - test_llm_providers.py 
+  - test_structured_logging.py
+  - test_token_utils.py
+  - test_main.py
+  - test_security_comprehensive.py
+  - test_adversarial.py
+  - test_real_bugs.py
+  - test_ollama_integration.py
 
 ### Frontend (Planned - Phase 3)
 - Jest and Testing Library
@@ -167,11 +181,12 @@ ai-conflict-dashboard/
 | Error Handling   | Circuit breakers, graceful degradation                |
 
 ### Key Metrics Achieved
-- Backend Test Coverage: 90.10% ✅
+- Backend Test Coverage: 92.23% ✅
 - Security Issues: 0 ✅
 - Response Time: <2s ✅
 - Code Quality: A+ ✅
 - Documentation: Complete ✅
+- AI Models Supported: 5 (OpenAI, Claude, Gemini, Grok, Ollama) ✅
 
 ---
 

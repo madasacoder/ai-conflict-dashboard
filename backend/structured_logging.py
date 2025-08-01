@@ -18,11 +18,11 @@ from structlog.processors import CallsiteParameter
 SENSITIVE_PATTERNS: Dict[str, Pattern] = {
     "openai_key": re.compile(r'(sk-[a-zA-Z0-9]{48})'),
     "anthropic_key": re.compile(r'(sk-ant-[a-zA-Z0-9-]{50,})'),
-    "generic_api_key": re.compile(r'(api[_-]?key["\s:=]+)(["\'']?)([a-zA-Z0-9-_]{20,})(["\'']?)', re.IGNORECASE),
+    "generic_api_key": re.compile(r'(api[_-]?key["\s:=]+)(["\']?)([a-zA-Z0-9-_]{20,})(["\']?)', re.IGNORECASE),
     "bearer_token": re.compile(r'(bearer\s+)([a-zA-Z0-9-._~+/]{20,})', re.IGNORECASE),
     "aws_access_key": re.compile(r'(AKIA[A-Z0-9]{16})'),
     "gemini_key": re.compile(r'(AIza[a-zA-Z0-9-_]{35})'),
-    "password": re.compile(r'(password["\s:=]+)(["\'']?)([^"\s]+)(["\'']?)', re.IGNORECASE),
+    "password": re.compile(r'(password["\s:=]+)(["\']?)([^"\s]+)(["\']?)', re.IGNORECASE),
 }
 
 

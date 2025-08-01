@@ -26,9 +26,32 @@ Compare responses from multiple AI models side-by-side to get better insights an
 
 ## 🚀 Quick Start
 
-### One-Click Launch:
+### Production-Ready Startup (Recommended):
+```bash
+./start_app.sh
+```
+
+This script provides:
+- Comprehensive error logging to `logs/` directory
+- Import validation before startup
+- Automatic port cleanup
+- Service health monitoring
+- Graceful shutdown handling
+
+### Quick Development Mode:
+```bash
+./start_dev.sh
+```
+
+### One-Click Launch (Legacy):
 - **Mac/Linux**: Double-click `run.sh` (or run `./run.sh` in terminal)
 - **Windows**: Double-click `run.bat`
+
+### Managing the Application:
+```bash
+./stop_app.sh    # Stop all services
+./view_logs.sh   # Interactive log viewer
+```
 
 The app will automatically:
 1. Install dependencies

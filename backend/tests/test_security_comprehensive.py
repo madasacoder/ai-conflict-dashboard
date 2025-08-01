@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 
 from main import app
-from llm_providers_fixed import get_circuit_breaker, circuit_breakers
+from llm_providers import get_circuit_breaker, circuit_breakers
 from rate_limiting import RateLimiter, get_identifier
 from smart_chunking import chunk_text_smart
 from cors_config import get_allowed_origins

@@ -266,6 +266,55 @@
             font-weight: bold;
             pointer-events: none;
         }
+        
+        /* Model selection card styling */
+        .model-card {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .model-card.disabled {
+            opacity: 0.6;
+        }
+        
+        .model-card.disabled select,
+        .model-card.disabled small {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* Make checkboxes more visible */
+        .form-check-input {
+            width: 1.2rem;
+            height: 1.2rem;
+            cursor: pointer;
+        }
+        
+        .form-check {
+            background: white;
+            padding: 2px;
+            border-radius: 4px;
+        }
+        
+        /* Position checkbox properly */
+        .model-selection-card {
+            position: relative;
+        }
+        
+        .model-selection-card .form-check {
+            z-index: 10;
+        }
+        
+        /* Spinning animation for restart button */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .spin-animation {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -275,9 +324,14 @@
                 <h1 class="text-center mb-2">AI Conflict Dashboard</h1>
                 <p class="text-center text-muted mb-0">Compare responses from multiple AI models side-by-side</p>
             </div>
-            <button class="btn btn-outline-secondary" onclick="toggleDarkMode()" title="Toggle dark mode">
-                <i class="bi bi-moon-fill" id="themeIcon"></i>
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-danger" onclick="restartBackend()" title="Restart backend server">
+                    <i class="bi bi-arrow-clockwise" id="restartIcon"></i> Restart Backend
+                </button>
+                <button class="btn btn-outline-secondary" onclick="toggleDarkMode()" title="Toggle dark mode">
+                    <i class="bi bi-moon-fill" id="themeIcon"></i>
+                </button>
+            </div>
         </div>
         
         <!-- Settings Section -->
@@ -387,7 +441,7 @@
                                         OpenAI
                                     </h6>
                                     <select class="form-select" id="openaiModelDisplay">
-                                        <option value="" disabled>Select OpenAI Model</option>
+                                        <option value="dont_use">Don't use OpenAI</option>
                                         <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo</option>
                                         <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
                                         <option value="gpt-4">GPT-4</option>
@@ -403,7 +457,7 @@
                                         Anthropic Claude
                                     </h6>
                                     <select class="form-select" id="claudeModelDisplay">
-                                        <option value="" disabled>Select Claude Model</option>
+                                        <option value="dont_use">Don't use Claude</option>
                                         <option value="claude-3-haiku-20240307" selected>Claude 3 Haiku</option>
                                         <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
                                         <option value="claude-3-opus-20240229">Claude 3 Opus</option>
@@ -419,7 +473,7 @@
                                         Google Gemini
                                     </h6>
                                     <select class="form-select" id="geminiModelDisplay">
-                                        <option value="" disabled>Select Gemini Model</option>
+                                        <option value="dont_use">Don't use Gemini</option>
                                         <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash</option>
                                         <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B</option>
                                         <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
@@ -435,7 +489,7 @@
                                         xAI Grok
                                     </h6>
                                     <select class="form-select" id="grokModelDisplay">
-                                        <option value="" disabled>Select Grok Model</option>
+                                        <option value="dont_use">Don't use Grok</option>
                                         <option value="grok-2-latest" selected>Grok 2 Latest</option>
                                         <option value="grok-2-mini">Grok 2 Mini</option>
                                         <option value="grok-beta">Grok Beta</option>
@@ -444,9 +498,32 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Second row for Ollama -->
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100 position-relative">
+                                    <h6 class="d-flex align-items-center mb-3">
+                                        <span class="me-2" style="font-size: 24px;">🦙</span>
+                                        Ollama (Local)
+                                    </h6>
+                                    <select class="form-select" id="ollamaModelDisplay" disabled>
+                                        <option value="" selected>Loading models...</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2">Run LLMs locally on your machine</small>
+                                    <div id="ollamaStatus" class="position-absolute bottom-0 end-0 m-2">
+                                        <span class="badge bg-secondary" id="ollamaStatusBadge">Checking...</span>
+                                        <button class="btn btn-sm btn-link p-0 ms-2" onclick="window.loadOllamaModels()" title="Reload Ollama models">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="alert alert-info mt-3 mb-0" role="alert">
                             <i class="bi bi-info-circle me-2"></i>
-                            Only models with configured API keys will be used. Set your API keys in the settings above.
+                            <strong>Select which models to use:</strong> Choose "Don't use" from the dropdown to disable a model. Models without API keys will be skipped automatically.
                         </div>
                     </div>
                 </div>
@@ -493,39 +570,9 @@
         </div>
 
         <!-- Results Section -->
-        <div class="row" id="resultsSection" style="display: none;">
-            <div class="col-md-4">
-                <div class="response-column">
-                    <div class="response-header d-flex justify-content-between align-items-center">
-                        <span>Original Text</span>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('originalText')" title="Copy to clipboard">
-                            <i class="bi bi-clipboard"></i> Copy
-                        </button>
-                    </div>
-                    <div id="originalText"></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="response-column">
-                    <div class="response-header d-flex justify-content-between align-items-center">
-                        <span>OpenAI Response</span>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('openaiResponse')" title="Copy to clipboard">
-                            <i class="bi bi-clipboard"></i> Copy
-                        </button>
-                    </div>
-                    <div id="openaiResponse"></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="response-column">
-                    <div class="response-header d-flex justify-content-between align-items-center">
-                        <span>Claude Response</span>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('claudeResponse')" title="Copy to clipboard">
-                            <i class="bi bi-clipboard"></i> Copy
-                        </button>
-                    </div>
-                    <div id="claudeResponse"></div>
-                </div>
+        <div id="resultsSection" style="display: none;">
+            <div class="row" id="resultsContainer">
+                <!-- Dynamic response columns will be inserted here -->
             </div>
         </div>
         
@@ -606,10 +653,34 @@
         // Load API keys from localStorage on page load
         window.onload = async function() {
             logger.info('App loaded');
-            document.getElementById('openaiKey').value = localStorage.getItem('openaiKey') || '';
-            document.getElementById('claudeKey').value = localStorage.getItem('claudeKey') || '';
-            document.getElementById('geminiKey').value = localStorage.getItem('geminiKey') || '';
-            document.getElementById('grokKey').value = localStorage.getItem('grokKey') || '';
+            
+            // Debug localStorage
+            logger.info('LocalStorage debug:', {
+                origin: window.location.origin,
+                hostname: window.location.hostname,
+                port: window.location.port,
+                protocol: window.location.protocol,
+                storageLength: localStorage.length,
+                storageKeys: Object.keys(localStorage)
+            });
+            
+            // Load API keys
+            const openaiKey = localStorage.getItem('openaiKey');
+            const claudeKey = localStorage.getItem('claudeKey');
+            const geminiKey = localStorage.getItem('geminiKey');
+            const grokKey = localStorage.getItem('grokKey');
+            
+            logger.info('Loaded API keys from localStorage:', {
+                openaiKey: openaiKey ? '***' + openaiKey.slice(-4) : 'null',
+                claudeKey: claudeKey ? '***' + claudeKey.slice(-4) : 'null',
+                geminiKey: geminiKey ? '***' + geminiKey.slice(-4) : 'null',
+                grokKey: grokKey ? '***' + grokKey.slice(-4) : 'null'
+            });
+            
+            document.getElementById('openaiKey').value = openaiKey || '';
+            document.getElementById('claudeKey').value = claudeKey || '';
+            document.getElementById('geminiKey').value = geminiKey || '';
+            document.getElementById('grokKey').value = grokKey || '';
             
             // Load model selections
             const openaiModel = localStorage.getItem('openaiModel') || 'gpt-3.5-turbo';
@@ -692,11 +763,17 @@
                 addDebugUI();
             }
             
+            // Load Ollama models
+            await loadOllamaModels();
+            
             // Set up keyboard shortcuts
             setupKeyboardShortcuts();
             
             // Set up drag and drop
             setupDragAndDrop();
+            
+            // Model selection is now handled by dropdowns
+            setupModelVisualFeedback();
         };
         
         // Debug UI helper
@@ -723,7 +800,61 @@
             logger.info('Logs cleared');
         }
         
+        // Debug localStorage persistence
+        window.checkLocalStoragePersistence = function() {
+            const info = {
+                origin: window.location.origin,
+                hostname: window.location.hostname,
+                port: window.location.port,
+                protocol: window.location.protocol,
+                userAgent: navigator.userAgent,
+                cookieEnabled: navigator.cookieEnabled,
+                storage: {
+                    length: localStorage.length,
+                    keys: Object.keys(localStorage),
+                    apiKeys: {
+                        openai: localStorage.getItem('openaiKey') ? 'Set' : 'Not set',
+                        claude: localStorage.getItem('claudeKey') ? 'Set' : 'Not set',
+                        gemini: localStorage.getItem('geminiKey') ? 'Set' : 'Not set',
+                        grok: localStorage.getItem('grokKey') ? 'Set' : 'Not set'
+                    }
+                }
+            };
+            
+            console.log('LocalStorage Persistence Check:', info);
+            
+            // Test write/read
+            const testKey = 'test_' + Date.now();
+            const testValue = 'test_value_' + Math.random();
+            localStorage.setItem(testKey, testValue);
+            const readValue = localStorage.getItem(testKey);
+            const testPassed = readValue === testValue;
+            localStorage.removeItem(testKey);
+            
+            console.log('Write/Read test:', testPassed ? 'PASSED' : 'FAILED');
+            
+            return info;
+        }
+        
         // Enable debug mode with: localStorage.setItem('debugMode', 'true')
+        
+        // Visual feedback for model selection dropdowns
+        function setupModelVisualFeedback() {
+            // Setup visual feedback for each provider
+            ['openai', 'claude', 'gemini', 'grok'].forEach(provider => {
+                const displayDropdown = document.getElementById(`${provider}ModelDisplay`);
+                const card = displayDropdown.closest('.border');
+                
+                // Add change listener for visual feedback
+                displayDropdown.addEventListener('change', function() {
+                    if (this.value === 'dont_use') {
+                        card.style.opacity = '0.5';
+                    } else {
+                        card.style.opacity = '1';
+                    }
+                });
+            });
+        }
         
         // Sync model selections between display and settings dropdowns
         function syncModelSelections() {
@@ -745,6 +876,178 @@
                 });
             });
         }
+        
+        // Load available Ollama models
+        window.loadOllamaModels = async function(retryCount = 0) {
+            const statusBadge = document.getElementById('ollamaStatusBadge');
+            const modelSelect = document.getElementById('ollamaModelDisplay');
+            
+            console.log(`Loading Ollama models... (attempt ${retryCount + 1})`);
+            
+            // Step 1: Initial check
+            statusBadge.textContent = 'Initializing...';
+            statusBadge.className = 'badge bg-info';
+            modelSelect.innerHTML = '<option value="">Connecting to backend...</option>';
+            
+            // Small delay to show the status
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            try {
+                // Step 2: Connecting to backend
+                statusBadge.textContent = 'Connecting...';
+                statusBadge.className = 'badge bg-warning';
+                console.log('Making request to: http://localhost:8000/api/ollama/models');
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('http://localhost:8000/api/ollama/models', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                // Step 3: Processing response
+                statusBadge.textContent = 'Processing...';
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+                
+                // Step 4: Loading models
+                statusBadge.textContent = 'Loading models...';
+                modelSelect.innerHTML = '<option value="">Fetching model list...</option>';
+                
+                const data = await response.json();
+                console.log('Ollama response data:', data);
+                
+                if (data.available && data.models && data.models.length > 0) {
+                    // Step 5: Populating models
+                    statusBadge.textContent = 'Populating...';
+                    modelSelect.innerHTML = '<option value="">Building model list...</option>';
+                    
+                    // Small delay to show status
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Enable and populate dropdown
+                    modelSelect.disabled = false;
+                    modelSelect.innerHTML = '<option value="dont_use">Don\'t use Ollama</option>';
+                    
+                    // Add models to dropdown with count progress
+                    const totalModels = data.models.length;
+                    let loadedCount = 0;
+                    
+                    for (const model of data.models) {
+                        loadedCount++;
+                        statusBadge.textContent = `Loading ${loadedCount}/${totalModels}...`;
+                        
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = model.name;
+                        if (model.size) {
+                            const sizeInGB = (model.size / (1024 * 1024 * 1024)).toFixed(1);
+                            option.textContent += ` (${sizeInGB}GB)`;
+                        }
+                        if (model.description) {
+                            option.title = model.description;
+                        }
+                        modelSelect.appendChild(option);
+                        
+                        // Very small delay for visual feedback on large lists
+                        if (totalModels > 5 && loadedCount % 3 === 0) {
+                            await new Promise(resolve => setTimeout(resolve, 10));
+                        }
+                    }
+                    
+                    // Step 6: Finalizing
+                    statusBadge.textContent = `${totalModels} models`;
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.title = `Ollama connected with ${totalModels} models available`;
+                    
+                    // Load saved selection
+                    const savedModel = localStorage.getItem('ollamaModel');
+                    if (savedModel && data.models.some(m => m.name === savedModel)) {
+                        modelSelect.value = savedModel;
+                    }
+                    
+                    // Save selection on change
+                    modelSelect.addEventListener('change', function() {
+                        localStorage.setItem('ollamaModel', this.value);
+                    });
+                    
+                    logger.info('Ollama models loaded', { count: data.models.length });
+                } else {
+                    // Ollama not available
+                    statusBadge.textContent = 'Not Running';
+                    statusBadge.className = 'badge bg-secondary';
+                    statusBadge.title = 'Ollama service is not running';
+                    modelSelect.innerHTML = '<option value="">Ollama not running</option>';
+                    modelSelect.disabled = true;
+                    
+                    if (data.error) {
+                        console.log('Ollama error:', data.error);
+                        modelSelect.title = data.error;
+                        statusBadge.textContent = 'Offline';
+                        statusBadge.title = data.error;
+                    }
+                    
+                    if (data.help) {
+                        const helpOption = document.createElement('option');
+                        helpOption.textContent = data.help;
+                        helpOption.disabled = true;
+                        modelSelect.appendChild(helpOption);
+                    }
+                    
+                    logger.warn('Ollama not available', data);
+                }
+            } catch (error) {
+                // Error checking Ollama
+                console.error('Failed to load Ollama models:', error);
+                
+                // Retry logic - try up to 3 times with exponential backoff
+                if (retryCount < 2 && (error.name === 'AbortError' || error.message.includes('Failed to fetch'))) {
+                    console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
+                    statusBadge.textContent = `Retrying...`;
+                    statusBadge.className = 'badge bg-info';
+                    
+                    setTimeout(() => {
+                        loadOllamaModels(retryCount + 1);
+                    }, (retryCount + 1) * 2000); // 2s, 4s delay
+                    return;
+                }
+                
+                if (error.name === 'AbortError') {
+                    console.error('Request timed out after 10 seconds');
+                    statusBadge.textContent = 'Timeout';
+                    statusBadge.className = 'badge bg-danger';
+                    modelSelect.innerHTML = '<option value="">Request Timeout</option>';
+                    modelSelect.title = 'Request timed out - check backend connection';
+                } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                    console.error('Network error - likely CORS or backend down');
+                    statusBadge.textContent = 'Network Error';
+                    statusBadge.className = 'badge bg-danger';
+                    modelSelect.innerHTML = '<option value="">Backend Unreachable</option>';
+                    modelSelect.title = 'Cannot reach backend at http://localhost:8000';
+                } else {
+                    statusBadge.textContent = 'Error';
+                    statusBadge.className = 'badge bg-danger';
+                    modelSelect.innerHTML = '<option value="">Connection Error</option>';
+                    modelSelect.title = error.message;
+                }
+                
+                modelSelect.disabled = true;
+                logger.error('Failed to load Ollama models', error);
+            }
+        };
         
         // Update character and token counts
         function updateCounts() {
@@ -776,18 +1079,34 @@
         // Save API keys to localStorage when they change
         document.getElementById('openaiKey').addEventListener('change', function() {
             localStorage.setItem('openaiKey', this.value);
+            logger.info('Saved OpenAI key to localStorage', {
+                keyLength: this.value.length,
+                lastFour: this.value.slice(-4)
+            });
         });
 
         document.getElementById('claudeKey').addEventListener('change', function() {
             localStorage.setItem('claudeKey', this.value);
+            logger.info('Saved Claude key to localStorage', {
+                keyLength: this.value.length,
+                lastFour: this.value.slice(-4)
+            });
         });
 
         document.getElementById('geminiKey').addEventListener('change', function() {
             localStorage.setItem('geminiKey', this.value);
+            logger.info('Saved Gemini key to localStorage', {
+                keyLength: this.value.length,
+                lastFour: this.value.slice(-4)
+            });
         });
 
         document.getElementById('grokKey').addEventListener('change', function() {
             localStorage.setItem('grokKey', this.value);
+            logger.info('Saved Grok key to localStorage', {
+                keyLength: this.value.length,
+                lastFour: this.value.slice(-4)
+            });
         });
 
         // Save model selections to localStorage when they change
@@ -828,10 +1147,18 @@
             const claudeKey = document.getElementById('claudeKey').value.trim();
             const geminiKey = document.getElementById('geminiKey').value.trim();
             const grokKey = document.getElementById('grokKey').value.trim();
+            const ollamaModel = document.getElementById('ollamaModelDisplay').value;
             const openaiModel = document.getElementById('openaiModel').value;
             const claudeModel = document.getElementById('claudeModel').value;
             const geminiModel = document.getElementById('geminiModel').value;
             const grokModel = document.getElementById('grokModel').value;
+            
+            // Check which models are enabled (not set to "dont_use")
+            const openaiEnabled = openaiModel !== 'dont_use';
+            const claudeEnabled = claudeModel !== 'dont_use';
+            const geminiEnabled = geminiModel !== 'dont_use';
+            const grokEnabled = grokModel !== 'dont_use';
+            const ollamaEnabled = ollamaModel && ollamaModel !== '' && ollamaModel !== 'dont_use';
 
             // Sanitize user input if XSS protection is available
             if (window.XSSProtection && window.XSSProtection.sanitizeUserInput) {
@@ -840,14 +1167,16 @@
 
             logger.debug('Starting analysis', { 
                 textLength: text.length, 
-                hasOpenAI: !!openaiKey, 
-                hasClaude: !!claudeKey,
-                hasGemini: !!geminiKey,
-                hasGrok: !!grokKey,
+                openaiEnabled: openaiEnabled && !!openaiKey,
+                claudeEnabled: claudeEnabled && !!claudeKey,
+                geminiEnabled: geminiEnabled && !!geminiKey,
+                grokEnabled: grokEnabled && !!grokKey,
+                ollamaEnabled: ollamaEnabled && !!ollamaModel && ollamaModel !== '',
                 openaiModel: openaiModel,
                 claudeModel: claudeModel,
                 geminiModel: geminiModel,
-                grokModel: grokModel
+                grokModel: grokModel,
+                ollamaModel: ollamaModel
             });
 
             // Validation
@@ -856,8 +1185,16 @@
                 return;
             }
 
-            if (!openaiKey && !claudeKey && !geminiKey && !grokKey) {
-                showError('Please provide at least one API key');
+            // Check if at least one model is enabled with a valid configuration
+            const hasEnabledModel = 
+                (openaiEnabled && openaiKey) ||
+                (claudeEnabled && claudeKey) ||
+                (geminiEnabled && geminiKey) ||
+                (grokEnabled && grokKey) ||
+                (ollamaEnabled && ollamaModel && ollamaModel !== '');
+                
+            if (!hasEnabledModel) {
+                showError('Please enable at least one model with a valid API key or select an Ollama model');
                 return;
             }
 
@@ -885,10 +1222,11 @@
                     },
                     body: JSON.stringify({
                         text: text,
-                        openai_key: openaiKey,
-                        claude_key: claudeKey,
-                        gemini_key: geminiKey,
-                        grok_key: grokKey,
+                        openai_key: openaiEnabled && openaiKey ? openaiKey : null,
+                        claude_key: claudeEnabled && claudeKey ? claudeKey : null,
+                        gemini_key: geminiEnabled && geminiKey ? geminiKey : null,
+                        grok_key: grokEnabled && grokKey ? grokKey : null,
+                        ollama_model: ollamaEnabled && ollamaModel && ollamaModel !== '' ? ollamaModel : null,
                         openai_model: openaiModel,
                         claude_model: claudeModel,
                         gemini_model: geminiModel,
@@ -959,63 +1297,106 @@
 
         function displayResults(data) {
             // Show results section
-            document.getElementById('resultsSection').style.display = 'flex';
-
-            // Display original text
-            document.getElementById('originalText').textContent = data.original_text;
-
-            // Display responses
-            const openaiResponse = data.responses.find(r => r.model === 'openai');
-            const claudeResponse = data.responses.find(r => r.model === 'claude');
-
-            if (openaiResponse) {
-                const openaiElement = document.getElementById('openaiResponse');
-                if (openaiResponse.error) {
-                    // Use safe innerHTML setter if available
-                    const errorHtml = `<span class="error-text">Error: ${escapeHtml(openaiResponse.error)}</span>`;
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // Clear previous results
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '';
+            
+            // Model name mappings for display
+            const modelDisplayNames = {
+                'openai': 'OpenAI',
+                'claude': 'Claude',
+                'gemini': 'Gemini',
+                'grok': 'Grok',
+                'gpt-3.5-turbo': 'GPT-3.5 Turbo',
+                'gpt-4': 'GPT-4',
+                'gpt-4-turbo-preview': 'GPT-4 Turbo',
+                'claude-3-haiku-20240307': 'Claude 3 Haiku',
+                'claude-3-sonnet-20240229': 'Claude 3 Sonnet',
+                'claude-3-opus-20240229': 'Claude 3 Opus',
+                'gemini-1.5-flash': 'Gemini 1.5 Flash',
+                'gemini-1.5-pro': 'Gemini 1.5 Pro',
+                'grok-2-latest': 'Grok 2',
+                'grok-2-mini': 'Grok 2 Mini'
+            };
+            
+            // Calculate column width based on number of responses
+            const numResponses = data.responses.length + 1; // +1 for original text
+            const colClass = numResponses <= 3 ? 'col-md-4' : (numResponses <= 4 ? 'col-md-3' : 'col-md-2');
+            
+            // Create original text column
+            const originalCol = document.createElement('div');
+            originalCol.className = colClass;
+            originalCol.innerHTML = `
+                <div class="response-column">
+                    <div class="response-header d-flex justify-content-between align-items-center">
+                        <span>Original Text</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('originalText')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+                    <div id="originalText">${escapeHtml(data.original_text)}</div>
+                </div>
+            `;
+            resultsContainer.appendChild(originalCol);
+            
+            // Create columns for each response
+            data.responses.forEach((response, index) => {
+                // Get display name for the model
+                let displayName = response.model;
+                
+                // Handle Ollama models
+                if (response.model.startsWith('ollama/')) {
+                    const ollamaModel = response.model.replace('ollama/', '');
+                    displayName = `Ollama (${ollamaModel})`;
+                } else if (modelDisplayNames[response.model]) {
+                    displayName = modelDisplayNames[response.model];
+                }
+                
+                const responseCol = document.createElement('div');
+                responseCol.className = colClass;
+                const responseId = `response-${index}`;
+                
+                responseCol.innerHTML = `
+                    <div class="response-column">
+                        <div class="response-header d-flex justify-content-between align-items-center">
+                            <span>${displayName}</span>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyResponseToClipboard('${responseId}')" title="Copy to clipboard">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        <div id="${responseId}" class="model-response"></div>
+                    </div>
+                `;
+                resultsContainer.appendChild(responseCol);
+                
+                // Fill response content
+                const responseElement = responseCol.querySelector(`#${responseId}`);
+                if (response.error) {
+                    const errorHtml = `<span class="error-text">Error: ${escapeHtml(response.error)}</span>`;
                     if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
-                        window.XSSProtection.setInnerHTMLSafely(openaiElement, errorHtml);
+                        window.XSSProtection.setInnerHTMLSafely(responseElement, errorHtml);
                     } else {
-                        openaiElement.innerHTML = errorHtml;
+                        responseElement.innerHTML = errorHtml;
                     }
                 } else {
-                    const processedHtml = processTextWithHighlighting(openaiResponse.response);
+                    const processedHtml = processTextWithHighlighting(response.response);
                     if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
-                        window.XSSProtection.setInnerHTMLSafely(openaiElement, processedHtml);
+                        window.XSSProtection.setInnerHTMLSafely(responseElement, processedHtml);
                     } else {
-                        openaiElement.innerHTML = processedHtml;
+                        responseElement.innerHTML = processedHtml;
                     }
                     // Re-run Prism highlighting
-                    Prism.highlightAllUnder(openaiElement);
+                    Prism.highlightAllUnder(responseElement);
                 }
-            }
-
-            if (claudeResponse) {
-                const claudeElement = document.getElementById('claudeResponse');
-                if (claudeResponse.error) {
-                    // Use safe innerHTML setter if available
-                    const errorHtml = `<span class="error-text">Error: ${escapeHtml(claudeResponse.error)}</span>`;
-                    if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
-                        window.XSSProtection.setInnerHTMLSafely(claudeElement, errorHtml);
-                    } else {
-                        claudeElement.innerHTML = errorHtml;
-                    }
-                } else {
-                    const processedHtml = processTextWithHighlighting(claudeResponse.response);
-                    if (window.XSSProtection && window.XSSProtection.setInnerHTMLSafely) {
-                        window.XSSProtection.setInnerHTMLSafely(claudeElement, processedHtml);
-                    } else {
-                        claudeElement.innerHTML = processedHtml;
-                    }
-                    // Re-run Prism highlighting
-                    Prism.highlightAllUnder(claudeElement);
-                }
-            }
-
-            // Generate comparison if both responses are available
-            if (openaiResponse && claudeResponse && 
-                !openaiResponse.error && !claudeResponse.error) {
-                generateComparison(openaiResponse.response, claudeResponse.response);
+            });
+            
+            // Generate comparison if we have at least 2 non-error responses
+            const successfulResponses = data.responses.filter(r => !r.error);
+            if (successfulResponses.length >= 2) {
+                // For now, compare the first two successful responses
+                generateComparison(successfulResponses[0].response, successfulResponses[1].response);
                 document.getElementById('comparisonSection').style.display = 'block';
             }
 
@@ -1504,6 +1885,33 @@
             return div.innerHTML;
         }
         
+        // Copy response to clipboard function
+        function copyResponseToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                logger.info('Copied response to clipboard', { elementId, length: text.length });
+                
+                // Show success feedback
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check-circle"></i> Copied!';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            }).catch(err => {
+                logger.error('Failed to copy to clipboard', err);
+                showError('Failed to copy to clipboard');
+            });
+        }
+        
         // Copy to clipboard function
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
@@ -1529,6 +1937,108 @@
                 logger.error('Failed to copy to clipboard', err);
                 showError('Failed to copy to clipboard');
             });
+        }
+        
+        // Backend restart function
+        async function restartBackend() {
+            const restartBtn = event.target.closest('button');
+            const restartIcon = document.getElementById('restartIcon');
+            
+            if (!confirm('Are you sure you want to restart the backend server? This will interrupt any ongoing requests.')) {
+                return;
+            }
+            
+            try {
+                // Disable button and show loading state
+                restartBtn.disabled = true;
+                restartIcon.classList.add('spin-animation');
+                restartBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin-animation"></i> Restarting...';
+                
+                const response = await fetch('http://localhost:8000/api/restart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to restart: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                logger.info('Backend restart initiated', data);
+                
+                // Show success message
+                restartBtn.classList.remove('btn-outline-danger');
+                restartBtn.classList.add('btn-success');
+                restartBtn.innerHTML = '<i class="bi bi-check-circle"></i> Restart Initiated';
+                
+                // Wait for backend to restart
+                setTimeout(async () => {
+                    restartBtn.innerHTML = '<i class="bi bi-hourglass-split spin-animation"></i> Waiting for restart...';
+                    
+                    // Poll health endpoint until backend is back
+                    let attempts = 0;
+                    const maxAttempts = 30; // 30 seconds max wait
+                    
+                    const checkHealth = async () => {
+                        try {
+                            const healthResponse = await fetch('http://localhost:8000/api/health');
+                            if (healthResponse.ok) {
+                                // Backend is back online
+                                restartBtn.classList.remove('btn-success');
+                                restartBtn.classList.add('btn-outline-success');
+                                restartBtn.innerHTML = '<i class="bi bi-check-circle"></i> Backend Online';
+                                
+                                // Reload Ollama models if they were loaded
+                                if (window.loadOllamaModels) {
+                                    await window.loadOllamaModels();
+                                }
+                                
+                                // Reset button after 3 seconds
+                                setTimeout(() => {
+                                    restartBtn.disabled = false;
+                                    restartBtn.classList.remove('btn-outline-success', 'btn-success');
+                                    restartBtn.classList.add('btn-outline-danger');
+                                    restartBtn.innerHTML = '<i class="bi bi-arrow-clockwise" id="restartIcon"></i> Restart Backend';
+                                }, 3000);
+                                
+                                return true;
+                            }
+                        } catch (e) {
+                            // Backend not ready yet
+                        }
+                        
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            setTimeout(checkHealth, 1000);
+                        } else {
+                            // Timeout
+                            restartBtn.classList.remove('btn-success');
+                            restartBtn.classList.add('btn-outline-warning');
+                            restartBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Restart timeout';
+                            setTimeout(() => {
+                                restartBtn.disabled = false;
+                                restartBtn.classList.remove('btn-outline-warning');
+                                restartBtn.classList.add('btn-outline-danger');
+                                restartBtn.innerHTML = '<i class="bi bi-arrow-clockwise" id="restartIcon"></i> Restart Backend';
+                            }, 3000);
+                        }
+                    };
+                    
+                    await checkHealth();
+                }, 2000);
+                
+            } catch (error) {
+                logger.error('Failed to restart backend', error);
+                showError('Failed to restart backend: ' + error.message);
+                
+                // Reset button
+                restartBtn.disabled = false;
+                restartBtn.classList.remove('btn-success');
+                restartBtn.classList.add('btn-outline-danger');
+                restartBtn.innerHTML = '<i class="bi bi-arrow-clockwise" id="restartIcon"></i> Restart Backend';
+            }
         }
         
         // Dark mode toggle functions
@@ -1668,5 +2178,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <!-- Auto-loader for additional languages -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <!-- Bootstrap JavaScript Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -149,6 +149,7 @@ class AnalyzeRequest(BaseModel):
     claude_model: Optional[str] = "claude-3-haiku-20240307"  # Default model
     gemini_model: Optional[str] = "gemini-1.5-flash"  # Default model
     grok_model: Optional[str] = "grok-2-latest"  # Default model
+    ollama_model: Optional[str] = None  # Ollama model to use
 
 
 class ModelResponse(BaseModel):
@@ -227,7 +228,7 @@ async def analyze_text(request: AnalyzeRequest):
         raise HTTPException(status_code=400, detail="Text cannot be empty")
 
     # Import here to avoid circular imports
-    from llm_providers_fixed import analyze_with_models
+    from llm_providers import analyze_with_models
     from token_utils import check_token_limits
     from smart_chunking import chunk_text_smart
 
@@ -298,6 +299,7 @@ async def analyze_text(request: AnalyzeRequest):
                 request.claude_key,
                 request.gemini_key,
                 request.grok_key,
+                request.ollama_model,
                 request.openai_model,
                 request.claude_model,
                 request.gemini_model,
@@ -379,3 +381,84 @@ async def analyze_text(request: AnalyzeRequest):
                 )
             else:
                 raise HTTPException(status_code=500, detail="Analysis failed")
+
+
+@app.get("/api/ollama/models")
+async def list_ollama_models():
+    """List available Ollama models.
+    
+    Returns:
+        dict: Available models and status information
+    """
+    from plugins.ollama_provider import OllamaProvider
+    
+    try:
+        async with OllamaProvider() as provider:
+            # Check health first
+            health = await provider.check_health()
+            
+            if not health.get('available'):
+                return {
+                    "available": False,
+                    "error": health.get('error', 'Ollama is not available'),
+                    "help": health.get('help', '')
+                }
+            
+            # Get list of models
+            models = await provider.list_models()
+            
+            return {
+                "available": True,
+                "models": models,
+                "base_url": health.get('base_url')
+            }
+            
+    except Exception as e:
+        logger.error(f"Failed to list Ollama models: {str(e)}")
+        return {
+            "available": False,
+            "error": str(e)
+        }
+
+
+@app.post("/api/restart")
+async def restart_backend():
+    """Restart the backend server.
+    
+    This endpoint triggers a graceful restart of the backend server.
+    The server will complete any ongoing requests before restarting.
+    
+    Returns:
+        dict: Status message
+    """
+    import os
+    import sys
+    import signal
+    
+    logger.info("Backend restart requested via API")
+    
+    # Schedule restart after response is sent
+    async def delayed_restart():
+        import asyncio
+        await asyncio.sleep(1)  # Give time for response to be sent
+        logger.info("Initiating backend restart...")
+        
+        # If running with uvicorn reload, touch a file to trigger reload
+        try:
+            # Touch main.py to trigger uvicorn reload
+            os.utime(__file__, None)
+            logger.info("Triggered uvicorn reload by touching main.py")
+        except Exception as e:
+            logger.warning(f"Could not trigger uvicorn reload: {e}")
+            
+            # Fallback: Send SIGTERM to self (graceful shutdown)
+            os.kill(os.getpid(), signal.SIGTERM)
+    
+    # Run restart in background
+    import asyncio
+    asyncio.create_task(delayed_restart())
+    
+    return {
+        "status": "success",
+        "message": "Backend restart initiated. The server will restart in a moment."
+    }

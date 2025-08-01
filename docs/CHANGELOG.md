@@ -2,6 +2,50 @@
 
 All notable changes to the AI Conflict Dashboard project will be documented in this file.
 
+## [2025-08-01] - Selective Model Usage Added
+
+### New Features
+- **Model Selection Checkboxes**
+  - Added checkbox for each AI model provider
+  - Users can now enable/disable individual models
+  - Only checked models with valid API keys are used
+  - Visual feedback: disabled models appear dimmed
+  - Settings persist across sessions via localStorage
+
+### User Experience Improvements
+- Clear visual distinction between enabled and disabled models
+- Dropdown selections remain visible but disabled when unchecked
+- Updated info message to explain checkbox functionality
+- Prevents unnecessary API calls to unchecked providers
+
+## [2025-08-01] - Ollama Integration Added
+
+### New Features
+- **Ollama Local LLM Support**
+  - Complete integration with Ollama for running local LLMs
+  - New plugin: `plugins/ollama_provider.py`
+  - Supports all Ollama-installed models
+  - No API key required - runs completely locally
+  - Dynamic model detection and selection
+  - Real-time status indicator in UI
+  
+- **API Enhancements**
+  - New endpoint: `GET /api/ollama/models` to list available models
+  - Added `ollama_model` parameter to `/api/analyze`
+  - Full async support with aiohttp
+  
+- **UI Improvements**
+  - Dynamic response columns for all active models
+  - Ollama model dropdown with live status badge
+  - Automatic column width adjustment based on number of responses
+  - Support for 5+ simultaneous model responses
+
+### Technical Details
+- Models tested: r1-1776, dolphin-mixtral, deepseek-r1, llama3.3, qwen3
+- Response time tracking and metadata
+- Integrated with existing circuit breaker protection
+- Full error handling for offline Ollama instances
+
 ## [2025-08-01] - Phase 3 Security Hardening Complete
 
 ### Security Enhancements

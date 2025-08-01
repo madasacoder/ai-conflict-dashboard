@@ -97,7 +97,46 @@ Get timeout statistics for all operations.
 }
 ```
 
-### 5. Analyze Text (Main Endpoint)
+### 5. List Ollama Models
+
+```http
+GET /api/ollama/models
+```
+
+List available local LLM models from Ollama.
+
+**Response:**
+```json
+{
+    "available": true,
+    "models": [
+        {
+            "name": "llama3.3:70b",
+            "size": 42520413916,
+            "modified": "2025-06-18T20:35:27.752086116-05:00",
+            "description": "Meta's Llama 3.3 70B model"
+        },
+        {
+            "name": "deepseek-r1:70b",
+            "size": 42520397873,
+            "modified": "2025-06-18T20:46:24.395885425-05:00",
+            "description": "DeepSeek R1 70B reasoning model"
+        }
+    ],
+    "base_url": "http://localhost:11434"
+}
+```
+
+**Error Response (Ollama not available):**
+```json
+{
+    "available": false,
+    "error": "Cannot connect to Ollama. Is it running?",
+    "help": "Start Ollama with: ollama serve"
+}
+```
+
+### 6. Analyze Text (Main Endpoint)
 
 ```http
 POST /api/analyze
@@ -118,6 +157,7 @@ Content-Type: application/json
     "claude_api_key": "sk-ant-...",
     "gemini_api_key": "AIza...",
     "grok_api_key": "xai-...",
+    "ollama_model": "llama3.3:70b",
     "openai_model": "gpt-4",
     "claude_model": "claude-3-opus-20240229",
     "gemini_model": "gemini-1.5-flash",
@@ -131,6 +171,7 @@ Content-Type: application/json
 - `claude_api_key` (optional): Anthropic API key
 - `gemini_api_key` (optional): Google Gemini API key
 - `grok_api_key` (optional): xAI Grok API key
+- `ollama_model` (optional): Local Ollama model to use (no API key required)
 - `openai_model` (optional): Model to use (default: "gpt-3.5-turbo")
 - `claude_model` (optional): Model to use (default: "claude-3-haiku-20240307")
 - `gemini_model` (optional): Model to use (default: "gemini-1.5-flash")
@@ -159,6 +200,11 @@ Grok:
 - `grok-2-latest`
 - `grok-2-mini`
 - `grok-beta`
+
+Ollama (Local):
+- Any model installed locally via Ollama
+- Common models: `llama3.3`, `deepseek-r1`, `mistral`, `phi`, `codellama`
+- Check available models with `GET /api/ollama/models`
 
 **Response:**
 ```json
@@ -311,6 +357,7 @@ response = requests.post(
         "text": "What is the meaning of life?",
         "openai_api_key": "sk-...",
         "claude_api_key": "sk-ant-...",
+        "ollama_model": "llama3.3:70b",  # Local model, no API key needed
         "openai_model": "gpt-4",
         "claude_model": "claude-3-opus-20240229"
     }

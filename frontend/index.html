@@ -8,6 +8,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prismTheme" />
     <style>
         :root {
             --bg-color: #ffffff;
@@ -131,6 +134,136 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        
+        /* Diff highlighting styles */
+        .diff-table {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        .diff-table th {
+            background-color: var(--muted-bg);
+            position: sticky;
+            top: 0;
+        }
+        .line-num {
+            background-color: var(--muted-bg);
+            color: #6c757d;
+            text-align: right;
+            padding: 2px 8px;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+        .diff-identical {
+            color: #6c757d;
+        }
+        .diff-modified {
+            background-color: #fff3cd;
+        }
+        .diff-removed {
+            background-color: #f8d7da;
+            text-decoration: line-through;
+        }
+        .diff-added {
+            background-color: #d4edda;
+        }
+        .diff-empty {
+            background-color: var(--muted-bg);
+        }
+        .diff-highlight-1 {
+            background-color: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .diff-highlight-2 {
+            background-color: #03dac6;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        /* Dark mode diff colors */
+        [data-theme="dark"] .diff-modified {
+            background-color: #664d00;
+        }
+        [data-theme="dark"] .diff-removed {
+            background-color: #842029;
+        }
+        [data-theme="dark"] .diff-added {
+            background-color: #0f5132;
+        }
+        [data-theme="dark"] .diff-highlight-1 {
+            background-color: #ffc107;
+            color: #000;
+        }
+        [data-theme="dark"] .diff-highlight-2 {
+            background-color: #00897b;
+            color: #fff;
+        }
+        
+        /* Comparison stats */
+        .comparison-stats {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        /* Copy button styles */
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .response-column:hover .copy-btn {
+            opacity: 1;
+        }
+        
+        /* Keyboard shortcut hint */
+        .shortcut-hint {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        
+        /* Collapsible section styles */
+        .btn-link {
+            color: var(--text-color);
+            text-align: left;
+        }
+        .btn-link:hover {
+            color: var(--primary-color);
+        }
+        .btn-link:focus {
+            box-shadow: none;
+        }
+        #apiSettingsChevron {
+            transition: transform 0.3s ease;
+        }
+        .card-header {
+            background-color: var(--background-color);
+            border-bottom: 1px solid var(--secondary-color);
+        }
+        
+        /* Drag and drop styles */
+        #dropZone {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        #dropZone.drag-over {
+            border: 2px dashed var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        #dropZone.drag-over::after {
+            content: 'Drop file here to upload';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -150,20 +283,51 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">API Settings</h5>
+                        <h5 class="mb-0">
+                            <button class="btn btn-link text-decoration-none p-0 d-flex align-items-center justify-content-between w-100" type="button" data-bs-toggle="collapse" data-bs-target="#apiSettingsCollapse" aria-expanded="false" aria-controls="apiSettingsCollapse">
+                                <span><i class="bi bi-key-fill me-2"></i>API Settings</span>
+                                <i class="bi bi-chevron-down" id="apiSettingsChevron"></i>
+                            </button>
+                        </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="collapse" id="apiSettingsCollapse">
+                        <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="openaiKey" class="form-label">OpenAI API Key</label>
                                 <input type="password" class="form-control" id="openaiKey" placeholder="sk-...">
+                                <div class="mt-2">
+                                    <label for="openaiModel" class="form-label">Model</label>
+                                    <select class="form-select" id="openaiModel">
+                                        <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo (Fast, Economical)</option>
+                                        <option value="gpt-4-turbo-preview">GPT-4 Turbo (Latest, Powerful)</option>
+                                        <option value="gpt-4">GPT-4 (Stable, Powerful)</option>
+                                        <option value="gpt-3.5-turbo-16k">GPT-3.5 Turbo 16K (Long Context)</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="GPT-3.5: Fast and cost-effective. GPT-4: More capable but slower and more expensive."></i>
+                                    </small>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="claudeKey" class="form-label">Claude API Key</label>
                                 <input type="password" class="form-control" id="claudeKey" placeholder="sk-ant-...">
+                                <div class="mt-2">
+                                    <label for="claudeModel" class="form-label">Model</label>
+                                    <select class="form-select" id="claudeModel">
+                                        <option value="claude-3-haiku-20240307" selected>Claude 3 Haiku (Fast, Light)</option>
+                                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Balanced)</option>
+                                        <option value="claude-3-opus-20240229">Claude 3 Opus (Most Capable)</option>
+                                        <option value="claude-2.1">Claude 2.1 (Previous Gen)</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="Haiku: Fast and efficient. Sonnet: Good balance. Opus: Most capable but slower."></i>
+                                    </small>
+                                </div>
                             </div>
                         </div>
-                        <small class="text-muted">Keys are stored locally in your browser</small>
+                        <small class="text-muted">Keys and preferences are stored locally in your browser</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -172,7 +336,7 @@
         <!-- Input Section -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
+                <div class="card" id="dropZone">
                     <div class="card-body">
                         <label for="inputText" class="form-label">Enter your text:</label>
                         <textarea class="form-control" id="inputText" rows="6" 
@@ -250,9 +414,17 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Response History</h5>
-                        <button class="btn btn-sm btn-outline-danger" onclick="clearHistory()" id="clearHistoryBtn">
-                            Clear History
-                        </button>
+                        <div class="d-flex align-items-center">
+                            <div class="input-group input-group-sm me-2" style="width: 250px;">
+                                <input type="text" class="form-control" id="historySearch" placeholder="Search history..." onkeyup="searchHistory()" oninput="searchHistory()">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchHistory()">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearHistory()" id="clearHistoryBtn">
+                                Clear History
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div id="historyList">
@@ -307,14 +479,64 @@
             }
         };
 
+        // Initialize history manager
+        let historyManager = null;
+        
         // Load API keys from localStorage on page load
-        window.onload = function() {
+        window.onload = async function() {
             logger.info('App loaded');
             document.getElementById('openaiKey').value = localStorage.getItem('openaiKey') || '';
             document.getElementById('claudeKey').value = localStorage.getItem('claudeKey') || '';
             
+            // Initialize Bootstrap tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Handle collapse toggle for API settings
+            const apiSettingsCollapse = document.getElementById('apiSettingsCollapse');
+            const apiSettingsChevron = document.getElementById('apiSettingsChevron');
+            
+            // Check if API settings should be expanded (if keys are not set)
+            const hasKeys = localStorage.getItem('openaiKey') || localStorage.getItem('claudeKey');
+            if (!hasKeys) {
+                // Expand by default if no keys are set
+                apiSettingsCollapse.classList.add('show');
+                apiSettingsChevron.style.transform = 'rotate(180deg)';
+                document.querySelector('[data-bs-target="#apiSettingsCollapse"]').setAttribute('aria-expanded', 'true');
+            }
+            
+            apiSettingsCollapse.addEventListener('show.bs.collapse', function () {
+                apiSettingsChevron.style.transform = 'rotate(180deg)';
+                localStorage.setItem('apiSettingsExpanded', 'true');
+            });
+            
+            apiSettingsCollapse.addEventListener('hide.bs.collapse', function () {
+                apiSettingsChevron.style.transform = 'rotate(0deg)';
+                localStorage.setItem('apiSettingsExpanded', 'false');
+            });
+            
+            // Restore collapse state from localStorage
+            const isExpanded = localStorage.getItem('apiSettingsExpanded');
+            if (isExpanded === 'true' || (!isExpanded && !hasKeys)) {
+                apiSettingsCollapse.classList.add('show');
+                apiSettingsChevron.style.transform = 'rotate(180deg)';
+                document.querySelector('[data-bs-target="#apiSettingsCollapse"]').setAttribute('aria-expanded', 'true');
+            }
+            
+            // Initialize history manager
+            try {
+                historyManager = new HistoryManager();
+                await historyManager.init();
+                logger.info('History manager initialized');
+            } catch (error) {
+                logger.error('Failed to initialize history manager', error);
+                // Fall back to localStorage
+            }
+            
             // Load history
-            loadHistory();
+            await loadHistory();
             
             // Load theme
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -325,6 +547,12 @@
             if (localStorage.getItem('debugMode') === 'true') {
                 addDebugUI();
             }
+            
+            // Set up keyboard shortcuts
+            setupKeyboardShortcuts();
+            
+            // Set up drag and drop
+            setupDragAndDrop();
         };
         
         // Debug UI helper
@@ -406,11 +634,15 @@
             const text = document.getElementById('inputText').value.trim();
             const openaiKey = document.getElementById('openaiKey').value.trim();
             const claudeKey = document.getElementById('claudeKey').value.trim();
+            const openaiModel = document.getElementById('openaiModel').value;
+            const claudeModel = document.getElementById('claudeModel').value;
 
             logger.debug('Starting analysis', { 
                 textLength: text.length, 
                 hasOpenAI: !!openaiKey, 
-                hasClaude: !!claudeKey 
+                hasClaude: !!claudeKey,
+                openaiModel: openaiModel,
+                claudeModel: claudeModel
             });
 
             // Validation
@@ -441,7 +673,9 @@
                     body: JSON.stringify({
                         text: text,
                         openai_key: openaiKey,
-                        claude_key: claudeKey
+                        claude_key: claudeKey,
+                        openai_model: openaiModel,
+                        claude_model: claudeModel
                     })
                 });
 
@@ -467,8 +701,14 @@
                 logger.info('Analysis successful', { 
                     requestId: data.request_id,
                     modelCount: data.responses.length,
+                    chunked: data.chunked,
                     duration: Date.now() - startTime + 'ms'
                 });
+                
+                // Show chunking warning if applicable
+                if (data.chunked && data.chunk_info) {
+                    showChunkingNotice(data.chunk_info);
+                }
                 
                 displayResults(data);
                 
@@ -510,7 +750,9 @@
                     document.getElementById('openaiResponse').innerHTML = 
                         `<span class="error-text">Error: ${openaiResponse.error}</span>`;
                 } else {
-                    document.getElementById('openaiResponse').textContent = openaiResponse.response;
+                    document.getElementById('openaiResponse').innerHTML = processTextWithHighlighting(openaiResponse.response);
+                    // Re-run Prism highlighting
+                    Prism.highlightAllUnder(document.getElementById('openaiResponse'));
                 }
             }
 
@@ -519,7 +761,9 @@
                     document.getElementById('claudeResponse').innerHTML = 
                         `<span class="error-text">Error: ${claudeResponse.error}</span>`;
                 } else {
-                    document.getElementById('claudeResponse').textContent = claudeResponse.response;
+                    document.getElementById('claudeResponse').innerHTML = processTextWithHighlighting(claudeResponse.response);
+                    // Re-run Prism highlighting
+                    Prism.highlightAllUnder(document.getElementById('claudeResponse'));
                 }
             }
 
@@ -537,82 +781,22 @@
         function generateComparison(openaiText, claudeText) {
             logger.debug('Generating comparison');
             
-            const comparison = compareResponses(openaiText, claudeText);
-            const comparisonHTML = `
-                <div class="diff-item ${comparison.similarity > 80 ? 'consensus' : 'conflict'}">
-                    <div class="diff-label">Overall Similarity</div>
-                    <div>${comparison.similarity}%</div>
-                </div>
-                
-                <div class="diff-item">
-                    <div class="diff-label">Length Comparison</div>
-                    <div>
-                        OpenAI: ${comparison.lengths.openai} characters<br>
-                        Claude: ${comparison.lengths.claude} characters<br>
-                        Difference: ${Math.abs(comparison.lengths.openai - comparison.lengths.claude)} characters
-                    </div>
-                </div>
-                
-                <div class="diff-item">
-                    <div class="diff-label">Key Differences</div>
-                    <div>${comparison.keyDifferences}</div>
-                </div>
-            `;
+            // Create comparison engine instance
+            const engine = new ComparisonEngine();
             
-            document.getElementById('comparisonContent').innerHTML = comparisonHTML;
+            // Create response objects
+            const openaiResponse = { model: 'OpenAI', response: openaiText };
+            const claudeResponse = { model: 'Claude', response: claudeText };
+            
+            // Run comparison
+            const comparison = engine.compareResponses(openaiResponse, claudeResponse);
+            
+            // Render comparison
+            const container = document.getElementById('comparisonContent');
+            engine.renderComparison(comparison, container);
         }
 
-        function compareResponses(text1, text2) {
-            // Basic similarity calculation
-            const words1 = text1.toLowerCase().split(/\s+/);
-            const words2 = text2.toLowerCase().split(/\s+/);
-            
-            const set1 = new Set(words1);
-            const set2 = new Set(words2);
-            
-            const intersection = new Set([...set1].filter(x => set2.has(x)));
-            const union = new Set([...set1, ...set2]);
-            
-            const similarity = Math.round((intersection.size / union.size) * 100);
-            
-            // Key differences
-            let keyDifferences = [];
-            
-            if (Math.abs(text1.length - text2.length) > 50) {
-                keyDifferences.push('Significant length difference');
-            }
-            
-            if (text1.includes('!') !== text2.includes('!')) {
-                keyDifferences.push('Different tone (exclamation usage)');
-            }
-            
-            if (text1.includes('?') !== text2.includes('?')) {
-                keyDifferences.push('Different question usage');
-            }
-            
-            // Check for unique words in each response
-            const unique1 = [...set1].filter(x => !set2.has(x));
-            const unique2 = [...set2].filter(x => !set1.has(x));
-            
-            if (unique1.length > 5) {
-                keyDifferences.push(`OpenAI uses ${unique1.length} unique words`);
-            }
-            
-            if (unique2.length > 5) {
-                keyDifferences.push(`Claude uses ${unique2.length} unique words`);
-            }
-            
-            return {
-                similarity,
-                lengths: {
-                    openai: text1.length,
-                    claude: text2.length
-                },
-                keyDifferences: keyDifferences.length > 0 ? 
-                    keyDifferences.join('<br>') : 
-                    'Responses are very similar'
-            };
-        }
+        // compareResponses function removed - now using ComparisonEngine
 
         function toggleComparison() {
             const content = document.getElementById('comparisonContent');
@@ -628,42 +812,64 @@
         }
         
         // History management functions
-        function saveToHistory(data) {
+        async function saveToHistory(data) {
             try {
-                const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
-                
-                // Add new item to beginning of array
-                history.unshift({
-                    id: Date.now(),
-                    timestamp: new Date().toISOString(),
-                    input: data.original_text,
-                    responses: data.responses,
-                    request_id: data.request_id
-                });
-                
-                // Keep only last 20 items
-                if (history.length > 20) {
-                    history.pop();
+                if (historyManager) {
+                    // Use IndexedDB
+                    await historyManager.save(data);
+                    logger.debug('Saved to IndexedDB history');
+                } else {
+                    // Fallback to localStorage
+                    const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
+                    
+                    // Add new item to beginning of array
+                    history.unshift({
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        input: data.original_text,
+                        responses: data.responses,
+                        request_id: data.request_id
+                    });
+                    
+                    // Keep only last 20 items
+                    if (history.length > 20) {
+                        history.pop();
+                    }
+                    
+                    localStorage.setItem('responseHistory', JSON.stringify(history));
+                    logger.debug('Saved to localStorage history', { count: history.length });
                 }
                 
-                localStorage.setItem('responseHistory', JSON.stringify(history));
-                logger.debug('Saved to history', { count: history.length });
-                
                 // Update UI
-                loadHistory();
+                await loadHistory();
             } catch (error) {
                 logger.error('Failed to save history', error);
             }
         }
         
-        function loadHistory() {
+        async function loadHistory(searchQuery = '') {
             try {
-                const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
                 const historyList = document.getElementById('historyList');
                 
+                if (!historyManager) {
+                    historyList.innerHTML = '<p class="text-muted">History manager not initialized.</p>';
+                    return;
+                }
+                
+                let history;
+                if (searchQuery) {
+                    history = await historyManager.search(searchQuery);
+                } else {
+                    history = await historyManager.getAll();
+                }
+                
                 if (history.length === 0) {
-                    historyList.innerHTML = '<p class="text-muted">No history yet. Responses will appear here after analysis.</p>';
-                    document.getElementById('clearHistoryBtn').style.display = 'none';
+                    if (searchQuery) {
+                        historyList.innerHTML = '<p class="text-muted">No history items match your search.</p>';
+                    } else {
+                        historyList.innerHTML = '<p class="text-muted">No history yet. Responses will appear here after analysis.</p>';
+                    }
+                    document.getElementById('clearHistoryBtn').style.display = searchQuery ? 'block' : 'none';
                     return;
                 }
                 
@@ -672,7 +878,8 @@
                 const historyHTML = history.map(item => {
                     const date = new Date(item.timestamp);
                     const dateStr = date.toLocaleString();
-                    const preview = item.input.substring(0, 100) + (item.input.length > 100 ? '...' : '');
+                    const preview = item.prompt.substring(0, 100) + (item.prompt.length > 100 ? '...' : '');
+                    const successCount = item.responses.filter(r => !r.error).length;
                     
                     return `
                         <div class="history-item" onclick="loadFromHistory(${item.id})">
@@ -681,7 +888,8 @@
                                 <span class="history-item-date">${dateStr}</span>
                             </div>
                             <div class="history-item-preview">
-                                ${item.responses.filter(r => !r.error).length} successful response(s)
+                                ${successCount} successful response(s)
+                                ${item.starred ? '<i class="bi bi-star-fill text-warning ms-2"></i>' : ''}
                             </div>
                         </div>
                     `;
@@ -693,10 +901,19 @@
             }
         }
         
-        function loadFromHistory(id) {
+        async function searchHistory() {
+            const searchQuery = document.getElementById('historySearch').value.trim();
+            await loadHistory(searchQuery);
+        }
+        
+        async function loadFromHistory(id) {
             try {
-                const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
-                const item = history.find(h => h.id === id);
+                if (!historyManager) {
+                    showError('History manager not initialized');
+                    return;
+                }
+                
+                const item = await historyManager.getById(id);
                 
                 if (!item) {
                     showError('History item not found');
@@ -704,9 +921,9 @@
                 }
                 
                 // Set the input text
-                document.getElementById('inputText').value = item.input;
-                document.getElementById('charCount').textContent = item.input.length;
-                document.getElementById('tokenCount').textContent = Math.ceil(item.input.length / 4);
+                document.getElementById('inputText').value = item.fullPrompt || item.prompt;
+                document.getElementById('charCount').textContent = (item.fullPrompt || item.prompt).length;
+                document.getElementById('tokenCount').textContent = Math.ceil((item.fullPrompt || item.prompt).length / 4);
                 
                 // Display the results
                 displayResults({
@@ -782,6 +999,98 @@
             reader.readAsText(file);
         }
         
+        // Drag and drop handlers
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    
+                    // Check if file type is supported
+                    const supportedTypes = ['.txt', '.md', '.json', '.js', '.py', '.html', '.css'];
+                    const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                    
+                    if (supportedTypes.includes(fileExt)) {
+                        // Set the file in the file input
+                        const fileInput = document.getElementById('fileInput');
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInput.files = dataTransfer.files;
+                        
+                        // Trigger the file upload handler
+                        handleFileUpload({ target: fileInput });
+                    } else {
+                        showError('Unsupported file type. Please use: ' + supportedTypes.join(', '));
+                    }
+                }
+            });
+        }
+        
+        // Process text to highlight code blocks
+        function processTextWithHighlighting(text) {
+            // Regular expression to match code blocks with optional language
+            const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+            
+            let processedText = text.replace(codeBlockRegex, (match, language, code) => {
+                language = language || 'plaintext';
+                
+                // Map common language aliases
+                const languageMap = {
+                    'js': 'javascript',
+                    'ts': 'typescript',
+                    'py': 'python',
+                    'rb': 'ruby',
+                    'yml': 'yaml',
+                    'sh': 'bash',
+                    'shell': 'bash'
+                };
+                
+                language = languageMap[language.toLowerCase()] || language.toLowerCase();
+                
+                // Create a pre element with Prism classes
+                return `<pre><code class="language-${language}">${escapeHtml(code.trim())}</code></pre>`;
+            });
+            
+            // Convert inline code
+            processedText = processedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Convert line breaks to <br> for non-code sections
+            processedText = processedText.split('\n').map(line => {
+                // Don't add <br> to lines that are part of pre/code blocks
+                if (line.includes('<pre>') || line.includes('</pre>')) {
+                    return line;
+                }
+                return line;
+            }).join('<br>\n');
+            
+            return processedText;
+        }
+        
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         // Copy to clipboard function
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
@@ -818,6 +1127,16 @@
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
             
+            // Update Prism theme
+            const prismTheme = document.getElementById('prismTheme');
+            if (prismTheme) {
+                if (newTheme === 'dark') {
+                    prismTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
+                } else {
+                    prismTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css';
+                }
+            }
+            
             logger.info('Theme changed', { from: currentTheme, to: newTheme });
         }
         
@@ -831,6 +1150,108 @@
                 icon.classList.add('bi-moon-fill');
             }
         }
+        
+        // Show chunking notice
+        function showChunkingNotice(chunkInfo) {
+            const notice = document.createElement('div');
+            notice.className = 'alert alert-info alert-dismissible fade show mt-3';
+            notice.innerHTML = `
+                <strong>Large Document Detected:</strong> Your text was split into ${chunkInfo.total_chunks} chunks for processing.
+                Currently showing results for chunk 1 of ${chunkInfo.total_chunks}.
+                <br><small>Each chunk contains approximately ${chunkInfo.chunk_tokens} tokens.</small>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert after the error alert
+            const errorAlert = document.getElementById('errorAlert');
+            errorAlert.parentNode.insertBefore(notice, errorAlert.nextSibling);
+            
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => {
+                notice.remove();
+            }, 10000);
+        }
+        
+        // Keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(event) {
+                // Cmd/Ctrl + Enter to analyze
+                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    const inputText = document.getElementById('inputText');
+                    if (document.activeElement === inputText && inputText.value.trim()) {
+                        analyzeText();
+                    }
+                }
+                
+                // Cmd/Ctrl + K to clear
+                if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+                    event.preventDefault();
+                    clearAll();
+                }
+                
+                // Cmd/Ctrl + D to toggle dark mode
+                if ((event.metaKey || event.ctrlKey) && event.key === 'd') {
+                    event.preventDefault();
+                    toggleDarkMode();
+                }
+                
+                // Cmd/Ctrl + H to toggle history
+                if ((event.metaKey || event.ctrlKey) && event.key === 'h') {
+                    event.preventDefault();
+                    const historySection = document.querySelector('.card:has(#historyList)').parentElement.parentElement;
+                    historySection.style.display = historySection.style.display === 'none' ? 'block' : 'none';
+                }
+                
+                // Cmd/Ctrl + F to focus search
+                if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+                    event.preventDefault();
+                    const historySearch = document.getElementById('historySearch');
+                    if (historySearch) {
+                        historySearch.focus();
+                        historySearch.select();
+                    }
+                }
+                
+                // Escape to close comparison
+                if (event.key === 'Escape') {
+                    const comparisonSection = document.getElementById('comparisonSection');
+                    if (comparisonSection.style.display !== 'none') {
+                        toggleComparison();
+                    }
+                }
+            });
+            
+            // Add tooltip with shortcuts info
+            const helpText = `
+                <div class="mt-3 text-muted small">
+                    <strong>Keyboard Shortcuts:</strong><br>
+                    ${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+Enter - Analyze text<br>
+                    ${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+K - Clear all<br>
+                    ${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+D - Toggle dark mode<br>
+                    ${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+H - Toggle history<br>
+                    Escape - Close comparison
+                </div>
+            `;
+            
+            // Add help text after the analyze button
+            const analyzeButton = document.querySelector('button[onclick="analyzeText()"]');
+            if (analyzeButton) {
+                const helpDiv = document.createElement('div');
+                helpDiv.innerHTML = helpText;
+                analyzeButton.parentElement.appendChild(helpDiv);
+            }
+        }
     </script>
+    
+    <!-- Load comparison engine -->
+    <script src="comparison-engine.js"></script>
+    <!-- Load history manager -->
+    <script src="history-manager.js"></script>
+    
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <!-- Auto-loader for additional languages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
 </html>

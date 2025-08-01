@@ -6,11 +6,48 @@
     <title>AI Conflict Dashboard - Phase 0</title>
     <!-- Bootstrap CSS from CDN for quick styling -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --muted-bg: #f8f9fa;
+            --input-bg: #ffffff;
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #212529;
+            --text-color: #f8f9fa;
+            --card-bg: #2c3034;
+            --border-color: #495057;
+            --muted-bg: #343a40;
+            --input-bg: #343a40;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .form-control, .form-select {
+            background-color: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
         .response-column {
             height: 400px;
             overflow-y: auto;
-            background-color: #f8f9fa;
+            background-color: var(--muted-bg);
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
@@ -34,12 +71,79 @@
         .error-text {
             color: #dc3545;
         }
+        .comparison-section {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: var(--muted-bg);
+            border-radius: 8px;
+        }
+        .diff-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: var(--card-bg);
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        .diff-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        .consensus {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .conflict {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .history-item {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .history-item:hover {
+            background-color: #f8f9fa;
+        }
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .history-item-date {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .history-item-preview {
+            font-size: 0.875rem;
+            color: #495057;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid py-4">
-        <h1 class="text-center mb-4">AI Conflict Dashboard</h1>
-        <p class="text-center text-muted mb-4">Compare responses from multiple AI models side-by-side</p>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="flex-grow-1">
+                <h1 class="text-center mb-2">AI Conflict Dashboard</h1>
+                <p class="text-center text-muted mb-0">Compare responses from multiple AI models side-by-side</p>
+            </div>
+            <button class="btn btn-outline-secondary" onclick="toggleDarkMode()" title="Toggle dark mode">
+                <i class="bi bi-moon-fill" id="themeIcon"></i>
+            </button>
+        </div>
         
         <!-- Settings Section -->
         <div class="row mb-4">
@@ -73,6 +177,11 @@
                         <label for="inputText" class="form-label">Enter your text:</label>
                         <textarea class="form-control" id="inputText" rows="6" maxlength="4000" 
                                   placeholder="Enter text to analyze (max 4000 characters)"></textarea>
+                        <div class="mt-2">
+                            <label for="fileInput" class="form-label">Or upload a text file:</label>
+                            <input type="file" class="form-control" id="fileInput" accept=".txt,.md,.json,.js,.py,.html,.css" onchange="handleFileUpload(event)">
+                            <small class="text-muted">Supported formats: .txt, .md, .json, .js, .py, .html, .css (max 4000 characters)</small>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <span class="char-count"><span id="charCount">0</span> / 4000 characters</span>
                             <div>
@@ -97,20 +206,71 @@
         <div class="row" id="resultsSection" style="display: none;">
             <div class="col-md-4">
                 <div class="response-column">
-                    <div class="response-header">Original Text</div>
+                    <div class="response-header d-flex justify-content-between align-items-center">
+                        <span>Original Text</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('originalText')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
                     <div id="originalText"></div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="response-column">
-                    <div class="response-header">OpenAI Response</div>
+                    <div class="response-header d-flex justify-content-between align-items-center">
+                        <span>OpenAI Response</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('openaiResponse')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
                     <div id="openaiResponse"></div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="response-column">
-                    <div class="response-header">Claude Response</div>
+                    <div class="response-header d-flex justify-content-between align-items-center">
+                        <span>Claude Response</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('claudeResponse')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
                     <div id="claudeResponse"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- History Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Response History</h5>
+                        <button class="btn btn-sm btn-outline-danger" onclick="clearHistory()" id="clearHistoryBtn">
+                            Clear History
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="historyList">
+                            <p class="text-muted">No history yet. Responses will appear here after analysis.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comparison Section -->
+        <div class="row mt-4" id="comparisonSection" style="display: none;">
+            <div class="col-12">
+                <div class="comparison-section">
+                    <div class="comparison-header">
+                        <h4>Response Comparison</h4>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleComparison()">
+                            <span id="toggleText">Hide</span> Comparison
+                        </button>
+                    </div>
+                    <div id="comparisonContent">
+                        <!-- Comparison details will be inserted here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -147,6 +307,14 @@
             logger.info('App loaded');
             document.getElementById('openaiKey').value = localStorage.getItem('openaiKey') || '';
             document.getElementById('claudeKey').value = localStorage.getItem('claudeKey') || '';
+            
+            // Load history
+            loadHistory();
+            
+            // Load theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
             
             // Add debug mode toggle
             if (localStorage.getItem('debugMode') === 'true') {
@@ -205,7 +373,9 @@
         function clearAll() {
             document.getElementById('inputText').value = '';
             document.getElementById('charCount').textContent = '0';
+            document.getElementById('fileInput').value = '';
             document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('comparisonSection').style.display = 'none';
             document.getElementById('errorAlert').style.display = 'none';
         }
 
@@ -278,6 +448,9 @@
                 });
                 
                 displayResults(data);
+                
+                // Save to history
+                saveToHistory(data);
 
             } catch (error) {
                 logger.error('Analysis failed', error);
@@ -327,8 +500,320 @@
                 }
             }
 
+            // Generate comparison if both responses are available
+            if (openaiResponse && claudeResponse && 
+                !openaiResponse.error && !claudeResponse.error) {
+                generateComparison(openaiResponse.response, claudeResponse.response);
+                document.getElementById('comparisonSection').style.display = 'block';
+            }
+
             // Scroll to results
             document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateComparison(openaiText, claudeText) {
+            logger.debug('Generating comparison');
+            
+            const comparison = compareResponses(openaiText, claudeText);
+            const comparisonHTML = `
+                <div class="diff-item ${comparison.similarity > 80 ? 'consensus' : 'conflict'}">
+                    <div class="diff-label">Overall Similarity</div>
+                    <div>${comparison.similarity}%</div>
+                </div>
+                
+                <div class="diff-item">
+                    <div class="diff-label">Length Comparison</div>
+                    <div>
+                        OpenAI: ${comparison.lengths.openai} characters<br>
+                        Claude: ${comparison.lengths.claude} characters<br>
+                        Difference: ${Math.abs(comparison.lengths.openai - comparison.lengths.claude)} characters
+                    </div>
+                </div>
+                
+                <div class="diff-item">
+                    <div class="diff-label">Key Differences</div>
+                    <div>${comparison.keyDifferences}</div>
+                </div>
+            `;
+            
+            document.getElementById('comparisonContent').innerHTML = comparisonHTML;
+        }
+
+        function compareResponses(text1, text2) {
+            // Basic similarity calculation
+            const words1 = text1.toLowerCase().split(/\s+/);
+            const words2 = text2.toLowerCase().split(/\s+/);
+            
+            const set1 = new Set(words1);
+            const set2 = new Set(words2);
+            
+            const intersection = new Set([...set1].filter(x => set2.has(x)));
+            const union = new Set([...set1, ...set2]);
+            
+            const similarity = Math.round((intersection.size / union.size) * 100);
+            
+            // Key differences
+            let keyDifferences = [];
+            
+            if (Math.abs(text1.length - text2.length) > 50) {
+                keyDifferences.push('Significant length difference');
+            }
+            
+            if (text1.includes('!') !== text2.includes('!')) {
+                keyDifferences.push('Different tone (exclamation usage)');
+            }
+            
+            if (text1.includes('?') !== text2.includes('?')) {
+                keyDifferences.push('Different question usage');
+            }
+            
+            // Check for unique words in each response
+            const unique1 = [...set1].filter(x => !set2.has(x));
+            const unique2 = [...set2].filter(x => !set1.has(x));
+            
+            if (unique1.length > 5) {
+                keyDifferences.push(`OpenAI uses ${unique1.length} unique words`);
+            }
+            
+            if (unique2.length > 5) {
+                keyDifferences.push(`Claude uses ${unique2.length} unique words`);
+            }
+            
+            return {
+                similarity,
+                lengths: {
+                    openai: text1.length,
+                    claude: text2.length
+                },
+                keyDifferences: keyDifferences.length > 0 ? 
+                    keyDifferences.join('<br>') : 
+                    'Responses are very similar'
+            };
+        }
+
+        function toggleComparison() {
+            const content = document.getElementById('comparisonContent');
+            const toggleText = document.getElementById('toggleText');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggleText.textContent = 'Hide';
+            } else {
+                content.style.display = 'none';
+                toggleText.textContent = 'Show';
+            }
+        }
+        
+        // History management functions
+        function saveToHistory(data) {
+            try {
+                const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
+                
+                // Add new item to beginning of array
+                history.unshift({
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    input: data.original_text,
+                    responses: data.responses,
+                    request_id: data.request_id
+                });
+                
+                // Keep only last 20 items
+                if (history.length > 20) {
+                    history.pop();
+                }
+                
+                localStorage.setItem('responseHistory', JSON.stringify(history));
+                logger.debug('Saved to history', { count: history.length });
+                
+                // Update UI
+                loadHistory();
+            } catch (error) {
+                logger.error('Failed to save history', error);
+            }
+        }
+        
+        function loadHistory() {
+            try {
+                const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
+                const historyList = document.getElementById('historyList');
+                
+                if (history.length === 0) {
+                    historyList.innerHTML = '<p class="text-muted">No history yet. Responses will appear here after analysis.</p>';
+                    document.getElementById('clearHistoryBtn').style.display = 'none';
+                    return;
+                }
+                
+                document.getElementById('clearHistoryBtn').style.display = 'block';
+                
+                const historyHTML = history.map(item => {
+                    const date = new Date(item.timestamp);
+                    const dateStr = date.toLocaleString();
+                    const preview = item.input.substring(0, 100) + (item.input.length > 100 ? '...' : '');
+                    
+                    return `
+                        <div class="history-item" onclick="loadFromHistory(${item.id})">
+                            <div class="history-item-header">
+                                <strong>${preview}</strong>
+                                <span class="history-item-date">${dateStr}</span>
+                            </div>
+                            <div class="history-item-preview">
+                                ${item.responses.filter(r => !r.error).length} successful response(s)
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                historyList.innerHTML = historyHTML;
+            } catch (error) {
+                logger.error('Failed to load history', error);
+            }
+        }
+        
+        function loadFromHistory(id) {
+            try {
+                const history = JSON.parse(localStorage.getItem('responseHistory') || '[]');
+                const item = history.find(h => h.id === id);
+                
+                if (!item) {
+                    showError('History item not found');
+                    return;
+                }
+                
+                // Set the input text
+                document.getElementById('inputText').value = item.input;
+                document.getElementById('charCount').textContent = item.input.length;
+                
+                // Display the results
+                displayResults({
+                    original_text: item.input,
+                    responses: item.responses,
+                    request_id: item.request_id
+                });
+                
+                // Scroll to results
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+                
+                logger.info('Loaded from history', { id });
+            } catch (error) {
+                logger.error('Failed to load from history', error);
+                showError('Failed to load history item');
+            }
+        }
+        
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                localStorage.removeItem('responseHistory');
+                loadHistory();
+                logger.info('History cleared');
+            }
+        }
+        
+        // File upload handler
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            logger.info('File selected', { name: file.name, size: file.size, type: file.type });
+            
+            // Check file size (approximate 4000 chars)
+            if (file.size > 4096) {
+                showError('File is too large. Please select a file with less than 4000 characters.');
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                
+                // Check content length
+                if (content.length > 4000) {
+                    showError('File content exceeds 4000 characters. Please use a smaller file.');
+                    event.target.value = '';
+                    return;
+                }
+                
+                // Set the content in the textarea
+                document.getElementById('inputText').value = content;
+                document.getElementById('charCount').textContent = content.length;
+                
+                logger.info('File loaded successfully', { 
+                    name: file.name, 
+                    contentLength: content.length 
+                });
+                
+                // Show file name in a small notification
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-info alert-dismissible fade show mt-2';
+                notification.innerHTML = `
+                    <strong>File loaded:</strong> ${file.name}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.getElementById('fileInput').parentElement.appendChild(notification);
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            };
+            
+            reader.onerror = function() {
+                showError('Failed to read file. Please try again.');
+                event.target.value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                logger.info('Copied to clipboard', { elementId, length: text.length });
+                
+                // Show success feedback
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check-circle"></i> Copied!';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            }).catch(err => {
+                logger.error('Failed to copy to clipboard', err);
+                showError('Failed to copy to clipboard');
+            });
+        }
+        
+        // Dark mode toggle functions
+        function toggleDarkMode() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+            
+            logger.info('Theme changed', { from: currentTheme, to: newTheme });
+        }
+        
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (theme === 'dark') {
+                icon.classList.remove('bi-moon-fill');
+                icon.classList.add('bi-sun-fill');
+            } else {
+                icon.classList.remove('bi-sun-fill');
+                icon.classList.add('bi-moon-fill');
+            }
         }
     </script>
 </body>

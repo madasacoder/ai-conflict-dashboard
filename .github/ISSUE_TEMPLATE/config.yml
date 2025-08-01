@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/madasacoder/ai-conflict-dashboard/tree/main/docs
+    about: Check our documentation first
+  - name: Discussions
+    url: https://github.com/madasacoder/ai-conflict-dashboard/discussions
+    about: Ask questions and discuss ideas

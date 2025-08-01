@@ -51,7 +51,7 @@ Simply open `frontend/index.html` in your web browser.
 
 ### 4. Start Comparing!
 
-Enter any text up to 4000 characters and click "Analyze" to see how different AI models respond.
+Enter any text and click "Analyze" to see how different AI models respond. The tool shows estimated token count and warns if you're approaching API limits.
 
 ## Example Use Cases
 

@@ -175,15 +175,20 @@
                 <div class="card">
                     <div class="card-body">
                         <label for="inputText" class="form-label">Enter your text:</label>
-                        <textarea class="form-control" id="inputText" rows="6" maxlength="4000" 
-                                  placeholder="Enter text to analyze (max 4000 characters)"></textarea>
+                        <textarea class="form-control" id="inputText" rows="6" 
+                                  placeholder="Enter text to analyze"></textarea>
                         <div class="mt-2">
                             <label for="fileInput" class="form-label">Or upload a text file:</label>
                             <input type="file" class="form-control" id="fileInput" accept=".txt,.md,.json,.js,.py,.html,.css" onchange="handleFileUpload(event)">
-                            <small class="text-muted">Supported formats: .txt, .md, .json, .js, .py, .html, .css (max 4000 characters)</small>
+                            <small class="text-muted">Supported formats: .txt, .md, .json, .js, .py, .html, .css</small>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="char-count"><span id="charCount">0</span> / 4000 characters</span>
+                            <span class="char-count">
+                                <span id="charCount">0</span> characters | ~<span id="tokenCount">0</span> tokens
+                                <span id="tokenWarning" class="text-warning ms-2" style="display: none;">
+                                    <i class="bi bi-exclamation-triangle"></i> May exceed GPT-3.5 limit
+                                </span>
+                            </span>
                             <div>
                                 <button class="btn btn-secondary me-2" onclick="clearAll()">Clear</button>
                                 <button class="btn btn-primary" onclick="analyzeText()">
@@ -348,9 +353,26 @@
         
         // Enable debug mode with: localStorage.setItem('debugMode', 'true')
 
-        // Update character count
+        // Update character and token count
         document.getElementById('inputText').addEventListener('input', function() {
-            document.getElementById('charCount').textContent = this.value.length;
+            const length = this.value.length;
+            const tokens = Math.ceil(length / 4);
+            
+            document.getElementById('charCount').textContent = length;
+            document.getElementById('tokenCount').textContent = tokens;
+            
+            // Show warning if approaching GPT-3.5 limit (4096 tokens total, ~3000 for input to leave room for response)
+            const tokenWarning = document.getElementById('tokenWarning');
+            if (tokens > 3000) {
+                tokenWarning.style.display = 'inline';
+                tokenWarning.innerHTML = '<i class="bi bi-exclamation-triangle"></i> May exceed GPT-3.5 limit (3000 tokens)';
+            } else if (tokens > 2500) {
+                tokenWarning.style.display = 'inline';
+                tokenWarning.innerHTML = '<i class="bi bi-info-circle"></i> Approaching GPT-3.5 limit';
+                tokenWarning.className = 'text-info ms-2';
+            } else {
+                tokenWarning.style.display = 'none';
+            }
         });
 
         // Save API keys to localStorage when they change
@@ -373,6 +395,7 @@
         function clearAll() {
             document.getElementById('inputText').value = '';
             document.getElementById('charCount').textContent = '0';
+            document.getElementById('tokenCount').textContent = '0';
             document.getElementById('fileInput').value = '';
             document.getElementById('resultsSection').style.display = 'none';
             document.getElementById('comparisonSection').style.display = 'none';
@@ -683,6 +706,7 @@
                 // Set the input text
                 document.getElementById('inputText').value = item.input;
                 document.getElementById('charCount').textContent = item.input.length;
+                document.getElementById('tokenCount').textContent = Math.ceil(item.input.length / 4);
                 
                 // Display the results
                 displayResults({
@@ -716,27 +740,19 @@
             
             logger.info('File selected', { name: file.name, size: file.size, type: file.type });
             
-            // Check file size (approximate 4000 chars)
-            if (file.size > 4096) {
-                showError('File is too large. Please select a file with less than 4000 characters.');
-                event.target.value = '';
-                return;
-            }
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const content = e.target.result;
                 
-                // Check content length
-                if (content.length > 4000) {
-                    showError('File content exceeds 4000 characters. Please use a smaller file.');
-                    event.target.value = '';
-                    return;
-                }
-                
                 // Set the content in the textarea
                 document.getElementById('inputText').value = content;
                 document.getElementById('charCount').textContent = content.length;
+                const tokens = Math.ceil(content.length / 4);
+                document.getElementById('tokenCount').textContent = tokens;
+                
+                // Trigger token warning check
+                const event = new Event('input');
+                document.getElementById('inputText').dispatchEvent(event);
                 
                 logger.info('File loaded successfully', { 
                     name: file.name, 

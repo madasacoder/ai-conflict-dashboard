@@ -89,11 +89,22 @@ async def analyze_text(request: AnalyzeRequest):
     if not request.text or len(request.text.strip()) == 0:
         raise HTTPException(status_code=400, detail="Text cannot be empty")
     
-    if len(request.text) > 4000:  # Simple character limit for Phase 0
-        raise HTTPException(status_code=400, detail="Text too long (max 4000 characters)")
-    
     # Import here to avoid circular imports
     from llm_providers import analyze_with_models
+    from token_utils import check_token_limits
+    
+    # Check token limits
+    token_check = check_token_limits(request.text)
+    logger.info(f"Token check", extra={
+        "estimated_tokens": token_check["estimated_tokens"],
+        "safe_for_all": token_check["safe_for_all"],
+        "warnings_count": len(token_check["warnings"])
+    })
+    
+    # Log warnings but don't block - let the APIs handle their own limits
+    if token_check["warnings"]:
+        for warning in token_check["warnings"]:
+            logger.warning(f"Token limit warning", extra=warning)
     
     # Generate request ID
     request_id = str(uuid4())

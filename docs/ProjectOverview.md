@@ -178,4 +178,6 @@ The AI Conflict Dashboard is a production-ready application that enables users t
 
 *Last Updated: January 2025*
 *Phase 3 Security Complete*
-*Ready for Production Deployment*
+*Desktop App Transformation Started*
+
+> **New Direction**: Transforming from web app to desktop app using Tauri. See [DESKTOP_TRANSFORMATION_STATUS.md](DESKTOP_TRANSFORMATION_STATUS.md) for progress.

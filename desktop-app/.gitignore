@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+venv/
+venv311/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+target/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Database
+data/
+*.db
+*.sqlite
+
+# Test artifacts
+test-results/
+coverage/
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+
+# React
+.parcel-cache/
+.cache/
+
+# OS
+Thumbs.db
+Desktop.ini

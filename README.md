@@ -2,6 +2,8 @@
 
 Compare responses from multiple AI models side-by-side to get better insights and catch potential issues.
 
+> **🚀 Major Update**: We are transforming this web application into a powerful desktop application using Tauri! See [DESKTOP_TRANSFORMATION_STATUS.md](docs/DESKTOP_TRANSFORMATION_STATUS.md) for details and progress tracking. The current web version remains fully functional during this transition.
+
 ## ✨ Features
 
 ### Core Functionality

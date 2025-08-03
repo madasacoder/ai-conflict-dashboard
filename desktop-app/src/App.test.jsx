@@ -1,14 +1,16 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import App from './App'
 
 // Mock fetch
-global.fetch = vi.fn()
+beforeEach(() => {
+  global.fetch = vi.fn()
+})
 
 describe('App', () => {
   it('renders welcome message', async () => {
     // Mock successful API response
-    fetch.mockResolvedValueOnce({
+    global.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ status: 'healthy', message: 'All systems operational' }),
     })
@@ -21,7 +23,7 @@ describe('App', () => {
 
   it('shows loading state initially', () => {
     // Mock pending API response
-    fetch.mockImplementationOnce(() => new Promise(() => {}))
+    global.fetch.mockImplementationOnce(() => new Promise(() => {}))
 
     render(<App />)
     

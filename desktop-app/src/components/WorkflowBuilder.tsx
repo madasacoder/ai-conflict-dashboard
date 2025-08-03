@@ -81,7 +81,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
     setIsDraggingOver(true)
-    console.log('Drag over canvas')
+    // Drag over canvas
   }, [])
   
   const onDragLeave = useCallback((event: React.DragEvent) => {
@@ -90,32 +90,28 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
-      console.log('Drop event fired!')
+      // Drop event fired
       event.preventDefault()
       event.stopPropagation()
       setIsDraggingOver(false)
 
-      // Debug all available data
-      console.log('DataTransfer types:', Array.from(event.dataTransfer.types))
-      console.log('DataTransfer items:', event.dataTransfer.items)
-      
       // Try different ways to get the data
       let type = null
       
       // Method 1: Standard way
       type = event.dataTransfer.getData('application/reactflow')
-      console.log('Method 1 (application/reactflow):', type)
+      // Method 1 (application/reactflow)
       
       // Method 2: Text fallback
       if (!type) {
         type = event.dataTransfer.getData('text/plain')
-        console.log('Method 2 (text/plain):', type)
+        // Method 2 (text/plain)
       }
       
       // Method 3: Try text
       if (!type) {
         type = event.dataTransfer.getData('text')
-        console.log('Method 3 (text):', type)
+        // Method 3 (text)
       }
 
       if (!type) {
@@ -131,7 +127,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
       }
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
-      console.log('React Flow bounds:', reactFlowBounds)
+      // React Flow bounds
 
       // Calculate position - use project if available, otherwise raw coords
       const position = reactFlowInstance 
@@ -144,7 +140,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
             y: event.clientY - reactFlowBounds.top,
           }
 
-      console.log('Dropping node:', type, 'at position:', position)
+      // Dropping node at position
       setDragError('') // Clear any errors
       
       // Ensure the node type is valid
@@ -185,7 +181,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
   // Initialize React Flow instance
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance)
-    console.log('React Flow initialized')
+    // React Flow initialized
   }, [])
 
   return (

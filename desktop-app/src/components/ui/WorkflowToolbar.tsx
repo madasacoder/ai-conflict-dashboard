@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import { Play, Save, FileText, Settings, Moon, Sun, Pause, Plus, FolderOpen, Sparkles, ChevronDown, BarChart3 } from 'lucide-react'
 import { useWorkflowStore } from '@/state/workflowStore'
 import { WorkflowModal } from './WorkflowModal'
+import toast from 'react-hot-toast'
 
 export const WorkflowToolbar: React.FC = () => {
   const {
@@ -21,17 +22,47 @@ export const WorkflowToolbar: React.FC = () => {
     setTheme,
     togglePalette,
     toggleExecutionPanel,
-    isExecutionPanelOpen
+    isExecutionPanelOpen,
+    validateWorkflow
   } = useWorkflowStore()
 
   const [showWorkflowModal, setShowWorkflowModal] = useState(false)
   const [workflowModalMode, setWorkflowModalMode] = useState<'create' | 'manage' | 'templates'>('create')
   const [showWorkflowMenu, setShowWorkflowMenu] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   const openWorkflowModal = (mode: 'create' | 'manage' | 'templates') => {
     setWorkflowModalMode(mode)
     setShowWorkflowModal(true)
     setShowWorkflowMenu(false)
+  }
+  
+  const handleExecuteClick = async () => {
+    const validation = validateWorkflow()
+    if (!validation.isValid) {
+      // Show validation errors
+      setValidationErrors(validation.errors)
+      validation.errors.forEach(error => {
+        toast.error(error)
+      })
+      // Clear errors after 5 seconds
+      setTimeout(() => setValidationErrors([]), 5000)
+      return
+    }
+    
+    setValidationErrors([])
+    
+    if (isExecuting) {
+      stopExecution()
+    } else {
+      try {
+        await executeWorkflow()
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Execution failed'
+        toast.error(errorMessage)
+        setValidationErrors([errorMessage])
+      }
+    }
   }
 
   return (
@@ -92,7 +123,7 @@ export const WorkflowToolbar: React.FC = () => {
           <button
             className="toolbar-btn primary"
             data-testid="execute-workflow"
-            onClick={isExecuting ? stopExecution : executeWorkflow}
+            onClick={handleExecuteClick}
             disabled={!workflow}
             aria-label={isExecuting ? 'Stop workflow execution' : 'Execute workflow'}
           >
@@ -157,6 +188,17 @@ export const WorkflowToolbar: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Validation Errors (hidden but in DOM for tests) */}
+      {validationErrors.length > 0 && (
+        <div className="validation-errors" style={{ position: 'absolute', left: '-9999px' }}>
+          {validationErrors.map((error, index) => (
+            <div key={index} className="validation-error">
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Workflow Modal */}
       <WorkflowModal

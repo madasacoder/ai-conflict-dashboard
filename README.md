@@ -15,16 +15,18 @@ Compare responses from multiple AI models side-by-side to get better insights an
 - **Dark Mode**: Easy on the eyes with automatic theme switching
 
 ### Advanced Features
+- **Visual Workflow Builder**: Drag-and-drop node-based interface for complex AI pipelines
 - **Per-User Circuit Breakers**: Individual API failure handling prevents one user affecting others
 - **Structured Logging**: Comprehensive observability with automatic API key sanitization
 - **Request Tracking**: Every API call logged with unique IDs and correlation
-- **Model Selection**: Support for GPT-3.5/4, Claude, Gemini, and Grok models
+- **Model Selection**: Support for GPT-3.5/4, Claude, Gemini, Grok, and local Ollama models
 - **Collapsible UI**: Space-efficient interface with intelligent state management
 - **Rate Limiting**: Token bucket algorithm prevents abuse (60/min, 600/hour)
 - **Memory Management**: Automatic cleanup and 10MB response size limits
 - **Timeout Handling**: Adaptive timeouts with retry logic
 - **Smart Text Chunking**: Preserves code blocks and markdown structure
 - **XSS Protection**: DOMPurify integration for safe content rendering
+- **Workflow Execution Results**: Visual display of AI outputs with modal and node previews
 
 ## 🚀 Quick Start
 
@@ -133,6 +135,19 @@ Explain the concept of quantum entanglement using everyday analogies
 What are the pros and cons of using microservices vs monolithic architecture for a startup?
 ```
 
+### Visual Workflow Builder
+Create complex AI pipelines with the drag-and-drop interface:
+1. Navigate to **Workflow Builder** from the main page
+2. Drag nodes from the palette:
+   - **Input Node**: Text, file, or URL input
+   - **LLM Node**: Multi-model AI processing (supports Ollama for local models)
+   - **Compare Node**: Find conflicts or consensus between responses
+   - **Output Node**: Export results in various formats
+3. Connect nodes by programmatic connection (drag-drop being improved)
+4. Configure each node by clicking on it
+5. Click **Run** to execute the workflow
+6. View results in a modal with visual feedback on nodes
+
 ## 🏗️ Architecture
 
 ### Backend (FastAPI + Python 3.11)
@@ -163,8 +178,10 @@ What are the pros and cons of using microservices vs monolithic architecture for
 
 ## 📊 Current Status
 
-### Completed Features (Phase 1, 2 & 3)
-- ✅ Multi-model API integration (OpenAI, Claude, Gemini, Grok)
+### Completed Features (Phase 1, 2, 3 & Workflow Builder)
+- ✅ Multi-model API integration (OpenAI, Claude, Gemini, Grok, Ollama)
+- ✅ Visual Workflow Builder with drag-and-drop node interface
+- ✅ Workflow execution with visual output display (modal + node previews)
 - ✅ Parallel request processing with isolated fault handling
 - ✅ Unicode-aware token counting and validation
 - ✅ Smart text chunking preserving code blocks

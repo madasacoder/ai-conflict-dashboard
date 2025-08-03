@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Conflict Dashboard - Simple Workflow Builder</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      }
+
+      .workflow-container {
+        display: flex;
+        height: 100vh;
+      }
+
+      .node-palette {
+        width: 300px;
+        background: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .workflow-canvas {
+        flex: 1;
+        position: relative;
+        background: #ffffff;
+        background-image: radial-gradient(circle, #e0e0e0 1px, transparent 1px);
+        background-size: 20px 20px;
+        overflow: hidden;
+      }
+
+      .node-item {
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .node-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .workflow-node {
+        position: absolute;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        min-width: 180px;
+        cursor: move;
+        user-select: none;
+      }
+
+      .workflow-node.selected {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+      }
+
+      .node-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .node-handle {
+        width: 12px;
+        height: 12px;
+        background: #666;
+        border: 2px solid white;
+        border-radius: 50%;
+        position: absolute;
+      }
+
+      .node-handle.input {
+        left: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .node-handle.output {
+        right: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .connection-line {
+        position: absolute;
+        pointer-events: none;
+        stroke: #666;
+        stroke-width: 2;
+        fill: none;
+      }
+
+      .toolbar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .message {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        display: none;
+      }
+
+      .message.error {
+        background: #dc3545;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="workflow-container">
+      <!-- Node Palette -->
+      <div class="node-palette">
+        <h5 class="mb-4">Node Library</h5>
+        <p class="text-muted small">Click to add nodes to canvas</p>
+
+        <div class="node-item" data-type="input">
+          <div class="node-title">
+            <span>📥</span>
+            <span>Input</span>
+          </div>
+          <small class="text-muted">Text, file, or URL input</small>
+        </div>
+
+        <div class="node-item" data-type="llm">
+          <div class="node-title">
+            <span>🧠</span>
+            <span>AI Analysis</span>
+          </div>
+          <small class="text-muted">Multi-model AI analysis</small>
+        </div>
+
+        <div class="node-item" data-type="compare">
+          <div class="node-title">
+            <span>🔄</span>
+            <span>Compare</span>
+          </div>
+          <small class="text-muted">Find conflicts & consensus</small>
+        </div>
+
+        <div class="node-item" data-type="summarize">
+          <div class="node-title">
+            <span>📄</span>
+            <span>Summarize</span>
+          </div>
+          <small class="text-muted">Consolidate results</small>
+        </div>
+
+        <div class="node-item" data-type="output">
+          <div class="node-title">
+            <span>📤</span>
+            <span>Output</span>
+          </div>
+          <small class="text-muted">Export results</small>
+        </div>
+
+        <hr class="my-4" />
+
+        <h6 class="mb-3">Instructions:</h6>
+        <ol class="small">
+          <li>Click nodes to add them</li>
+          <li>Drag nodes to move them</li>
+          <li>Click handles to connect</li>
+          <li>Double-click to configure</li>
+          <li>Press Delete to remove</li>
+        </ol>
+      </div>
+
+      <!-- Main Canvas -->
+      <div class="workflow-canvas" id="canvas">
+        <svg
+          id="connections"
+          style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+          "
+        ></svg>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <a href="index.html" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+          </a>
+          <button class="btn btn-sm btn-outline-primary" onclick="simpleWorkflow.clear()">
+            <i class="bi bi-trash"></i> Clear
+          </button>
+          <button class="btn btn-sm btn-outline-success" onclick="simpleWorkflow.export()">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <button class="btn btn-sm btn-primary" onclick="simpleWorkflow.run()">
+            <i class="bi bi-play-fill"></i> Run
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+      // Simple Workflow Builder without external dependencies
+      class SimpleWorkflowBuilder {
+        constructor() {
+          this.nodes = new Map();
+          this.connections = new Map();
+          this.selectedNode = null;
+          this.nodeIdCounter = 1;
+          this.connectingFrom = null;
+          this.init();
+        }
+
+        init() {
+          // Node palette click handlers
+          document.querySelectorAll('.node-item').forEach((item) => {
+            item.addEventListener('click', () => {
+              const type = item.dataset.type;
+              this.addNode(type);
+            });
+          });
+
+          // Canvas click handler
+          document.getElementById('canvas').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+              this.deselectAll();
+            }
+          });
+
+          // Keyboard handler
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && this.selectedNode) {
+              this.removeNode(this.selectedNode);
+            }
+          });
+        }
+
+        addNode(type) {
+          const id = 'node_' + this.nodeIdCounter++;
+          const canvas = document.getElementById('canvas');
+          const rect = canvas.getBoundingClientRect();
+
+          // Calculate center position
+          const x = rect.width / 2 - 90 + (Math.random() - 0.5) * 100;
+          const y = rect.height / 2 - 50 + (Math.random() - 0.5) * 100;
+
+          // Create node element
+          const node = document.createElement('div');
+          node.className = 'workflow-node';
+          node.id = id;
+          node.style.left = x + 'px';
+          node.style.top = y + 'px';
+
+          // Node content
+          const icons = {
+            input: '📥',
+            llm: '🧠',
+            compare: '🔄',
+            summarize: '📄',
+            output: '📤',
+          };
+
+          const names = {
+            input: 'Input',
+            llm: 'AI Analysis',
+            compare: 'Compare',
+            summarize: 'Summarize',
+            output: 'Output',
+          };
+
+          node.innerHTML = `
+                    <div class="node-title">
+                        <span>${icons[type]}</span>
+                        <span>${names[type]}</span>
+                    </div>
+                    <div class="node-content">
+                        ${this.getNodeContent(type)}
+                    </div>
+                    ${type !== 'input' ? '<div class="node-handle input"></div>' : ''}
+                    ${type !== 'output' ? '<div class="node-handle output"></div>' : ''}
+                `;
+
+          // Add to canvas
+          canvas.appendChild(node);
+
+          // Store node data
+          this.nodes.set(id, {
+            id,
+            type,
+            position: { x, y },
+            data: this.getDefaultData(type),
+          });
+
+          // Make draggable
+          this.makeDraggable(node);
+
+          // Add click handler
+          node.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectNode(id);
+          });
+
+          // Double click to configure
+          node.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            this.configureNode(id);
+          });
+
+          // Handle connections
+          const handles = node.querySelectorAll('.node-handle');
+          handles.forEach((handle) => {
+            handle.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.handleConnection(id, handle.classList.contains('output'));
+            });
+          });
+
+          this.showMessage('Node added!', 'success');
+        }
+
+        getNodeContent(type) {
+          switch (type) {
+            case 'input':
+              return '<small>Click to configure</small>';
+            case 'llm':
+              return '<small>Models: GPT-4</small>';
+            case 'compare':
+              return '<small>Find conflicts</small>';
+            case 'summarize':
+              return '<small>Medium length</small>';
+            case 'output':
+              return '<small>Markdown format</small>';
+            default:
+              return '';
+          }
+        }
+
+        getDefaultData(type) {
+          switch (type) {
+            case 'input':
+              return { content: '', type: 'text' };
+            case 'llm':
+              return { models: ['gpt-4'], prompt: 'Analyze the following:\n\n{input}' };
+            case 'compare':
+              return { comparisonType: 'conflicts' };
+            case 'summarize':
+              return { length: 'medium' };
+            case 'output':
+              return { format: 'markdown' };
+            default:
+              return {};
+          }
+        }
+
+        makeDraggable(element) {
+          let isDragging = false;
+          let startX, startY, initialX, initialY;
+
+          element.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('node-handle')) return;
+
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialX = element.offsetLeft;
+            initialY = element.offsetTop;
+            element.style.cursor = 'grabbing';
+          });
+
+          document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            element.style.left = initialX + dx + 'px';
+            element.style.top = initialY + dy + 'px';
+
+            // Update connections
+            this.updateConnections();
+          });
+
+          document.addEventListener('mouseup', () => {
+            isDragging = false;
+            element.style.cursor = 'move';
+          });
+        }
+
+        selectNode(id) {
+          this.deselectAll();
+          document.getElementById(id).classList.add('selected');
+          this.selectedNode = id;
+        }
+
+        deselectAll() {
+          document.querySelectorAll('.workflow-node').forEach((node) => {
+            node.classList.remove('selected');
+          });
+          this.selectedNode = null;
+        }
+
+        removeNode(id) {
+          const node = document.getElementById(id);
+          if (node) {
+            node.remove();
+            this.nodes.delete(id);
+
+            // Remove connections
+            this.connections.forEach((conn, key) => {
+              if (conn.from === id || conn.to === id) {
+                this.connections.delete(key);
+              }
+            });
+
+            this.updateConnections();
+            this.showMessage('Node removed', 'success');
+          }
+        }
+
+        handleConnection(nodeId, isOutput) {
+          if (!this.connectingFrom) {
+            if (isOutput) {
+              this.connectingFrom = nodeId;
+              this.showMessage('Click an input to connect', 'info');
+            }
+          } else {
+            if (!isOutput && nodeId !== this.connectingFrom) {
+              // Create connection
+              const key = `${this.connectingFrom}-${nodeId}`;
+              this.connections.set(key, {
+                from: this.connectingFrom,
+                to: nodeId,
+              });
+
+              this.updateConnections();
+              this.showMessage('Connected!', 'success');
+            }
+            this.connectingFrom = null;
+          }
+        }
+
+        updateConnections() {
+          const svg = document.getElementById('connections');
+          svg.innerHTML = '';
+
+          this.connections.forEach((conn) => {
+            const fromNode = document.getElementById(conn.from);
+            const toNode = document.getElementById(conn.to);
+
+            if (fromNode && toNode) {
+              const fromRect = fromNode.getBoundingClientRect();
+              const toRect = toNode.getBoundingClientRect();
+              const canvasRect = svg.getBoundingClientRect();
+
+              const x1 = fromRect.right - canvasRect.left;
+              const y1 = fromRect.top + fromRect.height / 2 - canvasRect.top;
+              const x2 = toRect.left - canvasRect.left;
+              const y2 = toRect.top + toRect.height / 2 - canvasRect.top;
+
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              const d = `M ${x1} ${y1} C ${x1 + 50} ${y1}, ${x2 - 50} ${y2}, ${x2} ${y2}`;
+              path.setAttribute('d', d);
+              path.setAttribute('class', 'connection-line');
+
+              svg.appendChild(path);
+            }
+          });
+        }
+
+        configureNode(id) {
+          const node = this.nodes.get(id);
+          if (!node) return;
+
+          // Simple configuration dialog
+          const value = prompt(`Configure ${node.type} node:`, JSON.stringify(node.data, null, 2));
+          if (value) {
+            try {
+              node.data = JSON.parse(value);
+              this.showMessage('Node configured', 'success');
+            } catch (e) {
+              this.showMessage('Invalid JSON', 'error');
+            }
+          }
+        }
+
+        clear() {
+          if (confirm('Clear all nodes?')) {
+            document.querySelectorAll('.workflow-node').forEach((node) => node.remove());
+            this.nodes.clear();
+            this.connections.clear();
+            this.updateConnections();
+            this.showMessage('Workflow cleared', 'success');
+          }
+        }
+
+        export() {
+          const workflow = {
+            nodes: Array.from(this.nodes.values()),
+            connections: Array.from(this.connections.values()),
+          };
+
+          const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'workflow.json';
+          a.click();
+          URL.revokeObjectURL(url);
+
+          this.showMessage('Workflow exported', 'success');
+        }
+
+        async run() {
+          if (this.nodes.size === 0) {
+            this.showMessage('Add some nodes first!', 'error');
+            return;
+          }
+
+          // Convert to backend format
+          const nodes = Array.from(this.nodes.values());
+          const edges = Array.from(this.connections.values()).map((conn) => ({
+            source: conn.from,
+            target: conn.to,
+          }));
+
+          // Get API keys
+          const apiKeys = {
+            openai: localStorage.getItem('openai_api_key') || '',
+            claude: localStorage.getItem('claude_api_key') || '',
+            gemini: localStorage.getItem('gemini_api_key') || '',
+            grok: localStorage.getItem('grok_api_key') || '',
+          };
+
+          this.showMessage('Running workflow...', 'info');
+
+          try {
+            const response = await fetch('/api/workflows/execute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                workflow: { nodes, edges },
+                api_keys: apiKeys,
+              }),
+            });
+
+            if (response.ok) {
+              const results = await response.json();
+              console.log('Results:', results);
+              this.showMessage('Workflow completed! Check console for results.', 'success');
+            } else {
+              throw new Error('Execution failed');
+            }
+          } catch (error) {
+            this.showMessage('Error: ' + error.message, 'error');
+          }
+        }
+
+        showMessage(text, type = 'success') {
+          const msg = document.getElementById('message');
+          msg.textContent = text;
+          msg.className = 'message' + (type === 'error' ? ' error' : '');
+          msg.style.display = 'block';
+
+          const messageTimeoutId = setTimeout(() => {
+            msg.style.display = 'none';
+          }, 3000);
+          if (window.appTimers) {
+            window.appTimers.add(messageTimeoutId);
+          }
+        }
+      }
+
+      // Initialize
+      const simpleWorkflow = new SimpleWorkflowBuilder();
+    </script>
+  </body>
+</html>

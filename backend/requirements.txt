@@ -8,7 +8,7 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 
 # Circuit Breaker Pattern
-pybreaker==1.2.0
+pybreaker==1.4.0
 
 # Structured Logging
 structlog==24.1.0
@@ -44,7 +44,9 @@ aiofiles==24.1.0
 aiohttp==3.11.0
 
 # LLM Providers
-google-generativeai==0.8.3
+openai>=1.0.0
+anthropic>=0.30.0
+google-generativeai>=0.8.0
 
 # Development tools
 ipython==8.29.0

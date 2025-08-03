@@ -147,3 +147,87 @@ code {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Error Boundary Styles */
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg-secondary);
+}
+
+.error-content {
+  max-width: 500px;
+  text-align: center;
+  padding: 3rem;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+}
+
+.error-icon {
+  color: var(--error);
+  margin-bottom: 1.5rem;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.error-message {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.error-details {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.error-details summary {
+  cursor: pointer;
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.error-stack {
+  background: var(--dark);
+  color: var(--light);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.error-reset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-reset-button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}

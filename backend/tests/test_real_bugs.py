@@ -1,6 +1,7 @@
 """Tests designed to find actual bugs, not just verify happy paths."""
 
-from token_utils import chunk_text, estimate_tokens
+from token_utils_wrapper import chunk_text
+from token_utils import estimate_tokens
 
 
 class TestActualBugs:
@@ -18,12 +19,19 @@ class TestActualBugs:
         chunks = chunk_text(text, chunk_size=4000)
 
         # The code block WILL be split!
-        print(f"Chunk 1 ends with: ...{chunks[0][-50:]}")
-        print(f"Chunk 2 starts with: {chunks[1][:50]}...")
+        chunk1_text = chunks[0]["text"]
+        chunk2_text = chunks[1]["text"]
 
-        # BUG: Code blocks can be split mid-block, breaking syntax highlighting!
-        assert "```python" in chunks[0]
-        assert "```" not in chunks[0][-10:]  # Closing ``` is in next chunk!
+        print(f"Chunk 1 ends with: ...{chunk1_text[-50:]}")
+        print(f"Chunk 2 starts with: {chunk2_text[:50]}...")
+
+        # FIXED: Code blocks are now kept together
+        # The entire code block should be in chunk2 since it can't fit in chunk1
+        assert "```python" not in chunk1_text  # Code block NOT in first chunk
+        assert "```python" in chunk2_text  # Entire code block in second chunk
+        assert (
+            chunk2_text.count("```") == 2
+        )  # Both opening and closing ``` in same chunk
 
     def test_token_counting_with_emojis(self):
         """Token counting is probably wrong for emojis."""

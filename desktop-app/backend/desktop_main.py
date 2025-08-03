@@ -19,17 +19,27 @@ from token_utils import estimate_tokens
 # Import plugins
 from plugins.ollama_provider import OllamaProvider
 
+# Import our database utilities
+from db_utils import DatabaseManager
+from models import Workflow, AnalysisHistory, RecentItem
+from workflow_engine import WorkflowEngine
+
 # Now create our desktop-specific main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import uvicorn
 from dotenv import load_dotenv
+from datetime import datetime
+import json
 
 # Load environment variables
 load_dotenv()
+
+# Initialize database
+db_manager = DatabaseManager()
 
 # App lifecycle
 @asynccontextmanager
@@ -37,6 +47,12 @@ async def lifespan(app: FastAPI):
     """Handle app startup and shutdown."""
     print("🚀 AI Conflict Dashboard Desktop Backend Starting...")
     print(f"✅ Reusing backend code from: {parent_backend}")
+    
+    # Initialize database
+    print("📊 Initializing SQLite database...")
+    db_manager.initialize()
+    print("✅ Database initialized successfully")
+    
     yield
     print("👋 AI Conflict Dashboard Desktop Backend Shutting Down...")
 
@@ -48,7 +64,8 @@ app = FastAPI(
 )
 
 # Configure CORS for Tauri
-origins = os.getenv("ALLOWED_ORIGINS", "tauri://localhost,http://localhost:3000").split(",")
+# Add all possible origins
+origins = ["tauri://localhost", "http://localhost:3000", "http://localhost:3001", "*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -148,7 +165,7 @@ async def analyze_text(request: AnalyzeRequest):
         raise HTTPException(status_code=400, detail="No models enabled or configured")
     
     # Use token counting from shared backend
-    token_count = count_tokens(request.text)
+    token_count = estimate_tokens(request.text)
     
     return AnalyzeResponse(
         results=results,
@@ -200,6 +217,133 @@ async def get_available_models():
             }
         }
     }
+
+@app.get("/api/workflows")
+async def get_workflows():
+    """Get all workflows."""
+    with db_manager.session() as session:
+        workflows = session.query(Workflow).filter_by(is_active=True).all()
+        return {
+            "workflows": [
+                {
+                    "id": w.id,
+                    "name": w.name,
+                    "description": w.description,
+                    "icon": w.icon,
+                    "color": w.color,
+                    "tags": w.get_tags(),
+                    "execution_count": w.execution_count,
+                    "last_executed_at": w.last_executed_at.isoformat() if w.last_executed_at else None
+                }
+                for w in workflows
+            ]
+        }
+
+class WorkflowExecutionRequest(BaseModel):
+    """Request to execute a workflow."""
+    workflow_id: str
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    api_keys: Dict[str, str]
+
+class WorkflowExecutionProgress(BaseModel):
+    """Progress update during workflow execution."""
+    progress: int
+    message: str
+
+@app.post("/api/workflows/{workflow_id}/execute")
+async def execute_workflow(workflow_id: str, request: WorkflowExecutionRequest):
+    """Execute a workflow and return results."""
+    try:
+        # Initialize workflow engine with API keys
+        engine = WorkflowEngine(request.api_keys)
+        
+        # Track execution time
+        start_time = datetime.now()
+        
+        # Execute workflow
+        results = await engine.execute_workflow(
+            nodes=request.nodes,
+            edges=request.edges
+        )
+        
+        # Calculate execution time
+        execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+        
+        # Convert results to JSON-serializable format
+        output = {}
+        for node_id, execution in results.items():
+            output[node_id] = {
+                "output": execution.output,
+                "error": execution.error,
+                "metadata": execution.metadata
+            }
+        
+        # Save to history
+        with db_manager.session() as session:
+            history = AnalysisHistory(
+                workflow_id=workflow_id,
+                workflow_name=f"Workflow {workflow_id}",
+                input_text=json.dumps(request.nodes[:3]),  # Save first 3 nodes as preview
+                results=json.dumps(output),
+                consensus="Workflow executed successfully" if not any(r.error for r in results.values()) else "Errors occurred",
+                execution_time_ms=execution_time_ms
+            )
+            session.add(history)
+            session.commit()
+        
+        return {
+            "success": True,
+            "results": output,
+            "execution_time_ms": execution_time_ms
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/history")
+async def get_analysis_history(limit: int = 20, starred_only: bool = False):
+    """Get analysis history."""
+    with db_manager.session() as session:
+        query = session.query(AnalysisHistory)
+        if starred_only:
+            query = query.filter_by(starred=True)
+        
+        analyses = query.order_by(AnalysisHistory.created_at.desc()).limit(limit).all()
+        
+        return {
+            "analyses": [
+                {
+                    "id": a.id,
+                    "workflow_name": a.workflow_name,
+                    "input_preview": a.input_text[:100] + "..." if len(a.input_text) > 100 else a.input_text,
+                    "consensus": a.consensus,
+                    "created_at": a.created_at.isoformat(),
+                    "starred": a.starred,
+                    "execution_time_ms": a.execution_time_ms
+                }
+                for a in analyses
+            ]
+        }
+
+@app.post("/api/backup")
+async def create_backup(description: str = ""):
+    """Create a database backup."""
+    try:
+        backup_file = db_manager.backup(description)
+        return {
+            "success": True,
+            "backup_file": backup_file,
+            "message": f"Backup created successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/stats")
+async def get_database_stats():
+    """Get database statistics."""
+    stats = db_manager.get_stats()
+    return stats
 
 if __name__ == "__main__":
     port = int(os.getenv("API_PORT", "8000"))

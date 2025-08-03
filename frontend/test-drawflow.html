@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Drawflow CDN</title>
+  </head>
+  <body>
+    <h1>Testing Drawflow CDN</h1>
+    <div id="results"></div>
+
+    <script>
+      const results = document.getElementById('results');
+
+      function addResult(message, success = true) {
+        const div = document.createElement('div');
+        div.style.color = success ? 'green' : 'red';
+        div.textContent = message;
+        results.appendChild(div);
+      }
+
+      // Test loading Drawflow from CDN
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/drawflow@0.0.59/dist/drawflow.min.js';
+      script.onload = () => {
+        addResult('✓ Drawflow loaded successfully from CDN');
+
+        // Test if Drawflow is accessible
+        if (typeof Drawflow !== 'undefined') {
+          addResult('✓ Drawflow constructor is available');
+
+          // Try to create instance
+          try {
+            const div = document.createElement('div');
+            div.id = 'test';
+            div.style.width = '100px';
+            div.style.height = '100px';
+            document.body.appendChild(div);
+
+            const editor = new Drawflow(div);
+            addResult('✓ Drawflow instance created successfully');
+          } catch (e) {
+            addResult('✗ Failed to create Drawflow instance: ' + e.message, false);
+          }
+        } else {
+          addResult('✗ Drawflow constructor not found', false);
+        }
+      };
+
+      script.onerror = () => {
+        addResult('✗ Failed to load Drawflow from CDN', false);
+        addResult('Check internet connection or CDN availability', false);
+      };
+
+      document.head.appendChild(script);
+
+      // Also test DOMPurify
+      const purifyScript = document.createElement('script');
+      purifyScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js';
+      purifyScript.onload = () => {
+        addResult('✓ DOMPurify loaded successfully');
+      };
+      purifyScript.onerror = () => {
+        addResult('✗ Failed to load DOMPurify', false);
+      };
+      document.head.appendChild(purifyScript);
+    </script>
+  </body>
+</html>

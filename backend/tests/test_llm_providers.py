@@ -24,7 +24,7 @@ class TestCircuitBreakerCallbacks:
         mock_breaker.name = "Test Breaker"
         mock_breaker.fail_counter = 5
 
-        with patch("llm_providers.log_circuit_breaker_event") as mock_log:
+        with patch("structured_logging.log_circuit_breaker_event") as mock_log:
             on_circuit_open(mock_breaker)
             mock_log.assert_called_once()
 
@@ -33,7 +33,7 @@ class TestCircuitBreakerCallbacks:
         mock_breaker = MagicMock()
         mock_breaker.name = "Test Breaker"
 
-        with patch("llm_providers.log_circuit_breaker_event") as mock_log:
+        with patch("structured_logging.log_circuit_breaker_event") as mock_log:
             on_circuit_close(mock_breaker)
             mock_log.assert_called_once()
 
@@ -95,18 +95,17 @@ class TestOpenAIIntegration:
     @pytest.mark.asyncio
     async def test_call_openai_circuit_open(self):
         """Test OpenAI call when circuit breaker is open."""
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = Exception("API Error")
-            # Mock the property getter
-            with patch("llm_providers.openai_breaker") as mock_breaker:
-                mock_breaker.current_state = "open"
-                result = await call_openai("Test text", "test-key")
-                assert (
-                    result["error"]
-                    == "Service temporarily unavailable (circuit breaker open)"
-                )
+        # Mock get_circuit_breaker to return a breaker in open state
+        with patch("llm_providers.get_circuit_breaker") as mock_get_breaker:
+            mock_breaker = MagicMock()
+            mock_breaker.current_state = "open"
+            mock_get_breaker.return_value = mock_breaker
+
+            result = await call_openai("Test text", "test-key")
+            assert (
+                result["error"]
+                == "Service temporarily unavailable (circuit breaker open)"
+            )
 
 
 class TestClaudeIntegration:
@@ -166,18 +165,17 @@ class TestClaudeIntegration:
     @pytest.mark.asyncio
     async def test_call_claude_circuit_open(self):
         """Test Claude call when circuit breaker is open."""
-        with patch(
-            "llm_providers._call_claude_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = Exception("API Error")
-            # Mock the property getter
-            with patch("llm_providers.claude_breaker") as mock_breaker:
-                mock_breaker.current_state = "open"
-                result = await call_claude("Test text", "test-key")
-                assert (
-                    result["error"]
-                    == "Service temporarily unavailable (circuit breaker open)"
-                )
+        # Mock get_circuit_breaker to return a breaker in open state
+        with patch("llm_providers.get_circuit_breaker") as mock_get_breaker:
+            mock_breaker = MagicMock()
+            mock_breaker.current_state = "open"
+            mock_get_breaker.return_value = mock_breaker
+
+            result = await call_claude("Test text", "test-key")
+            assert (
+                result["error"]
+                == "Service temporarily unavailable (circuit breaker open)"
+            )
 
 
 class TestGeminiIntegration:
@@ -236,17 +234,17 @@ class TestGeminiIntegration:
     @pytest.mark.asyncio
     async def test_call_gemini_circuit_open(self):
         """Test Gemini call when circuit breaker is open."""
-        with patch(
-            "llm_providers._call_gemini_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = Exception("API Error")
-            with patch("llm_providers.gemini_breaker") as mock_breaker:
-                mock_breaker.current_state = "open"
-                result = await call_gemini("Test text", "test-key")
-                assert (
-                    result["error"]
-                    == "Service temporarily unavailable (circuit breaker open)"
-                )
+        # Mock get_circuit_breaker to return a breaker in open state
+        with patch("llm_providers.get_circuit_breaker") as mock_get_breaker:
+            mock_breaker = MagicMock()
+            mock_breaker.current_state = "open"
+            mock_get_breaker.return_value = mock_breaker
+
+            result = await call_gemini("Test text", "test-key")
+            assert (
+                result["error"]
+                == "Service temporarily unavailable (circuit breaker open)"
+            )
 
 
 class TestGrokIntegration:
@@ -305,17 +303,17 @@ class TestGrokIntegration:
     @pytest.mark.asyncio
     async def test_call_grok_circuit_open(self):
         """Test Grok call when circuit breaker is open."""
-        with patch(
-            "llm_providers._call_grok_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = Exception("API Error")
-            with patch("llm_providers.grok_breaker") as mock_breaker:
-                mock_breaker.current_state = "open"
-                result = await call_grok("Test text", "test-key")
-                assert (
-                    result["error"]
-                    == "Service temporarily unavailable (circuit breaker open)"
-                )
+        # Mock get_circuit_breaker to return a breaker in open state
+        with patch("llm_providers.get_circuit_breaker") as mock_get_breaker:
+            mock_breaker = MagicMock()
+            mock_breaker.current_state = "open"
+            mock_get_breaker.return_value = mock_breaker
+
+            result = await call_grok("Test text", "test-key")
+            assert (
+                result["error"]
+                == "Service temporarily unavailable (circuit breaker open)"
+            )
 
 
 class TestAnalyzeWithModels:
@@ -404,12 +402,13 @@ class TestAnalyzeWithModels:
 
                 await analyze_with_models(
                     "Test text",
-                    "openai-key",
-                    "claude-key",
-                    None,
-                    None,
-                    "gpt-4",
-                    "claude-3-opus-20240229",
+                    openai_key="openai-key",
+                    claude_key="claude-key",
+                    gemini_key=None,
+                    grok_key=None,
+                    ollama_model=None,
+                    openai_model="gpt-4",
+                    claude_model="claude-3-opus-20240229",
                 )
 
                 mock_openai.assert_called_once_with("Test text", "openai-key", "gpt-4")

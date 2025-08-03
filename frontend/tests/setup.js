@@ -17,7 +17,7 @@ const localStorageMock = {
   },
   clear() {
     this.store = {};
-  }
+  },
 };
 
 global.localStorage = localStorageMock;
@@ -42,13 +42,13 @@ global.bootstrap = {
     show() {}
     hide() {}
     toggle() {}
-  }
+  },
 };
 
 // Mock Prism
 global.Prism = {
   highlightAllUnder: vi.fn(),
-  highlightElement: vi.fn()
+  highlightElement: vi.fn(),
 };
 
 // Reset mocks before each test

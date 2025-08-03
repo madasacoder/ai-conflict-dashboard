@@ -160,16 +160,29 @@ class SmartChunker:
 
             # If adding block would exceed limit
             elif current_size + block_size + 2 > self.chunk_size:  # +2 for \n\n
-                # Finish current chunk
-                if current_chunk:
-                    chunks.append("\n\n".join(current_chunk))
+                # Check if block can be split
+                if not block.can_split:
+                    # If current chunk is empty, we must add this block even if too large
+                    if not current_chunk:
+                        current_chunk = [block.content]
+                        current_size = block_size
+                    else:
+                        # Finish current chunk without this block
+                        chunks.append("\n\n".join(current_chunk))
+                        # Start new chunk with just this block
+                        current_chunk = [block.content]
+                        current_size = block_size
+                else:
+                    # Finish current chunk
+                    if current_chunk:
+                        chunks.append("\n\n".join(current_chunk))
 
-                # Start new chunk with overlap
-                overlap_blocks = self._get_overlap_blocks(current_chunk)
-                current_chunk = overlap_blocks + [block.content]
-                current_size = (
-                    sum(len(b) for b in current_chunk) + len(current_chunk) * 2
-                )
+                    # Start new chunk with overlap
+                    overlap_blocks = self._get_overlap_blocks(current_chunk)
+                    current_chunk = overlap_blocks + [block.content]
+                    current_size = (
+                        sum(len(b) for b in current_chunk) + len(current_chunk) * 2
+                    )
 
             # Otherwise add to current chunk
             else:
@@ -192,6 +205,11 @@ class SmartChunker:
 
     def _split_large_block(self, block: TextBlock) -> List[str]:
         """Split a large block that can be split."""
+        # For blocks that are marked as can_split=False but are too large,
+        # we still need to force split them
+        if not block.can_split and len(block.content) > self.chunk_size:
+            return self._force_split_text(block.content)
+
         if block.block_type == "paragraph":
             return self._split_paragraph(block.content)
         elif block.block_type == "list":
@@ -205,12 +223,31 @@ class SmartChunker:
         # Simple sentence splitting (could be improved with NLTK)
         sentences = re.split(r"(?<=[.!?])\s+", text)
 
+        # If there's only one "sentence" and it's too long, force split it
+        if len(sentences) == 1 and len(sentences[0]) > self.chunk_size:
+            return self._force_split_text(sentences[0])
+
         chunks = []
         current = []
         current_size = 0
 
         for sentence in sentences:
-            if current_size + len(sentence) > self.chunk_size:
+            # If a single sentence is longer than chunk size, force split it
+            if len(sentence) > self.chunk_size:
+                # Finish current chunk
+                if current:
+                    chunks.append(" ".join(current))
+                    current = []
+                    current_size = 0
+
+                # Force split the long sentence
+                split_parts = self._force_split_text(sentence)
+                chunks.extend(split_parts[:-1])
+
+                # Keep last part for next chunk
+                current = [split_parts[-1]]
+                current_size = len(split_parts[-1])
+            elif current_size + len(sentence) > self.chunk_size:
                 if current:
                     chunks.append(" ".join(current))
                 current = [sentence]
@@ -249,7 +286,56 @@ class SmartChunker:
 
     def _split_by_sentences(self, text: str) -> List[str]:
         """Generic sentence-based splitting."""
+        # First try to split by sentences
+        sentences = re.split(r"(?<=[.!?])\s+", text)
+
+        # If no sentence boundaries found and text is too long, force split
+        if len(sentences) == 1 and len(text) > self.chunk_size:
+            return self._force_split_text(text)
+
         return self._split_paragraph(text)
+
+    def _force_split_text(self, text: str) -> List[str]:
+        """Force split text that has no natural boundaries.
+
+        This handles edge cases like very long words or text without spaces.
+        """
+        chunks = []
+
+        # Try to split on spaces first
+        words = text.split()
+        if len(words) > 1:
+            # Split by words
+            current = []
+            current_size = 0
+
+            for word in words:
+                if len(word) > self.chunk_size:
+                    # Handle single word longer than chunk size
+                    if current:
+                        chunks.append(" ".join(current))
+                        current = []
+                        current_size = 0
+
+                    # Force split the long word
+                    for i in range(0, len(word), self.chunk_size):
+                        chunks.append(word[i : i + self.chunk_size])
+                elif current_size + len(word) + 1 > self.chunk_size:
+                    chunks.append(" ".join(current))
+                    current = [word]
+                    current_size = len(word)
+                else:
+                    current.append(word)
+                    current_size += len(word) + 1
+
+            if current:
+                chunks.append(" ".join(current))
+        else:
+            # No spaces - just force split at chunk boundaries
+            for i in range(0, len(text), self.chunk_size):
+                chunks.append(text[i : i + self.chunk_size])
+
+        return chunks
 
     def _get_overlap_blocks(self, blocks: List[str]) -> List[str]:
         """Get blocks for overlap from end of chunk."""

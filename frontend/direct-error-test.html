@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Direct Error Test - Find the Real Issues</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: #f8f9fa;
+      }
+      .error-box {
+        background: #fff;
+        border: 2px solid #dc3545;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
+      }
+      .success-box {
+        background: #fff;
+        border: 2px solid #28a745;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
+      }
+      .info-box {
+        background: #fff;
+        border: 2px solid #17a2b8;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
+      }
+      pre {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1>🎯 Direct Error Test</h1>
+      <p>
+        This page directly loads and tests the problematic features to capture the exact errors.
+      </p>
+
+      <div id="errorLog"></div>
+
+      <!-- Test 1: Ollama Integration -->
+      <div class="test-section">
+        <h3>Test 1: Ollama Integration</h3>
+        <button class="btn btn-primary" onclick="testOllamaDirect()">Run Ollama Test</button>
+        <div id="ollamaResults" class="mt-3"></div>
+      </div>
+
+      <!-- Test 2: Workflow Builder -->
+      <div class="test-section">
+        <h3>Test 2: Workflow Builder</h3>
+        <button class="btn btn-primary" onclick="testWorkflowDirect()">Run Workflow Test</button>
+        <div id="workflowResults" class="mt-3"></div>
+      </div>
+
+      <!-- Test 3: Manual Navigation -->
+      <div class="test-section">
+        <h3>Test 3: Manual Navigation</h3>
+        <p>Open these links in new tabs and check the browser console (F12):</p>
+        <a href="/" target="_blank" class="btn btn-info">Open Main App</a>
+        <a href="/workflow-builder.html" target="_blank" class="btn btn-info"
+          >Open Workflow Builder</a
+        >
+        <p class="mt-2"><small>After opening, come back here and click:</small></p>
+        <button class="btn btn-warning" onclick="showManualInstructions()">
+          I See Errors - What Now?
+        </button>
+      </div>
+
+      <div id="resultsLog" class="mt-4"></div>
+    </div>
+
+    <script>
+      // Error logging
+      window.addEventListener('error', function (e) {
+        logError(`Global Error: ${e.message} at ${e.filename}:${e.lineno}:${e.colno}`, e.error);
+      });
+
+      window.addEventListener('unhandledrejection', function (e) {
+        logError(`Unhandled Promise Rejection: ${e.reason}`);
+      });
+
+      function logError(message, error = null) {
+        const errorDiv = document.getElementById('errorLog');
+        const errorBox = document.createElement('div');
+        errorBox.className = 'error-box';
+        errorBox.innerHTML = `
+                <strong>❌ ${message}</strong>
+                ${error && error.stack ? `<pre>${error.stack}</pre>` : ''}
+            `;
+        errorDiv.appendChild(errorBox);
+      }
+
+      function logSuccess(message, targetId) {
+        const target = document.getElementById(targetId);
+        const successBox = document.createElement('div');
+        successBox.className = 'success-box';
+        successBox.innerHTML = DOMPurify.sanitize(`<strong>✅ ${message}</strong>`);
+        target.appendChild(successBox);
+      }
+
+      function logInfo(message, targetId, details = null) {
+        const target = document.getElementById(targetId);
+        const infoBox = document.createElement('div');
+        infoBox.className = 'info-box';
+        infoBox.innerHTML = `
+                <strong>ℹ️ ${message}</strong>
+                ${details ? `<pre>${details}</pre>` : ''}
+            `;
+        target.appendChild(infoBox);
+      }
+
+      // Test Ollama directly
+      async function testOllamaDirect() {
+        const results = document.getElementById('ollamaResults');
+        results.innerHTML =
+          '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
+
+        try {
+          // Test 1: Check if the Ollama endpoint exists
+          logInfo('Testing Ollama endpoint...', 'ollamaResults');
+
+          const response = await fetch('http://localhost:8000/api/ollama/models');
+
+          if (!response.ok) {
+            logError(`Ollama endpoint returned ${response.status}: ${response.statusText}`, null);
+            const text = await response.text();
+            logInfo(`Response body: ${text}`, 'ollamaResults');
+          } else {
+            const data = await response.json();
+            logSuccess(
+              `Ollama endpoint working! Response: ${JSON.stringify(data, null, 2)}`,
+              'ollamaResults'
+            );
+          }
+
+          // Test 2: Try to load the main page and check for Ollama elements
+          logInfo('Fetching main page to check Ollama integration...', 'ollamaResults');
+
+          const pageResponse = await fetch('/');
+          const pageHtml = await pageResponse.text();
+
+          // Check for Ollama elements
+          const hasOllamaStatus = pageHtml.includes('ollamaStatusBadge');
+          const hasOllamaModel = pageHtml.includes('ollamaModelDisplay');
+          const hasLoadFunction = pageHtml.includes('loadOllamaModels');
+
+          logInfo(
+            `Ollama elements check:
+- Status badge element: ${hasOllamaStatus ? '✅' : '❌'}
+- Model display element: ${hasOllamaModel ? '✅' : '❌'}
+- loadOllamaModels function: ${hasLoadFunction ? '✅' : '❌'}`,
+            'ollamaResults'
+          );
+
+          // Test 3: Check for specific error patterns
+          if (pageHtml.includes('TypeError')) {
+            logError('Found "TypeError" in page content!', null);
+          }
+        } catch (error) {
+          logError(`Test failed: ${error.message}`, error);
+        }
+
+        // Clear spinner
+        if (results.firstChild && results.firstChild.className === 'spinner-border') {
+          results.removeChild(results.firstChild);
+        }
+      }
+
+      // Test Workflow Builder directly
+      async function testWorkflowDirect() {
+        const results = document.getElementById('workflowResults');
+        results.innerHTML =
+          '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
+
+        try {
+          // Test 1: Fetch workflow builder page
+          logInfo('Fetching workflow-builder.html...', 'workflowResults');
+
+          const response = await fetch('/workflow-builder.html');
+          const html = await response.text();
+
+          logInfo(`Page loaded, size: ${html.length} bytes`, 'workflowResults');
+
+          // Test 2: Check for key elements
+          const hasDrawflowContainer = html.includes('id="drawflow"');
+          const hasDrawflowScript =
+            html.includes('drawflow.min.js') || html.includes('drawflow.js');
+          const hasWorkflowScript =
+            html.includes('workflow-builder.js') || html.includes('workflow-builder-fixed.js');
+          const hasErrorText = html.toLowerCase().includes('error');
+
+          logInfo(
+            `Page structure check:
+- Drawflow container: ${hasDrawflowContainer ? '✅' : '❌'}
+- Drawflow library: ${hasDrawflowScript ? '✅' : '❌'}
+- Workflow script: ${hasWorkflowScript ? '✅' : '❌'}
+- Contains 'error' text: ${hasErrorText ? '⚠️ YES' : '✅ NO'}`,
+            'workflowResults'
+          );
+
+          // Test 3: Check which workflow script is being used
+          if (html.includes('workflow-builder-fixed.js')) {
+            logSuccess('Using workflow-builder-fixed.js (the fixed version)', 'workflowResults');
+          } else if (html.includes('workflow-builder.js')) {
+            logError('Still using original workflow-builder.js (not the fixed version!)', null);
+          }
+
+          // Test 4: Extract any visible error messages
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          if (bodyMatch) {
+            const bodyContent = bodyMatch[1];
+            const textContent = bodyContent.replace(/<[^>]*>/g, '').trim();
+            if (textContent.length < 100 && textContent.toLowerCase().includes('error')) {
+              logError(`Page appears to show only error: "${textContent}"`, null);
+            }
+          }
+        } catch (error) {
+          logError(`Test failed: ${error.message}`, error);
+        }
+
+        // Clear spinner
+        if (results.firstChild && results.firstChild.className === 'spinner-border') {
+          results.removeChild(results.firstChild);
+        }
+      }
+
+      // Manual instructions
+      function showManualInstructions() {
+        const log = document.getElementById('resultsLog');
+        log.innerHTML = `
+                <div class="alert alert-info">
+                    <h4>📋 Manual Error Collection Instructions</h4>
+                    <ol>
+                        <li><strong>Open Browser Console</strong>: Press F12 or right-click → Inspect → Console tab</li>
+                        <li><strong>Look for Red Errors</strong>: 
+                            <ul>
+                                <li>TypeError messages</li>
+                                <li>Failed to load resource</li>
+                                <li>Uncaught exceptions</li>
+                            </ul>
+                        </li>
+                        <li><strong>Copy Error Details</strong>:
+                            <ul>
+                                <li>Right-click on error → "Copy message"</li>
+                                <li>Or take a screenshot of the console</li>
+                            </ul>
+                        </li>
+                        <li><strong>Check Network Tab</strong>:
+                            <ul>
+                                <li>Look for red failed requests</li>
+                                <li>Check if /api/ollama/models fails</li>
+                            </ul>
+                        </li>
+                        <li><strong>For Workflow Builder</strong>:
+                            <ul>
+                                <li>Check if page is blank or shows error text</li>
+                                <li>Look for "Drawflow is not defined" errors</li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <p><strong>Share the error messages or screenshots and I'll fix them!</strong></p>
+                </div>
+            `;
+      }
+
+      // Initial message
+      logInfo('Direct Error Test loaded. Click the test buttons to begin.', 'errorLog');
+    </script>
+  </body>
+</html>

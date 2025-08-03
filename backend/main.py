@@ -24,15 +24,24 @@ from cors_config import get_allowed_origins
 from rate_limiting import RateLimiter, get_identifier
 
 # Import memory management
-from memory_management import memory_manager, RequestContext as MemoryContext, limit_response_size
+from memory_management import (
+    memory_manager,
+    RequestContext as MemoryContext,
+    limit_response_size,
+)
 
 # Import timeout handling
-from timeout_handler import timeout_handler, get_timeout_stats, with_timeout, TimeoutError as AppTimeoutError
+from timeout_handler import (
+    timeout_handler,
+    get_timeout_stats,
+    TimeoutError as AppTimeoutError,
+)
 
 # Setup structured logging (DEBUG in development)
 log_level = os.getenv("LOG_LEVEL", "DEBUG")
 setup_structured_logging(level=log_level, log_file="backend.log")
 logger = get_logger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,14 +54,38 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down AI Conflict Dashboard API")
     await memory_manager.stop()
 
+
 app = FastAPI(title="AI Conflict Dashboard", version="0.1.0", lifespan=lifespan)
 
 # Create rate limiter instance
+
+
+# Add headers to prevent HTTPS upgrades
+@app.middleware("http")
+async def prevent_https_upgrade(request, call_next):
+    """Prevent browsers from auto-upgrading HTTP to HTTPS."""
+    response = await call_next(request)
+
+    # Explicitly prevent HTTPS upgrades
+    response.headers["Strict-Transport-Security"] = "max-age=0; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Prevent upgrade-insecure-requests
+    csp = response.headers.get("Content-Security-Policy", "")
+    if "upgrade-insecure-requests" not in csp:
+        # Ensure no upgrade directive
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; upgrade-insecure-requests 0"
+        )
+
+    return response
+
+
 rate_limiter = RateLimiter(
     requests_per_minute=60,
-    requests_per_hour=600, 
+    requests_per_hour=600,
     requests_per_day=10000,
-    burst_size=100
+    burst_size=100,
 )
 
 # Configure CORS with secure settings
@@ -60,7 +93,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=get_allowed_origins(),
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -109,31 +142,31 @@ async def log_requests(request: Request, call_next):
 @app.middleware("http")
 async def rate_limit_requests(request: Request, call_next):
     """Middleware to rate limit incoming requests.
-    
+
     Args:
         request: The incoming FastAPI request object.
         call_next: The next middleware or endpoint in the chain.
-        
+
     Returns:
         The response or rate limit error.
     """
     # Skip rate limiting for health checks
     if request.url.path == "/api/health":
         return await call_next(request)
-        
+
     # Get identifier for rate limiting
     identifier = get_identifier(request)
-    
+
     # Check rate limit
     allowed, retry_after = rate_limiter.check_rate_limit(identifier)
-    
+
     if not allowed:
         return JSONResponse(
             status_code=429,
             content={"detail": "Rate limit exceeded"},
-            headers={"Retry-After": str(retry_after)} if retry_after else {}
+            headers={"Retry-After": str(retry_after)} if retry_after else {},
         )
-    
+
     # Process request if allowed
     return await call_next(request)
 
@@ -204,6 +237,66 @@ async def timeout_statistics():
         dict: Timeout statistics for all operations.
     """
     return get_timeout_stats()
+
+
+@app.post("/api/workflows/execute")
+@timeout_handler(operation="execute_workflow", timeout=300, retry=False)
+async def execute_workflow(request: Request):
+    """Execute a visual workflow from the workflow builder.
+
+    Args:
+        request: FastAPI request containing workflow definition
+
+    Returns:
+        dict: Execution results for each node
+    """
+    from workflow_executor import WorkflowExecutor
+
+    try:
+        # Parse request body
+        body = await request.json()
+        workflow_data = body.get("workflow", {})
+        api_keys = body.get("api_keys", {})
+
+        # Extract nodes and edges
+        nodes = workflow_data.get("nodes", [])
+        edges = workflow_data.get("edges", [])
+
+        if not nodes:
+            raise HTTPException(
+                status_code=400, detail="Workflow must contain at least one node"
+            )
+
+        # Log workflow execution
+        logger.info(
+            "Executing workflow",
+            extra={
+                "node_count": len(nodes),
+                "edge_count": len(edges),
+                "node_types": [n.get("type") for n in nodes],
+            },
+        )
+
+        # Execute workflow
+        executor = WorkflowExecutor(api_keys)
+        results = await executor.execute(nodes, edges)
+
+        return JSONResponse(
+            content={
+                "status": "success",
+                "results": results,
+                "node_count": len(nodes),
+                "execution_time": time.time(),
+            }
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Workflow execution failed", error=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Workflow execution failed: {str(e)}"
+        )
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
@@ -290,7 +383,7 @@ async def analyze_text(request: AnalyzeRequest):
         # Add large text to tracked resources
         mem_ctx.add_resource("request_text", request.text)
         mem_ctx.add_resource("original_text", original_text)
-        
+
         try:
             # Call all models in parallel
             responses = await analyze_with_models(
@@ -314,7 +407,9 @@ async def analyze_text(request: AnalyzeRequest):
                         "request_id": request_id,
                         "model": resp["model"],
                         "has_error": bool(resp["error"]),
-                        "response_length": len(resp["response"]) if resp["response"] else 0,
+                        "response_length": (
+                            len(resp["response"]) if resp["response"] else 0
+                        ),
                     },
                 )
 
@@ -322,12 +417,14 @@ async def analyze_text(request: AnalyzeRequest):
             model_responses = []
             for resp in responses:
                 # Limit response size to prevent memory issues
-                limited_response = limit_response_size(resp["response"]) if resp["response"] else ""
+                limited_response = (
+                    limit_response_size(resp["response"]) if resp["response"] else ""
+                )
                 model_responses.append(
                     ModelResponse(
-                        model=resp["model"], 
-                        response=limited_response, 
-                        error=resp["error"]
+                        model=resp["model"],
+                        response=limited_response,
+                        error=resp["error"],
                     )
                 )
                 # Track response in memory context
@@ -341,9 +438,14 @@ async def analyze_text(request: AnalyzeRequest):
                 },
             )
 
+            # Sanitize original text before including in response
+            from structured_logging import sanitize_sensitive_data
+
+            sanitized_text = sanitize_sensitive_data(original_text[:500])
+
             return AnalyzeResponse(
                 request_id=request_id,
-                original_text=original_text[:500],  # Truncate for response
+                original_text=sanitized_text,  # Sanitized and truncated
                 responses=model_responses,
                 chunked=needs_chunking,
                 chunk_info=chunk_info,
@@ -360,8 +462,7 @@ async def analyze_text(request: AnalyzeRequest):
                 },
             )
             raise HTTPException(
-                status_code=504,
-                detail=f"Request timed out after {e.elapsed:.1f}s"
+                status_code=504, detail=f"Request timed out after {e.elapsed:.1f}s"
             )
         except Exception as e:
             logger.error(
@@ -377,7 +478,8 @@ async def analyze_text(request: AnalyzeRequest):
             # Return more detailed error in development
             if log_level == "DEBUG":
                 raise HTTPException(
-                    status_code=500, detail=f"Analysis failed: {type(e).__name__}: {str(e)}"
+                    status_code=500,
+                    detail=f"Analysis failed: {type(e).__name__}: {str(e)}",
                 )
             else:
                 raise HTTPException(status_code=500, detail="Analysis failed")
@@ -386,63 +488,60 @@ async def analyze_text(request: AnalyzeRequest):
 @app.get("/api/ollama/models")
 async def list_ollama_models():
     """List available Ollama models.
-    
+
     Returns:
         dict: Available models and status information
     """
     from plugins.ollama_provider import OllamaProvider
-    
+
     try:
         async with OllamaProvider() as provider:
             # Check health first
             health = await provider.check_health()
-            
-            if not health.get('available'):
+
+            if not health.get("available"):
                 return {
                     "available": False,
-                    "error": health.get('error', 'Ollama is not available'),
-                    "help": health.get('help', '')
+                    "error": health.get("error", "Ollama is not available"),
+                    "help": health.get("help", ""),
                 }
-            
+
             # Get list of models
             models = await provider.list_models()
-            
+
             return {
                 "available": True,
                 "models": models,
-                "base_url": health.get('base_url')
+                "base_url": health.get("base_url"),
             }
-            
+
     except Exception as e:
         logger.error(f"Failed to list Ollama models: {str(e)}")
-        return {
-            "available": False,
-            "error": str(e)
-        }
+        return {"available": False, "error": str(e)}
 
 
 @app.post("/api/restart")
 async def restart_backend():
     """Restart the backend server.
-    
+
     This endpoint triggers a graceful restart of the backend server.
     The server will complete any ongoing requests before restarting.
-    
+
     Returns:
         dict: Status message
     """
     import os
-    import sys
     import signal
-    
+
     logger.info("Backend restart requested via API")
-    
+
     # Schedule restart after response is sent
     async def delayed_restart():
         import asyncio
+
         await asyncio.sleep(1)  # Give time for response to be sent
         logger.info("Initiating backend restart...")
-        
+
         # If running with uvicorn reload, touch a file to trigger reload
         try:
             # Touch main.py to trigger uvicorn reload
@@ -450,15 +549,16 @@ async def restart_backend():
             logger.info("Triggered uvicorn reload by touching main.py")
         except Exception as e:
             logger.warning(f"Could not trigger uvicorn reload: {e}")
-            
+
             # Fallback: Send SIGTERM to self (graceful shutdown)
             os.kill(os.getpid(), signal.SIGTERM)
-    
+
     # Run restart in background
     import asyncio
+
     asyncio.create_task(delayed_restart())
-    
+
     return {
         "status": "success",
-        "message": "Backend restart initiated. The server will restart in a moment."
+        "message": "Backend restart initiated. The server will restart in a moment.",
     }

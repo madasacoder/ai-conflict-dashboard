@@ -1,0 +1,13 @@
+node_modules/
+reports/
+.eslintcache
+.DS_Store
+*.log
+coverage/
+.env
+.env.local
+dist/
+build/
+.husky/
+test-results/
+playwright-report/

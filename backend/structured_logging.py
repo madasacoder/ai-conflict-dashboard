@@ -16,67 +16,91 @@ from structlog.processors import CallsiteParameter
 
 # Patterns for sensitive data that should be masked
 SENSITIVE_PATTERNS: Dict[str, Pattern] = {
-    "openai_key": re.compile(r'(sk-[a-zA-Z0-9]{48})'),
-    "anthropic_key": re.compile(r'(sk-ant-[a-zA-Z0-9-]{50,})'),
-    "generic_api_key": re.compile(r'(api[_-]?key["\s:=]+)(["\']?)([a-zA-Z0-9-_]{20,})(["\']?)', re.IGNORECASE),
-    "bearer_token": re.compile(r'(bearer\s+)([a-zA-Z0-9-._~+/]{20,})', re.IGNORECASE),
-    "aws_access_key": re.compile(r'(AKIA[A-Z0-9]{16})'),
-    "gemini_key": re.compile(r'(AIza[a-zA-Z0-9-_]{35})'),
-    "password": re.compile(r'(password["\s:=]+)(["\']?)([^"\s]+)(["\']?)', re.IGNORECASE),
+    "openai_key": re.compile(
+        r"(sk-(?!proj-|ant-)[a-zA-Z0-9]{4,})"
+    ),  # OpenAI keys, excluding sk-proj and sk-ant
+    "anthropic_key": re.compile(r"(sk-ant-[a-zA-Z0-9-]{4,})"),  # More flexible length
+    "generic_api_key": re.compile(
+        r'(api[_-]?key["\s:=]+)(["\']?)([a-zA-Z0-9-_]{20,})(["\']?)', re.IGNORECASE
+    ),
+    "bearer_token": re.compile(r"(bearer\s+)([a-zA-Z0-9-._~+/]{20,})", re.IGNORECASE),
+    "aws_access_key": re.compile(r"(AKIA[A-Z0-9]{16})"),
+    "gemini_key": re.compile(r"(AIza[a-zA-Z0-9-_]{35})"),
+    "password": re.compile(
+        r'(password["\s:=]+)(["\']?)([^"\s]+)(["\']?)', re.IGNORECASE
+    ),
+    "sk_proj_key": re.compile(
+        r"(sk-proj-[a-zA-Z0-9-]{4,})"
+    ),  # sk-proj- pattern with hyphens
 }
 
 
 def sanitize_value(value: Any) -> Any:
     """Recursively sanitize sensitive data in a value.
-    
+
     Args:
         value: The value to sanitize (can be str, dict, list, etc.)
-        
+
     Returns:
         Sanitized value with sensitive data masked
     """
     if isinstance(value, str):
         # Apply all sensitive patterns
         sanitized = value
-        
+
         # Direct pattern replacements
         for pattern_name, pattern in SENSITIVE_PATTERNS.items():
             if pattern_name in ["generic_api_key", "password"]:
                 # Special handling for patterns with groups
-                sanitized = pattern.sub(r'\1\2***\4', sanitized)
+                sanitized = pattern.sub(r"\1\2***\4", sanitized)
             elif pattern_name == "bearer_token":
-                sanitized = pattern.sub(r'\1***', sanitized)
+                sanitized = pattern.sub(r"\1***", sanitized)
             else:
                 # Simple replacement
-                sanitized = pattern.sub(r'***REDACTED***', sanitized)
-        
+                sanitized = pattern.sub(r"***REDACTED***", sanitized)
+
         return sanitized
-    
+
     elif isinstance(value, dict):
         # Recursively sanitize dictionary values
         return {k: sanitize_value(v) for k, v in value.items()}
-    
+
     elif isinstance(value, list):
         # Recursively sanitize list items
         return [sanitize_value(item) for item in value]
-    
+
     elif isinstance(value, tuple):
         # Recursively sanitize tuple items
         return tuple(sanitize_value(item) for item in value)
-    
+
     else:
         # Return other types as-is
         return value
 
 
+def sanitize_sensitive_data(text: str) -> str:
+    """Sanitize sensitive data in text for safe logging.
+
+    This is a convenience function that sanitizes API keys and other
+    sensitive information in text strings.
+
+    Args:
+        text: The text to sanitize
+
+    Returns:
+        Text with sensitive data replaced with ***
+    """
+    return sanitize_value(text)
+
+
 def sanitize_event_dict(_, __, event_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Processor to sanitize sensitive data in log events.
-    
+
     Args:
         _: Logger (unused)
         __: Method name (unused)
         event_dict: The log event dictionary
-        
+
     Returns:
         Sanitized event dictionary
     """
@@ -132,8 +156,6 @@ def setup_structured_logging(level="INFO", log_file="app.log"):
             ),
             # IMPORTANT: Sanitize sensitive data before any output
             sanitize_event_dict,
-            # Format stack traces
-            structlog.processors.format_exc_info,
             # Render to JSON for file output, console for stdout
             structlog.processors.StackInfoRenderer(),
             structlog.dev.set_exc_info,
@@ -149,10 +171,22 @@ def setup_structured_logging(level="INFO", log_file="app.log"):
     # Configure different formatters for console and file
     console_formatter = structlog.stdlib.ProcessorFormatter(
         processor=structlog.dev.ConsoleRenderer(colors=True),
+        foreign_pre_chain=[
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.dev.set_exc_info,
+        ],
     )
 
     json_formatter = structlog.stdlib.ProcessorFormatter(
         processor=structlog.processors.JSONRenderer(),
+        foreign_pre_chain=[
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.dev.set_exc_info,
+        ],
     )
 
     # Apply formatters to handlers
@@ -163,7 +197,13 @@ def setup_structured_logging(level="INFO", log_file="app.log"):
 
     # Update root logger handlers
     root_logger = logging.getLogger()
-    root_logger.handlers = [console_handler, json_handler]
+    # Close existing handlers to prevent resource warnings
+    for handler in root_logger.handlers[:]:
+        handler.close()
+        root_logger.removeHandler(handler)
+    # Add new handlers
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(json_handler)
 
     # Reduce noise from libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
@@ -247,16 +287,24 @@ if __name__ == "__main__":
     # Test the sanitization
     setup_structured_logging(level="DEBUG")
     logger = get_logger(__name__)
-    
+
     # Test various sensitive data patterns
     test_cases = [
-        {"message": "User provided API key sk-1234567890abcdef1234567890abcdef1234567890abcdef"},
+        {
+            "message": "User provided API key sk-1234567890abcdef1234567890abcdef1234567890abcdef"
+        },
         {"api_key": "sk-ant-1234567890abcdef1234567890abcdef1234567890abcdef-12"},
-        {"config": {"openai_key": "sk-1234567890abcdef1234567890abcdef1234567890abcdef"}},
-        {"auth": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"},
+        {
+            "config": {
+                "openai_key": "sk-1234567890abcdef1234567890abcdef1234567890abcdef"
+            }
+        },
+        {
+            "auth": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+        },
         {"text": "Password: mysecretpass123"},
         {"gemini": "API_KEY=AIzaSyDrFooBarBaz1234567890-1234567890"},
     ]
-    
+
     for test in test_cases:
         logger.info("Testing sanitization", **test)

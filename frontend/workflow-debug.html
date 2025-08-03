@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workflow Builder Debug</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/drawflow@0.0.59/dist/drawflow.min.css"
+    />
+    <style>
+      #drawflow {
+        width: 100%;
+        height: 600px;
+        border: 1px solid #ccc;
+        background-color: #f8f9fa;
+        background-image: radial-gradient(circle, #ddd 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+      .debug-panel {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+      .error {
+        color: red;
+      }
+      .success {
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1>Workflow Builder Debug</h1>
+      <p>This page tests Drawflow initialization step by step.</p>
+
+      <div class="debug-panel">
+        <h5>Debug Log:</h5>
+        <div id="debugLog"></div>
+      </div>
+
+      <div class="mt-4">
+        <button class="btn btn-primary" onclick="testInitialization()">Test Initialization</button>
+        <button class="btn btn-secondary" onclick="addTestNode()">Add Test Node</button>
+        <button class="btn btn-info" onclick="exportData()">Export Data</button>
+      </div>
+
+      <div id="drawflow" class="mt-4"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.59/dist/drawflow.min.js"></script>
+
+    <script>
+      let editor = null;
+
+      function log(message, isError = false) {
+        const logDiv = document.getElementById('debugLog');
+        const entry = document.createElement('div');
+        entry.className = isError ? 'error' : 'success';
+        entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        logDiv.appendChild(entry);
+        console.log(message);
+      }
+
+      function testInitialization() {
+        try {
+          log('Starting initialization...');
+
+          // Check if Drawflow is loaded
+          if (typeof Drawflow === 'undefined') {
+            log('ERROR: Drawflow library not loaded!', true);
+            return;
+          }
+          log('✓ Drawflow library loaded');
+
+          // Get container
+          const container = document.getElementById('drawflow');
+          if (!container) {
+            log('ERROR: Container element not found!', true);
+            return;
+          }
+          log('✓ Container element found');
+
+          // Initialize Drawflow
+          editor = new Drawflow(container);
+          log('✓ Drawflow instance created');
+
+          // Start editor
+          editor.start();
+          log('✓ Editor started');
+
+          // Test event listeners
+          editor.on('nodeCreated', (id) => {
+            log(`Event: Node created with ID ${id}`);
+          });
+
+          editor.on('connectionCreated', (connection) => {
+            log(`Event: Connection created`);
+          });
+
+          log('✓ Event listeners registered');
+          log('Initialization complete!');
+        } catch (error) {
+          log(`ERROR: ${error.message}`, true);
+          console.error('Full error:', error);
+        }
+      }
+
+      function addTestNode() {
+        if (!editor) {
+          log('ERROR: Editor not initialized!', true);
+          return;
+        }
+
+        try {
+          const html = `
+                    <div class="title">Test Node</div>
+                    <div class="content">
+                        <input type="text" class="form-control" placeholder="Test input">
+                    </div>
+                `;
+
+          const nodeId = editor.addNode(
+            'test', // name
+            1, // inputs
+            1, // outputs
+            150, // pos_x
+            150, // pos_y
+            'test-class', // class
+            { test: true }, // data
+            html // html
+          );
+
+          log(`✓ Test node added with ID: ${nodeId}`);
+        } catch (error) {
+          log(`ERROR adding node: ${error.message}`, true);
+        }
+      }
+
+      function exportData() {
+        if (!editor) {
+          log('ERROR: Editor not initialized!', true);
+          return;
+        }
+
+        try {
+          const data = editor.export();
+          log('✓ Export data:');
+          log(JSON.stringify(data, null, 2));
+        } catch (error) {
+          log(`ERROR exporting: ${error.message}`, true);
+        }
+      }
+
+      // Test on page load
+      window.addEventListener('DOMContentLoaded', () => {
+        log('Page loaded, ready for testing');
+      });
+
+      // Catch any global errors
+      window.addEventListener('error', (event) => {
+        log(
+          `GLOBAL ERROR: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`,
+          true
+        );
+      });
+    </script>
+  </body>
+</html>

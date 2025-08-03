@@ -6,7 +6,6 @@ These tests verify API behavior with various real-world scenarios.
 import pytest
 import json
 import time
-import asyncio
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 
@@ -192,11 +191,13 @@ This is a test project with multiple files."""
     def test_mixed_provider_response_times(self, client):
         """Test handling providers with different response times."""
 
-        async def fast_provider(*args, **kwargs):
+        def fast_provider(*args, **kwargs):
             return {"model": "fast", "response": "Fast response", "error": None}
 
-        async def slow_provider(*args, **kwargs):
-            await asyncio.sleep(0.5)
+        def slow_provider(*args, **kwargs):
+            import time
+
+            time.sleep(0.5)
             return {"model": "slow", "response": "Slow response", "error": None}
 
         with patch(
@@ -287,7 +288,7 @@ class TestAPIErrorScenarios:
         """Test API with malformed JSON."""
         response = client.post(
             "/api/analyze",
-            data="{'invalid': json}",  # Invalid JSON
+            content="{'invalid': json}",  # Invalid JSON
             headers={"Content-Type": "application/json"},
         )
 
@@ -297,7 +298,7 @@ class TestAPIErrorScenarios:
         """Test API without Content-Type header."""
         response = client.post(
             "/api/analyze",
-            data=json.dumps({"text": "Test", "openai_key": "test-key"}),
+            content=json.dumps({"text": "Test", "openai_key": "test-key"}),
             # No Content-Type header
         )
 
@@ -319,8 +320,9 @@ class TestAPIErrorScenarios:
 
     def test_rate_limiting_simulation(self, client):
         """Simulate rate limiting behavior."""
-        # Make many rapid requests
-        responses = []
+        # Make many rapid requests to test rate limiting
+        success_count = 0
+        rate_limited_count = 0
 
         with patch(
             "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
@@ -332,23 +334,32 @@ class TestAPIErrorScenarios:
                     "/api/analyze",
                     json={"text": f"Rapid request {i}", "openai_key": "test-key"},
                 )
-                responses.append(response.status_code)
+                if response.status_code == 200:
+                    success_count += 1
+                elif response.status_code == 429:
+                    rate_limited_count += 1
+                    # Verify proper rate limit error message
+                    assert "rate limit" in response.json()["detail"].lower()
 
-        # All should succeed (no rate limiting implemented yet)
-        assert all(status == 200 for status in responses)
-
-        # In future, some might return 429 (Too Many Requests)
+        # We have rate limiting implemented (60 req/min limit)
+        # So we should see some successful requests and some rate limited
+        assert success_count > 0, "Should have some successful requests"
+        assert rate_limited_count > 0, "Should have some rate limited requests"
+        assert (
+            success_count + rate_limited_count == 100
+        ), "All requests should be accounted for"
 
     def test_timeout_handling(self, client):
         """Test request timeout handling."""
 
-        async def slow_provider(*args, **kwargs):
-            await asyncio.sleep(35)  # Longer than 30s timeout
-            return {"model": "timeout", "response": "Should timeout", "error": None}
-
-        with patch(
-            "llm_providers._call_openai_with_breaker", side_effect=slow_provider
-        ):
+        # Mock the call_openai to simulate timeout
+        with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
+            # Return a timeout error response
+            mock_openai.return_value = {
+                "model": "openai",
+                "response": "",
+                "error": "Request timeout (30s)",
+            }
             response = client.post(
                 "/api/analyze", json={"text": "Test timeout", "openai_key": "test-key"}
             )

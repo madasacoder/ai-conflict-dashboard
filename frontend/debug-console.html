@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Console Error Debugger</title>
+    <style>
+      body {
+        font-family: monospace;
+        margin: 20px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+      }
+      .console-log {
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .error {
+        background: #442222;
+        color: #ff6b6b;
+      }
+      .warn {
+        background: #443322;
+        color: #ffd93d;
+      }
+      .info {
+        background: #223344;
+        color: #6bcfff;
+      }
+      .log {
+        background: #2d2d2d;
+        color: #d4d4d4;
+      }
+      .success {
+        background: #224422;
+        color: #6bff6b;
+      }
+      .controls {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #2d2d2d;
+        border-radius: 8px;
+      }
+      button {
+        margin: 5px;
+        padding: 8px 15px;
+        background: #007acc;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #005a9e;
+      }
+      #console-output {
+        background: #1e1e1e;
+        padding: 15px;
+        border-radius: 8px;
+        max-height: 600px;
+        overflow-y: auto;
+      }
+      iframe {
+        width: 100%;
+        height: 600px;
+        border: 2px solid #333;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Console Error Debugger</h1>
+    <p>This tool captures ALL console errors from pages loaded in the iframe below.</p>
+
+    <div class="controls">
+      <button onclick="loadPage('/')">Load Main App</button>
+      <button onclick="loadPage('/workflow-builder.html')">Load Workflow Builder</button>
+      <button onclick="loadPage('/test-ollama.html')">Load Ollama Test</button>
+      <button onclick="clearConsole()">Clear Console</button>
+      <button onclick="exportLogs()">Export Logs</button>
+    </div>
+
+    <h2>Console Output:</h2>
+    <div id="console-output"></div>
+
+    <h2>Page Preview:</h2>
+    <iframe id="test-frame" src="about:blank"></iframe>
+
+    <script>
+      const logs = [];
+
+      function addLog(type, message, source, details = {}) {
+        const timestamp = new Date().toISOString();
+        const log = { timestamp, type, message, source, details };
+        logs.push(log);
+
+        const logDiv = document.createElement('div');
+        logDiv.className = `console-log ${type}`;
+        logDiv.innerHTML = `
+                <strong>[${timestamp.substr(11, 12)}] ${type.toUpperCase()} from ${source}:</strong>
+                ${escapeHtml(message)}
+                ${details.stack ? '<br>Stack: ' + escapeHtml(details.stack) : ''}
+                ${details.url ? '<br>URL: ' + escapeHtml(details.url) : ''}
+                ${details.line ? '<br>Line: ' + details.line + ', Column: ' + details.column : ''}
+            `;
+
+        document.getElementById('console-output').appendChild(logDiv);
+        logDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function loadPage(url) {
+        const iframe = document.getElementById('test-frame');
+        addLog('info', `Loading page: ${url}`, 'debugger');
+
+        // Clear previous logs for this page
+        clearConsole();
+
+        iframe.src = url;
+
+        // Wait for iframe to load
+        iframe.onload = function () {
+          addLog('success', `Page loaded: ${url}`, 'debugger');
+
+          try {
+            // Inject error capturing into the iframe
+            const iframeWindow = iframe.contentWindow;
+
+            // Capture console methods
+            const originalConsole = {
+              log: iframeWindow.console.log,
+              error: iframeWindow.console.error,
+              warn: iframeWindow.console.warn,
+              info: iframeWindow.console.info,
+            };
+
+            iframeWindow.console.log = function (...args) {
+              addLog('log', args.join(' '), url);
+              originalConsole.log.apply(iframeWindow.console, args);
+            };
+
+            iframeWindow.console.error = function (...args) {
+              addLog('error', args.join(' '), url);
+              originalConsole.error.apply(iframeWindow.console, args);
+            };
+
+            iframeWindow.console.warn = function (...args) {
+              addLog('warn', args.join(' '), url);
+              originalConsole.warn.apply(iframeWindow.console, args);
+            };
+
+            iframeWindow.console.info = function (...args) {
+              addLog('info', args.join(' '), url);
+              originalConsole.info.apply(iframeWindow.console, args);
+            };
+
+            // Capture global errors
+            iframeWindow.addEventListener('error', function (event) {
+              addLog('error', event.message, url, {
+                filename: event.filename,
+                line: event.lineno,
+                column: event.colno,
+                stack: event.error ? event.error.stack : 'No stack trace',
+              });
+            });
+
+            // Capture unhandled promise rejections
+            iframeWindow.addEventListener('unhandledrejection', function (event) {
+              addLog('error', `Unhandled Promise Rejection: ${event.reason}`, url, {
+                reason: event.reason,
+                promise: event.promise,
+              });
+            });
+
+            // Check for specific elements
+            setTimeout(() => {
+              checkPageElements(iframeWindow, url);
+            }, 1000);
+          } catch (e) {
+            addLog('error', `Cannot access iframe (CORS): ${e.message}`, 'debugger');
+          }
+        };
+
+        iframe.onerror = function (e) {
+          addLog('error', `Failed to load iframe: ${e}`, 'debugger');
+        };
+      }
+
+      function checkPageElements(iframeWindow, url) {
+        const doc = iframeWindow.document;
+
+        // Check for error messages in the page
+        const errorElements = doc.querySelectorAll('.error, .alert-danger, [class*="error"]');
+        if (errorElements.length > 0) {
+          errorElements.forEach((el) => {
+            if (el.textContent.trim()) {
+              addLog('warn', `Error element found: "${el.textContent.trim()}"`, url, {
+                className: el.className,
+                id: el.id,
+              });
+            }
+          });
+        }
+
+        // Check specific elements based on URL
+        if (url.includes('workflow-builder')) {
+          const drawflow = doc.getElementById('drawflow');
+          if (drawflow) {
+            addLog('info', `Drawflow container found`, url);
+
+            // Check if Drawflow is initialized
+            if (iframeWindow.workflowBuilder) {
+              addLog('success', 'WorkflowBuilder global found', url);
+              if (iframeWindow.workflowBuilder.editor) {
+                addLog('success', 'Drawflow editor initialized', url);
+              } else {
+                addLog('error', 'Drawflow editor NOT initialized', url);
+              }
+            } else {
+              addLog('error', 'WorkflowBuilder global NOT found', url);
+            }
+          } else {
+            addLog('error', 'Drawflow container NOT found', url);
+          }
+        }
+
+        // Check for Ollama status
+        const ollamaStatus = doc.getElementById('ollamaStatusBadge');
+        if (ollamaStatus) {
+          addLog('info', `Ollama status: "${ollamaStatus.textContent}"`, url, {
+            className: ollamaStatus.className,
+            title: ollamaStatus.title,
+          });
+        }
+      }
+
+      function clearConsole() {
+        document.getElementById('console-output').innerHTML = '';
+        addLog('info', 'Console cleared', 'debugger');
+      }
+
+      function exportLogs() {
+        const json = JSON.stringify(logs, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `console-logs-${new Date().toISOString()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        addLog('success', 'Logs exported', 'debugger');
+      }
+
+      // Capture errors on this page too
+      window.addEventListener('error', function (event) {
+        addLog('error', `Debugger page error: ${event.message}`, 'debugger', {
+          filename: event.filename,
+          line: event.lineno,
+          column: event.colno,
+        });
+      });
+
+      // Initial message
+      addLog('info', 'Console debugger ready. Click a button above to load a page.', 'debugger');
+    </script>
+  </body>
+</html>

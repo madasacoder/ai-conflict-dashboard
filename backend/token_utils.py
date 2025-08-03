@@ -6,7 +6,6 @@ Unicode characters, emojis, and non-ASCII text correctly.
 """
 
 import unicodedata
-from typing import List, Dict, Any
 
 # API token limits
 MODEL_LIMITS = {
@@ -59,17 +58,17 @@ def estimate_tokens(text: str) -> int:
         return 0
 
     # Normalize Unicode to handle composite characters
-    text = unicodedata.normalize('NFC', text)
-    
+    text = unicodedata.normalize("NFC", text)
+
     token_count = 0
     i = 0
-    
+
     while i < len(text):
         char = text[i]
-        
+
         # Get Unicode category
-        category = unicodedata.category(char)
-        
+        unicodedata.category(char)
+
         # Handle different character types
         if char.isascii():
             if char.isalnum():
@@ -91,7 +90,7 @@ def estimate_tokens(text: str) -> int:
         else:
             # Non-ASCII character
             code_point = ord(char)
-            
+
             # Check for emoji
             if is_emoji(char, text, i):
                 # Handle emoji sequences (including ZWJ sequences)
@@ -99,111 +98,112 @@ def estimate_tokens(text: str) -> int:
                 token_count += emoji_tokens
                 i += emoji_len
             # CJK characters (Chinese, Japanese, Korean)
-            elif 0x4E00 <= code_point <= 0x9FFF or \
-                 0x3000 <= code_point <= 0x303F or \
-                 0xAC00 <= code_point <= 0xD7AF:
+            elif (
+                0x4E00 <= code_point <= 0x9FFF
+                or 0x3000 <= code_point <= 0x303F
+                or 0xAC00 <= code_point <= 0xD7AF
+            ):
                 # CJK chars are often 1-2 tokens each
                 token_count += 1.5
                 i += 1
             # Arabic, Hebrew, etc.
-            elif 0x0600 <= code_point <= 0x06FF or \
-                 0x0590 <= code_point <= 0x05FF:
+            elif 0x0600 <= code_point <= 0x06FF or 0x0590 <= code_point <= 0x05FF:
                 token_count += 1
                 i += 1
             else:
                 # Other Unicode characters
                 token_count += 1
                 i += 1
-    
+
     # Round up for conservative estimate
     return int(token_count + 0.5)
 
 
 def is_emoji(char: str, text: str, pos: int) -> bool:
     """Check if character at position is part of an emoji.
-    
+
     Args:
         char: The character to check
         text: Full text string
         pos: Position of char in text
-        
+
     Returns:
         bool: True if character is part of an emoji
     """
     # Basic emoji ranges
     code_point = ord(char)
-    
+
     # Common emoji code point ranges
     emoji_ranges = [
         (0x1F300, 0x1F6FF),  # Symbols & Pictographs
         (0x1F900, 0x1F9FF),  # Supplemental Symbols
-        (0x2600, 0x26FF),    # Miscellaneous Symbols
-        (0x2700, 0x27BF),    # Dingbats
+        (0x2600, 0x26FF),  # Miscellaneous Symbols
+        (0x2700, 0x27BF),  # Dingbats
         (0x1F1E6, 0x1F1FF),  # Regional indicators (flags)
         (0x1F600, 0x1F64F),  # Emoticons
         (0x1F680, 0x1F6FF),  # Transport & Map
         (0x1F700, 0x1F77F),  # Alchemical Symbols
     ]
-    
+
     for start, end in emoji_ranges:
         if start <= code_point <= end:
             return True
-    
+
     # Check for emoji modifiers and ZWJ sequences
     if pos + 1 < len(text):
         next_char = text[pos + 1]
         next_code = ord(next_char)
-        
+
         # Variation selectors
         if next_code in (0xFE0E, 0xFE0F):
             return True
-        
+
         # Skin tone modifiers
         if 0x1F3FB <= next_code <= 0x1F3FF:
             return True
-            
+
         # Zero Width Joiner (for compound emojis)
         if next_code == 0x200D:
             return True
-    
+
     return False
 
 
 def count_emoji_tokens(text: str, start_pos: int) -> tuple[int, int]:
     """Count tokens for an emoji sequence starting at position.
-    
+
     Args:
         text: Full text string
         start_pos: Starting position of emoji
-        
+
     Returns:
         tuple: (characters consumed, token count)
     """
     pos = start_pos
     token_count = 1
-    
+
     # Simple single emoji
     pos += 1
-    
+
     # Check for modifiers and sequences
     while pos < len(text):
         if pos >= len(text):
             break
-            
+
         char = text[pos]
         code = ord(char)
-        
+
         # Variation selector
         if code in (0xFE0E, 0xFE0F):
             pos += 1
             continue
-            
+
         # Skin tone modifier
         if 0x1F3FB <= code <= 0x1F3FF:
             pos += 1
             token_count += 1
             continue
-            
+
         # Zero Width Joiner - compound emoji
         if code == 0x200D:
             pos += 1
@@ -213,10 +213,10 @@ def count_emoji_tokens(text: str, start_pos: int) -> tuple[int, int]:
                 pos += 1
                 token_count += 1
             continue
-            
+
         # Not part of emoji sequence
         break
-    
+
     return pos - start_pos, token_count
 
 
@@ -271,8 +271,7 @@ def check_token_limits(text: str) -> dict:
     }
 
 
-# Re-export the chunk_text function from smart_chunking module
-from smart_chunking import chunk_text_smart as chunk_text
+# Import the wrapper that provides the expected interface
 
 
 if __name__ == "__main__":
@@ -288,10 +287,10 @@ if __name__ == "__main__":
         ("🎉🎊✨ Party! 🥳", "Mixed emojis and text"),
         ("café", "Accented characters"),
     ]
-    
+
     print("Token counting tests:")
     print("-" * 50)
-    
+
     for text, description in test_cases:
         tokens = estimate_tokens(text)
         print(f"{description:25} | Text: {text:20} | Tokens: {tokens}")

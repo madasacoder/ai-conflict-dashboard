@@ -8,6 +8,7 @@ circuit breakers per API key, and structured logging.
 
 import asyncio
 import os
+import threading
 from typing import Optional, Dict, List
 from pybreaker import CircuitBreaker
 import anthropic
@@ -32,6 +33,8 @@ circuit_breakers: Dict[str, Dict[str, CircuitBreaker]] = {
     "grok": {},
     "ollama": {},  # Added for local LLMs
 }
+# Lock for thread-safe access to circuit breakers
+_circuit_breaker_lock = threading.Lock()
 
 
 def get_circuit_breaker(provider: str, api_key: str) -> CircuitBreaker:
@@ -44,25 +47,26 @@ def get_circuit_breaker(provider: str, api_key: str) -> CircuitBreaker:
     Returns:
         CircuitBreaker instance for this provider/key combination
     """
-    if api_key not in circuit_breakers[provider]:
-        # Create new circuit breaker for this API key
-        breaker = CircuitBreaker(
-            fail_max=BREAKER_FAIL_MAX,
-            reset_timeout=BREAKER_TIMEOUT,  # Fixed parameter name
-            name=f"{provider}_{api_key[:8]}...{api_key[-4:]}",  # Partial key in name for logging
-        )
+    with _circuit_breaker_lock:
+        if api_key not in circuit_breakers[provider]:
+            # Create new circuit breaker for this API key
+            breaker = CircuitBreaker(
+                fail_max=BREAKER_FAIL_MAX,
+                reset_timeout=BREAKER_TIMEOUT,  # Fixed parameter name
+                name=f"{provider}_{api_key[:8]}...{api_key[-4:]}",  # Partial key in name for logging
+            )
 
-        # Skip callbacks for now - they're causing issues
-        # TODO: Fix callback implementation
+            # Skip callbacks for now - they're causing issues
+            # TODO: Fix callback implementation
 
-        circuit_breakers[provider][api_key] = breaker
-        logger.info(
-            f"Created new circuit breaker for {provider}",
-            provider=provider,
-            key_prefix=api_key[:8],
-        )
+            circuit_breakers[provider][api_key] = breaker
+            logger.info(
+                f"Created new circuit breaker for {provider}",
+                provider=provider,
+                key_prefix=api_key[:8],
+            )
 
-    return circuit_breakers[provider][api_key]
+        return circuit_breakers[provider][api_key]
 
 
 def on_circuit_open(breaker: CircuitBreaker) -> None:
@@ -307,7 +311,7 @@ async def analyze_with_models(
     # Handle any exceptions that occurred
     processed_results = []
     model_names = []
-    
+
     # Build list of model names based on what was called
     if openai_key:
         model_names.append("openai")
@@ -319,7 +323,7 @@ async def analyze_with_models(
         model_names.append("grok")
     if ollama_model:
         model_names.append(f"ollama/{ollama_model}")
-    
+
     for i, result in enumerate(results):
         if isinstance(result, Exception):
             model_name = model_names[i] if i < len(model_names) else "unknown"
@@ -336,18 +340,18 @@ async def call_gemini(
     text: str, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"
 ) -> dict:
     """Call Gemini API with per-key circuit breaker protection.
-    
+
     Args:
         text: The input text to process
         api_key: Gemini API key (optional, can use env var)
         model: The model to use (default: gemini-1.5-flash)
-        
+
     Returns:
         dict with model, response, and error fields
     """
     if not api_key:
         api_key = os.getenv("GEMINI_API_KEY")
-        
+
     if not api_key:
         logger.warning("Gemini API key not provided")
         return {
@@ -355,10 +359,10 @@ async def call_gemini(
             "response": "",
             "error": "Gemini API key not provided",
         }
-    
+
     # Get circuit breaker for this API key
     breaker = get_circuit_breaker("gemini", api_key)
-    
+
     if breaker.current_state == "open":
         logger.warning(f"Gemini circuit breaker is open for key {api_key[:8]}...")
         return {
@@ -366,7 +370,7 @@ async def call_gemini(
             "response": "",
             "error": "Service temporarily unavailable (circuit breaker open)",
         }
-    
+
     try:
         result = await _call_gemini_with_breaker(text, api_key, model, breaker)
         return result
@@ -386,7 +390,7 @@ async def _call_gemini_with_breaker(
     text: str, api_key: str, model: str, breaker: CircuitBreaker
 ) -> dict:
     """Internal Gemini function with circuit breaker."""
-    
+
     @breaker
     def call_with_breaker():
         # Mock implementation for testing
@@ -396,7 +400,7 @@ async def _call_gemini_with_breaker(
             "response": f"Mock Gemini response for: {text[:50]}...",
             "error": None,
         }
-    
+
     result = await asyncio.wait_for(
         asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS
     )
@@ -407,18 +411,18 @@ async def call_grok(
     text: str, api_key: Optional[str] = None, model: str = "grok-2-latest"
 ) -> dict:
     """Call Grok (xAI) API with per-key circuit breaker protection.
-    
+
     Args:
         text: The input text to process
         api_key: xAI API key (optional, can use env var)
         model: The model to use (default: grok-2-latest)
-        
+
     Returns:
         dict with model, response, and error fields
     """
     if not api_key:
         api_key = os.getenv("GROK_API_KEY")
-        
+
     if not api_key:
         logger.warning("Grok API key not provided")
         return {
@@ -426,10 +430,10 @@ async def call_grok(
             "response": "",
             "error": "Grok API key not provided",
         }
-    
+
     # Get circuit breaker for this API key
     breaker = get_circuit_breaker("grok", api_key)
-    
+
     if breaker.current_state == "open":
         logger.warning(f"Grok circuit breaker is open for key {api_key[:8]}...")
         return {
@@ -437,7 +441,7 @@ async def call_grok(
             "response": "",
             "error": "Service temporarily unavailable (circuit breaker open)",
         }
-    
+
     try:
         result = await _call_grok_with_breaker(text, api_key, model, breaker)
         return result
@@ -457,7 +461,7 @@ async def _call_grok_with_breaker(
     text: str, api_key: str, model: str, breaker: CircuitBreaker
 ) -> dict:
     """Internal Grok function with circuit breaker."""
-    
+
     @breaker
     def call_with_breaker():
         # Mock implementation for testing
@@ -467,7 +471,7 @@ async def _call_grok_with_breaker(
             "response": f"Mock Grok response for: {text[:50]}...",
             "error": None,
         }
-    
+
     result = await asyncio.wait_for(
         asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS
     )
@@ -478,36 +482,36 @@ async def call_ollama_fixed(
     text: str, model: str = "llama2", base_url: Optional[str] = None
 ) -> dict:
     """Call Ollama for local LLM processing.
-    
+
     Args:
         text: The input text to process
         model: Ollama model to use (default: llama2)
         base_url: Optional Ollama base URL
-        
+
     Returns:
         dict with model, response, and error fields
     """
     # Import here to avoid circular dependency
     from plugins.ollama_provider import call_ollama
-    
+
     logger.info(f"Calling Ollama with model {model}")
-    
+
     try:
         # Call the Ollama provider
         result = await call_ollama(text, model=model, base_url=base_url)
-        
+
         # Ensure consistent response format
         if "error" in result and result["error"]:
             logger.warning(f"Ollama error: {result['error']}")
         else:
             logger.info(f"Ollama response received for model {model}")
-            
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Ollama call failed: {str(e)}", error=str(e))
         return {
             "model": f"ollama/{model}",
             "response": "",
-            "error": f"Ollama error: {str(e)}"
+            "error": f"Ollama error: {str(e)}",
         }

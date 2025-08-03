@@ -2,36 +2,39 @@
   "env": {
     "browser": true,
     "es2021": true,
-    "jest": true
+    "node": true
   },
-  "extends": [
-    "eslint:recommended",
-    "plugin:react/recommended",
-    "plugin:react-hooks/recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
-  "parser": "@typescript-eslint/parser",
+  "extends": ["eslint:recommended"],
+  "plugins": ["security", "no-unsanitized"],
   "parserOptions": {
-    "ecmaFeatures": {
-      "jsx": true
-    },
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": [
-    "react",
-    "@typescript-eslint"
-  ],
   "rules": {
-    "react/react-in-jsx-scope": "off",
-    "react/prop-types": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-explicit-any": "warn"
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "eqeqeq": ["error", "always"],
+    "curly": ["error", "all"],
+    "semi": ["error", "always"],
+    "quotes": ["error", "single", { "avoidEscape": true }],
+    "security/detect-eval-with-expression": "error",
+    "security/detect-non-literal-regexp": "warn",
+    "security/detect-unsafe-regex": "error",
+    "no-unsanitized/method": "error",
+    "no-unsanitized/property": "error"
   },
-  "settings": {
-    "react": {
-      "version": "detect"
-    }
+  "globals": {
+    "DOMPurify": "readonly",
+    "Drawflow": "readonly",
+    "logger": "readonly",
+    "Prism": "readonly",
+    "bootstrap": "readonly",
+    "updateCounts": "readonly",
+    "showError": "readonly"
   }
 }

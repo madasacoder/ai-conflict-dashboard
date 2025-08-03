@@ -1,0 +1,40 @@
+
+IMMEDIATE BROWSER ACTIONS REQUIRED:
+
+1. 🧹 CLEAR BROWSER HSTS CACHE:
+   Chrome/Edge:
+   - Open: chrome://net-internals/#hsts
+   - In "Query HSTS/PKP domain" field, type: localhost
+   - If found, click "Delete domain security policies"
+   - Restart browser
+
+2. 🔒 DISABLE HTTPS UPGRADE FEATURES:
+   Chrome/Edge:
+   - Open: chrome://flags/#https-first-mode
+   - Set to: "Disabled"
+   - Open: chrome://flags/#https-only-mode-enabled  
+   - Set to: "Disabled"
+   - Restart browser
+   
+   Firefox:
+   - Open: about:preferences#privacy
+   - Uncheck: "HTTPS-Only Mode"
+
+3. 🔌 DISABLE EXTENSIONS:
+   - Temporarily disable: HTTPS Everywhere
+   - Temporarily disable: Privacy Badger
+   - Temporarily disable: uBlock Origin (HTTPS filter)
+
+4. 🔄 TEST IN INCOGNITO:
+   - Open incognito/private browsing window
+   - Navigate to: http://localhost:3000
+   - Check if HTTPS upgrades still occur
+
+5. 🔍 ALTERNATIVE PORT TEST:
+   - Start frontend on port 8080 instead of 3000
+   - Port 3000 might be in browser HSTS preload
+
+IF PROBLEM PERSISTS:
+- Try different browser (Safari, Firefox if using Chrome)
+- Check corporate firewall/proxy settings
+- Try 127.0.0.1:3000 instead of localhost:3000

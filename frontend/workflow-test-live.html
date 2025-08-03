@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Workflow Builder Test</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1>🔍 Live Workflow Builder Test</h1>
+      <p>Open the workflow builder in a new tab, then use these tests to check functionality:</p>
+
+      <div class="mb-3">
+        <a href="/workflow-builder.html" target="_blank" class="btn btn-primary"
+          >Open Workflow Builder</a
+        >
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Test 1: Check if workflowBuilder exists</h5>
+          <button class="btn btn-info" onclick="testGlobalObject()">Run Test</button>
+          <div id="test1Result" class="mt-2"></div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Test 2: Check Drawflow editor status</h5>
+          <button class="btn btn-info" onclick="testEditorStatus()">Run Test</button>
+          <div id="test2Result" class="mt-2"></div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Test 3: Try to add a node programmatically</h5>
+          <button class="btn btn-info" onclick="testAddNode()">Run Test</button>
+          <div id="test3Result" class="mt-2"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Browser Console Instructions</h5>
+          <p>Open the workflow builder, then open browser console (F12) and type:</p>
+          <pre class="bg-light p-2">
+// Check if workflowBuilder exists
+console.log('workflowBuilder exists:', typeof window.workflowBuilder);
+
+// Check editor
+console.log('Editor:', window.workflowBuilder?.editor);
+
+// Try to add a node
+if (window.workflowBuilder) {
+    window.workflowBuilder.addNode('input', 100, 100);
+}
+
+// Check for any errors in drag/drop
+document.querySelector('.node-item').draggable
+                </pre
+          >
+          <p>Share any error messages you see!</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function testGlobalObject() {
+        const result = document.getElementById('test1Result');
+
+        // Open a reference to the workflow builder window
+        const wbWindow = window.open('/workflow-builder.html', 'wb-test');
+
+        setTimeout(() => {
+          try {
+            if (wbWindow.workflowBuilder) {
+              result.innerHTML =
+                '<div class="alert alert-success">✅ workflowBuilder exists!</div>';
+              console.log('WorkflowBuilder object:', wbWindow.workflowBuilder);
+            } else {
+              result.innerHTML =
+                '<div class="alert alert-danger">❌ workflowBuilder is undefined</div>';
+            }
+          } catch (e) {
+            result.innerHTML = DOMPurify.sanitize(
+              `<div class="alert alert-warning">⚠️ Cannot access other window: ${e.message}</div>`
+            );
+          }
+        }, 3000);
+      }
+
+      function testEditorStatus() {
+        const result = document.getElementById('test2Result');
+        result.innerHTML = `
+                <div class="alert alert-info">
+                    <p>In the workflow builder console, run:</p>
+                    <code>window.workflowBuilder.editor</code>
+                    <p>It should show the Drawflow editor object.</p>
+                </div>
+            `;
+      }
+
+      function testAddNode() {
+        const result = document.getElementById('test3Result');
+        result.innerHTML = `
+                <div class="alert alert-info">
+                    <p>In the workflow builder console, run:</p>
+                    <code>window.workflowBuilder.addNode('input', 200, 200)</code>
+                    <p>A new input node should appear at position 200,200.</p>
+                </div>
+            `;
+      }
+    </script>
+  </body>
+</html>

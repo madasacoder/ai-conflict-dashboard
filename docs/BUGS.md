@@ -11,6 +11,51 @@ This document tracks all discovered bugs, their severity, impact, and resolution
 
 ## Active Bugs
 
+### BUG-066: Desktop App API URL Hardcoded Instead of Using Proxy
+- **Severity**: MEDIUM
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (App.tsx)
+- **Discovered**: 2025-08-03
+- **Description**: App was using http://localhost:8000/api/health instead of /api/health
+- **Impact**: Breaks when backend is on different port or domain
+- **Fix**: Changed to use relative URL to leverage Vite proxy
+
+### BUG-067: Playwright Tests in Wrong Directory
+- **Severity**: LOW
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (test structure)
+- **Discovered**: 2025-08-03
+- **Description**: Playwright tests were mixed with Vitest tests causing conflicts
+- **Impact**: Tests couldn't run due to module conflicts
+- **Fix**: Created separate playwright-tests directory
+
+### BUG-068: Vitest and Playwright Test Confusion
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Desktop App (test suite)
+- **Discovered**: 2025-08-03
+- **Description**: 62 integration tests written for Vitest that require real browser
+- **Impact**: Tests fail due to jsdom limitations
+- **Solution**: Convert all integration tests to Playwright
+
+### BUG-069: Drag and Drop Timing Issues in Playwright
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Desktop App (Playwright tests)
+- **Discovered**: 2025-08-03
+- **Description**: dragTo operations timeout due to element stability checks
+- **Impact**: 6 of 8 Playwright tests fail with timeout
+- **Solution**: Need to adjust timing or use alternative drag methods
+
+### BUG-070: Missing useWorkflowStore Import in Tests
+- **Severity**: LOW
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (MVP.critical.test.tsx)
+- **Discovered**: 2025-08-03
+- **Description**: Tests trying to use store without importing it
+- **Impact**: ReferenceError: useWorkflowStore is not defined
+- **Fix**: Added import statement
+
 ### BUG-059: Desktop App NodePalette Drag Events Not Setting DataTransfer
 - **Severity**: HIGH
 - **Status**: ACTIVE

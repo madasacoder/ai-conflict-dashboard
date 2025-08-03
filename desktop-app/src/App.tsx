@@ -30,8 +30,8 @@ function App(): JSX.Element {
 
   const checkApiHealth = async (): Promise<void> => {
     try {
-      console.log('Checking API health at http://localhost:8000/api/health')
-      const response = await fetch('http://localhost:8000/api/health', {
+      console.log('Checking API health at /api/health')
+      const response = await fetch('/api/health', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

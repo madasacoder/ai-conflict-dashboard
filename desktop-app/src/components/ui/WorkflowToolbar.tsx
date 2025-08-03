@@ -26,28 +26,38 @@ export const WorkflowToolbar: React.FC = () => {
       <div className="toolbar-section">
         <button
           className="toolbar-btn primary"
+          data-testid="execute-workflow"
           onClick={isExecuting ? stopExecution : executeWorkflow}
           disabled={!workflow}
+          aria-label={isExecuting ? 'Stop workflow execution' : 'Execute workflow'}
         >
           {isExecuting ? <Pause size={16} /> : <Play size={16} />}
           {isExecuting ? 'Stop' : 'Execute'}
         </button>
         
         {isExecuting && (
-          <div className="execution-progress">
-            <div 
-              className="progress-bar"
-              style={{ width: `${executionProgress}%` }}
-            />
-          </div>
+          <>
+            <div className="execution-progress">
+              <div 
+                className="progress-bar"
+                style={{ width: `${executionProgress}%` }}
+              />
+            </div>
+            <span data-testid="execution-status" className="hidden">executing</span>
+          </>
+        )}
+        {executionProgress === 100 && !isExecuting && (
+          <span data-testid="execution-complete" className="hidden">completed</span>
         )}
       </div>
 
       <div className="toolbar-section">
         <button
           className="toolbar-btn"
+          data-testid="save-workflow"
           onClick={saveWorkflow}
           disabled={!workflow}
+          aria-label="Save workflow"
         >
           <Save size={16} />
           Save
@@ -65,7 +75,9 @@ export const WorkflowToolbar: React.FC = () => {
       <div className="toolbar-section">
         <button
           className="toolbar-btn"
+          data-testid="theme-toggle"
           onClick={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
+          aria-label="Toggle theme"
         >
           {currentTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>

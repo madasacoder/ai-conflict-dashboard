@@ -259,6 +259,47 @@ We use cutting-edge testing tools that exceed industry standards:
 | **API Mocking** | MSW 2.0 | Service worker mocking | ✅ **Implemented** |
 | **DOM Environment** | happy-dom | 3x faster than jsdom | ✅ **Implemented** |
 
+### **🛠️ Development Toolchain**
+
+We maintain a comprehensive, production-grade toolchain across all components:
+
+#### **Quick Commands**
+```bash
+# Run all quality checks
+make quality
+
+# Individual commands
+make lint      # Run all linters
+make format    # Run all formatters
+make test      # Run all tests
+make security  # Run security scans
+```
+
+#### **JavaScript/Frontend Toolchain**
+| **Tool** | **Purpose** | **Configuration** |
+|----------|-------------|------------------|
+| **ESLint** | Linting + Security | `.eslintrc.security.cjs` with security plugins |
+| **Prettier** | Code formatting | `.prettierrc` with consistent style |
+| **npm audit** | Dependency scanning | Built into npm scripts |
+| **Husky** | Pre-commit hooks | Automated quality checks |
+| **Plato** | Code complexity | Visual complexity reports |
+
+#### **Python/Backend Toolchain**
+| **Tool** | **Purpose** | **Configuration** |
+|----------|-------------|------------------|
+| **Ruff** | Fast linting + formatting | `pyproject.toml` with security rules |
+| **Black** | Code formatting | Line length 100, Python 3.11+ |
+| **MyPy** | Static type checking | Strict mode enabled |
+| **Bandit** | Security scanning | Comprehensive AST analysis |
+| **pytest** | Testing framework | 90%+ coverage requirement |
+
+#### **Rust/Desktop App Toolchain**
+| **Tool** | **Purpose** | **Configuration** |
+|----------|-------------|------------------|
+| **rustfmt** | Code formatting | `rustfmt.toml` with project style |
+| **clippy** | Linting | `clippy.toml` with strict rules |
+| **cargo-audit** | Security scanning | Checks against RustSec database |
+
 ### **Running Tests**
 
 #### **Frontend Tests** (Modern Stack)
@@ -298,30 +339,59 @@ pytest tests/test_security_comprehensive.py -v
 
 ### **Code Quality Checks**
 
-#### **Backend Quality**
+#### **All-in-One Quality Check**
 ```bash
-# Formatting
-black .
-
-# Linting  
-ruff check .
-
-# Security scanning
-bandit -r .
-
-# Type checking
-mypy .
+# Run comprehensive quality checks for all components
+make quality
 ```
 
-#### **Frontend Quality**
+This runs:
+- ✅ All linters (ESLint, Ruff, Clippy)
+- ✅ All formatters (Prettier, Black, rustfmt)
+- ✅ All tests with coverage requirements
+- ✅ All security scans (npm audit, Bandit, cargo-audit)
+
+#### **Pre-commit Hooks**
+```bash
+# Install pre-commit hooks (one-time setup)
+make pre-commit
+
+# Hooks run automatically on commit:
+# - Trailing whitespace removal
+# - File formatting (Python, JS, Rust)
+# - Linting checks
+# - Security scans
+# - Secret detection
+```
+
+#### **Component-Specific Commands**
+
+**Frontend (JavaScript)**
 ```bash
 cd frontend
+npm run lint      # ESLint with security plugins
+npm run format    # Prettier formatting
+npm run security  # npm audit + ESLint security
+npm run quality   # Code complexity analysis
+```
 
-# ESLint with strict rules (no console.log allowed)
-npm run lint
+**Backend (Python)**
+```bash
+cd backend
+./venv/bin/ruff check .     # Fast linting
+./venv/bin/ruff format .    # Fast formatting
+./venv/bin/black .          # Alternative formatter
+./venv/bin/mypy .           # Type checking
+./venv/bin/bandit -r .      # Security scanning
+```
 
-# Type checking (if using TypeScript)
-npx tsc --noEmit
+**Desktop App (Rust)**
+```bash
+cd desktop-app/src-tauri
+cargo fmt          # Format code
+cargo clippy       # Lint with suggestions
+cargo audit        # Security vulnerability scan
+cargo test         # Run tests
 ```
 
 ### **Testing Standards** ⚡

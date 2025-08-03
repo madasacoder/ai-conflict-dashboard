@@ -44,6 +44,50 @@ make lint        # Run linters
 make format      # Format code
 ```
 
+### Development Toolchain
+
+#### **Rust/Tauri Toolchain**
+| **Tool** | **Purpose** | **Configuration** |
+|----------|-------------|------------------|
+| **rustfmt** | Code formatting | `src-tauri/rustfmt.toml` |
+| **clippy** | Linting + suggestions | `src-tauri/clippy.toml` |
+| **cargo-audit** | Security scanning | Checks RustSec database |
+
+**Quick Commands:**
+```bash
+# Format Rust code
+cd src-tauri && cargo fmt
+
+# Lint with Clippy
+cd src-tauri && cargo clippy -- -D warnings
+
+# Security audit
+cargo install cargo-audit  # One-time install
+cd src-tauri && cargo audit
+
+# Run tests
+cd src-tauri && cargo test
+```
+
+#### **Frontend Toolchain**
+Inherits all tools from main frontend:
+- **ESLint** for linting
+- **Prettier** for formatting
+- **Vitest** for testing
+- **npm audit** for security
+
+#### **Quality Checks**
+```bash
+# Run all quality checks
+cd .. && make desktop-lint    # Lint only
+cd .. && make desktop-format  # Format only
+cd .. && make desktop-test    # Tests only
+cd .. && make desktop-security # Security only
+
+# Or run everything
+cd .. && make quality
+```
+
 ### Project Structure
 
 ```
@@ -69,6 +113,7 @@ desktop-app/
 - **Desktop**: Tauri (Rust-based, uses OS webview)
 - **Backend**: FastAPI (Python), SQLite
 - **Testing**: Vitest (frontend), Pytest (backend)
+- **Tooling**: rustfmt, clippy, cargo-audit (Rust), ESLint, Prettier (JS)
 
 ## 🎯 Features
 

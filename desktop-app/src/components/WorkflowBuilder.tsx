@@ -21,6 +21,8 @@ import { NodePalette } from './ui/NodePalette'
 import { ConfigPanel } from './ui/ConfigPanel'
 import { WorkflowToolbar } from './ui/WorkflowToolbar'
 import { ConnectionLine } from './ui/ConnectionLine'
+import { NodeConfigModal } from './ui/NodeConfigModal'
+import { CustomControls } from './ui/CustomControls'
 
 // Custom node components
 import { LLMNode } from './nodes/LLMNode'
@@ -56,6 +58,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [dragError, setDragError] = React.useState<string>('')
   const [isDraggingOver, setIsDraggingOver] = React.useState(false)
+  const [configModalNodeId, setConfigModalNodeId] = useState<string | null>(null)
   
   const {
     nodes,
@@ -222,14 +225,8 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
             color={currentTheme === 'dark' ? '#404040' : '#e1e1e1'}
           />
           
-          {/* Controls for zoom/fit */}
-          <Controls 
-            position="bottom-right"
-            className="workflow-controls"
-            showZoom={true}
-            showFitView={true}
-            showInteractive={false}
-          />
+          {/* Custom Controls for zoom/fit */}
+          <CustomControls />
           
           {/* Minimap for navigation */}
           <MiniMap
@@ -263,6 +260,15 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
         <ConfigPanel 
           className="workflow-config"
           nodeId={selectedNode}
+        />
+      )}
+      
+      {/* Node Configuration Modal */}
+      {configModalNodeId && (
+        <NodeConfigModal
+          nodeId={configModalNodeId}
+          isOpen={true}
+          onClose={() => setConfigModalNodeId(null)}
         />
       )}
 

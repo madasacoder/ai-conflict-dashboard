@@ -3,6 +3,8 @@
  * Sets up global mocks and utilities
  */
 
+import { vi, beforeEach } from 'vitest';
+
 // Mock localStorage
 const localStorageMock = {
   store: {},

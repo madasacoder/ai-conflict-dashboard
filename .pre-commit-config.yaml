@@ -1,0 +1,148 @@
+# Pre-commit configuration for AI Conflict Dashboard
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # General
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-json
+      - id: pretty-format-json
+        args: ['--autofix', '--no-sort-keys']
+      - id: check-ast
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Python
+  - repo: https://github.com/psf/black
+    rev: 24.1.0
+    hooks:
+      - id: black
+        language_version: python3.11
+        files: ^backend/.*\.py$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/.*\.py$
+      - id: ruff-format
+        files: ^backend/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [
+          types-requests,
+          types-aiofiles,
+          pydantic,
+        ]
+        files: ^backend/.*\.py$
+        exclude: ^backend/tests/.*$
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args: ['-c', 'backend/pyproject.toml']
+        files: ^backend/.*\.py$
+        exclude: ^backend/tests/.*$
+
+  # JavaScript
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.0.0-alpha.0
+    hooks:
+      - id: eslint
+        files: ^frontend/.*\.(js|jsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.57.1
+          - eslint-config-prettier@10.1.8
+          - eslint-plugin-jsdoc@52.0.2
+          - eslint-plugin-no-secrets@2.2.1
+          - eslint-plugin-no-unsanitized@4.1.2
+          - eslint-plugin-prettier@5.5.3
+          - eslint-plugin-security@3.0.1
+          - eslint-plugin-sonarjs@3.0.4
+          - prettier@3.6.2
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^frontend/.*\.(js|jsx|json|md|html|css)$
+        additional_dependencies:
+          - prettier@3.6.2
+
+  # Rust (if Rust files exist)
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt
+        language: system
+        types: [rust]
+        pass_filenames: false
+        files: ^desktop-app/src-tauri/.*\.rs$
+
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+        files: ^desktop-app/src-tauri/.*\.rs$
+
+  # Security
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock\.json
+
+  # Documentation
+  - repo: https://github.com/pre-commit/mirrors-mdformat
+    rev: 0.7.17
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-black
+        files: \.(md|markdown)$
+
+# Configuration
+default_language_version:
+  python: python3.11
+  node: 18.19.0
+
+exclude: |
+  (?x)^(
+    .*\.min\.js|
+    .*\.min\.css|
+    node_modules/.*|
+    venv/.*|
+    \.venv/.*|
+    build/.*|
+    dist/.*|
+    .*\.egg-info/.*|
+    \S+\.log|
+    frontend/node_modules/.*|
+    backend/\.ruff_cache/.*|
+    backend/\.pytest_cache/.*|
+    backend/\.mypy_cache/.*|
+    desktop-app/target/.*|
+    desktop-app/node_modules/.*
+  )$

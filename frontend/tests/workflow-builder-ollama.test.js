@@ -3,8 +3,10 @@
  * Prevents regression of the [object Object] dropdown bug
  */
 
+import { describe, test, expect, beforeEach, vi } from 'vitest';
+
 // Mock fetch for testing
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe('WorkflowBuilder Ollama Integration', () => {
   let workflowBuilder;
@@ -17,13 +19,13 @@ describe('WorkflowBuilder Ollama Integration', () => {
     // Create mock select element
     mockSelectElement = {
       innerHTML: '',
-      querySelector: jest.fn(),
+      querySelector: vi.fn(),
     };
 
     // Mock console methods
-    global.console.log = jest.fn();
-    global.console.warn = jest.fn();
-    global.console.error = jest.fn();
+    global.console.log = vi.fn();
+    global.console.warn = vi.fn();
+    global.console.error = vi.fn();
   });
 
   describe('loadOllamaModels', () => {
@@ -100,8 +102,8 @@ describe('WorkflowBuilder Ollama Integration', () => {
       expect(mockSelectElement.innerHTML).not.toContain('object Object');
 
       // Verify console logs
-      expect(console.log).toHaveBeenCalledWith('Loading Ollama models...');
-      expect(console.log).toHaveBeenCalledWith('Loaded 2 Ollama models');
+      expect(console.log).toBeCalledWith('Loading Ollama models...');
+      expect(console.log).toBeCalledWith('Loaded 2 Ollama models');
     });
 
     test('should handle empty model list', async () => {
@@ -131,7 +133,7 @@ describe('WorkflowBuilder Ollama Integration', () => {
       await loadOllamaModels(mockSelectElement);
 
       expect(mockSelectElement.innerHTML).toBe('<option>No Ollama models found</option>');
-      expect(console.warn).toHaveBeenCalledWith('No Ollama models available');
+      expect(console.warn).toBeCalledWith('No Ollama models available');
     });
 
     test('regression test: using model object as string causes [object Object]', () => {
@@ -172,7 +174,7 @@ describe('WorkflowBuilder Ollama Integration', () => {
       await loadOllamaModels(mockSelectElement);
 
       expect(mockSelectElement.innerHTML).toBe('<option>Error loading models</option>');
-      expect(console.error).toHaveBeenCalledWith('Error loading Ollama models:', expect.any(Error));
+      expect(console.error).toBeCalledWith('Error loading Ollama models:', expect.any(Error));
     });
 
     test('should format model sizes correctly', () => {

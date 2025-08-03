@@ -25,7 +25,7 @@ test('debug why workflow execution is not working', async ({ page }) => {
 
   // Try calling runWorkflow directly
   console.log('\nCalling runWorkflow directly...');
-  
+
   const result = await page.evaluate(async () => {
     try {
       if (window.workflowBuilder && window.workflowBuilder.runWorkflow) {
@@ -39,25 +39,25 @@ test('debug why workflow execution is not working', async ({ page }) => {
       return `Error: ${error.message}`;
     }
   });
-  
+
   console.log('Result:', result);
 
   // Check the Run button
   const runButton = page.locator('button:has-text("Run")');
   const buttonExists = await runButton.count();
   console.log('\nRun button exists:', buttonExists > 0);
-  
+
   if (buttonExists > 0) {
     const onclick = await runButton.getAttribute('onclick');
     console.log('Button onclick:', onclick);
-    
+
     // Check button HTML
-    const buttonHTML = await runButton.evaluate(el => el.outerHTML);
+    const buttonHTML = await runButton.evaluate((el) => el.outerHTML);
     console.log('Button HTML:', buttonHTML);
   }
 
   // Monitor console for errors when clicking
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     if (msg.type() === 'error') {
       console.log('Console error:', msg.text());
     }
@@ -66,8 +66,8 @@ test('debug why workflow execution is not working', async ({ page }) => {
   // Try clicking the button
   console.log('\nClicking Run button...');
   await runButton.click();
-  
+
   await page.waitForTimeout(3000);
-  
+
   console.log('\nTest complete');
 });

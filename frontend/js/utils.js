@@ -86,9 +86,14 @@ export function processTextWithHighlighting(text) {
 
 // Escape HTML to prevent XSS
 export function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
 }
 
 // Sync model selections between dropdowns

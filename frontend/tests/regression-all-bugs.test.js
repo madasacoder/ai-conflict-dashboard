@@ -3,6 +3,8 @@
  * Maps to bugs documented in docs/BUGS.md
  */
 
+import { describe, test, expect } from 'vitest';
+
 describe('Frontend Bug Regression Tests', () => {
   describe('BUG-007: Duplicate Filenames', () => {
     test('should number duplicate filenames', () => {
@@ -169,6 +171,22 @@ describe('Memory and Performance Regression Tests', () => {
 
   describe('BUG-010: Timeout Handling', () => {
     test('should use AbortController for fetch timeout', async () => {
+      // Mock fetch to simulate a slow response
+      const originalFetch = global.fetch;
+      global.fetch = vi.fn().mockImplementation((url, options) => {
+        return new Promise((resolve, reject) => {
+          // Listen for abort signal
+          if (options?.signal) {
+            options.signal.addEventListener('abort', () => {
+              const error = new Error('The operation was aborted');
+              error.name = 'AbortError';
+              reject(error);
+            });
+          }
+          // Never resolve to simulate slow response
+        });
+      });
+
       const fetchWithTimeout = async (url, timeout = 5000) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -190,10 +208,13 @@ describe('Memory and Performance Regression Tests', () => {
       // Test that timeout error is thrown
       try {
         await fetchWithTimeout('https://httpstat.us/200?sleep=10000', 100);
-        fail('Should have timed out');
+        throw new Error('Should have timed out');
       } catch (error) {
         expect(error.message).toBe('Request timeout');
       }
+
+      // Restore original fetch
+      global.fetch = originalFetch;
     });
   });
 });

@@ -344,6 +344,7 @@ The visual feedback CSS was not properly defined for Drawflow connections and co
 ### Verification
 
 Visual feedback now works as evidenced by test screenshots showing:
+
 - Blue connection lines between nodes
 - Properly styled connection points (yellow outputs, white inputs)
 - Hover effects on connection points
@@ -545,7 +546,7 @@ The `showResults()` method only displayed an alert message instead of properly s
 
 3. Added CSS styles for:
    - `.execution-success` - Green border for successful nodes
-   - `.execution-error` - Red border for failed nodes  
+   - `.execution-error` - Red border for failed nodes
    - `.node-output-preview` - Preview box on nodes
 
 4. Output preview shows first 200 characters of LLM response directly on the node.
@@ -553,6 +554,7 @@ The `showResults()` method only displayed an alert message instead of properly s
 ### Test Results
 
 Created mock data test that validates:
+
 - Modal displays correctly ✅
 - Chinese text renders properly ✅
 - Visual states update ✅
@@ -583,13 +585,60 @@ Created mock data test that validates:
 
 ---
 
+## Bug #021: escapeHtml Function Not Actually Escaping HTML
+
+**Status**: 🐛 ACTIVE  
+**Severity**: High  
+**Component**: Frontend Utils / Security
+
+### Description
+
+The `escapeHtml` function in `js/utils.js` uses `textContent` which doesn't produce HTML entities. This causes it to not properly escape dangerous HTML characters like `<`, `>`, `&`, etc.
+
+### Root Cause
+
+The implementation uses:
+```javascript
+export function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+```
+
+This returns the original text, not HTML-escaped text.
+
+### Expected Behavior
+
+- `<script>` should become `&lt;script&gt;`
+- `&` should become `&amp;`
+- `"` should optionally become `&quot;`
+
+### Fix Required
+
+Replace with proper HTML escaping:
+```javascript
+export function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+```
+
+---
+
 ## Summary Statistics
 
-- **Total Bugs Found**: 20
+- **Total Bugs Found**: 21
 - **Fixed**: 20 ✅
-- **Pending**: 0
+- **Pending**: 1
 - **Critical**: 8
-- **High**: 8  
+- **High**: 9
 - **Medium**: 4
 
 ---
@@ -597,4 +646,4 @@ Created mock data test that validates:
 **Last Updated**: 2025-08-03  
 **Test Framework Version**: 1.0.0  
 **Workflow Builder Version**: Current with output display
-**Total Bugs Documented**: 20
+**Total Bugs Documented**: 21

@@ -89,7 +89,7 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ className }) => {
   }
 
   return (
-    <div className={`node-palette ${className || ''}`}>
+    <div className={`node-palette ${className || ''}`} data-testid="node-palette">
       {/* Header */}
       <div className="palette-header">
         <h3 className="palette-title">Node Library</h3>
@@ -114,6 +114,7 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ className }) => {
                   <div
                     key={nodeType.type}
                     className="palette-node"
+                    data-testid={`node-palette-${nodeType.type}`}
                     draggable
                     onDragStart={(e) => onDragStart(e, nodeType.type)}
                     style={{ '--node-color': nodeType.color } as React.CSSProperties}

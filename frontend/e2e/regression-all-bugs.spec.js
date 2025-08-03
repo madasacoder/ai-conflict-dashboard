@@ -31,10 +31,10 @@ test.describe('Regression Tests for All 20 Bugs', () => {
     // Get node positions
     const positions = await page.evaluate(() => {
       const nodes = document.querySelectorAll('.drawflow-node');
-      return Array.from(nodes).map(node => ({
+      return Array.from(nodes).map((node) => ({
         id: node.id,
         left: node.style.left,
-        top: node.style.top
+        top: node.style.top,
       }));
     });
 
@@ -47,14 +47,14 @@ test.describe('Regression Tests for All 20 Bugs', () => {
   test('Bug #002: Config Panel Blocking', async () => {
     // Create node and open config
     const nodeId = await framework.createInputNode({ type: 'text' });
-    
+
     // Click node to open config
     await page.locator(`#node-${nodeId}`).click();
     await page.waitForTimeout(500);
 
     // Close config panel
     await framework.closeConfigPanel();
-    
+
     // Verify we can click another node
     const node2Id = await framework.createAINode({ model: 'ollama' });
     await expect(page.locator(`#node-${node2Id}`)).toBeVisible();
@@ -64,7 +64,7 @@ test.describe('Regression Tests for All 20 Bugs', () => {
   test('Bug #003: Ollama Checkbox Missing', async () => {
     // Create LLM node
     await framework.createAINode({ model: 'ollama' });
-    
+
     // Click to open config
     await page.locator('.drawflow-node.llm').first().click();
     await page.waitForSelector('#configPanel.open');
@@ -86,10 +86,8 @@ test.describe('Regression Tests for All 20 Bugs', () => {
     // Verify connection exists
     const connectionExists = await page.evaluate(() => {
       const connections = window.workflowBuilder.editor.export().drawflow.Home.data;
-      return Object.values(connections).some(node => 
-        Object.values(node.outputs).some(output => 
-          output.connections.length > 0
-        )
+      return Object.values(connections).some((node) =>
+        Object.values(node.outputs).some((output) => output.connections.length > 0)
       );
     });
 
@@ -98,31 +96,31 @@ test.describe('Regression Tests for All 20 Bugs', () => {
 
   test('Bug #006: Ollama Workflow Execution', async () => {
     // Create simple workflow
-    const inputId = await framework.createInputNode({ 
-      type: 'text', 
-      content: 'Test' 
+    const inputId = await framework.createInputNode({
+      type: 'text',
+      content: 'Test',
     });
-    const llmId = await framework.createAINode({ 
+    const llmId = await framework.createAINode({
       model: 'ollama',
-      prompt: '[OLLAMA:gemma3:4b] Echo: {input}'
+      prompt: '[OLLAMA:gemma3:4b] Echo: {input}',
     });
     await framework.connectNodes(inputId, llmId);
 
     // Mock successful execution
     await page.evaluate(() => {
-      window.workflowBuilder.showResults = function(results) {
+      window.workflowBuilder.showResults = function (results) {
         window.lastWorkflowResults = results;
       };
     });
 
     // Click run
     await page.locator('button:has-text("Run")').click();
-    
+
     // Verify execution was attempted
     const executionAttempted = await page.evaluate(() => {
       return window.lastWorkflowResults !== undefined;
     });
-    
+
     expect(executionAttempted).toBe(true);
   });
 
@@ -132,7 +130,7 @@ test.describe('Regression Tests for All 20 Bugs', () => {
       'div[data-node-type="input"].node-item',
       'div[data-node-type="llm"].node-item',
       'div[data-node-type="compare"].node-item',
-      'div[data-node-type="output"].node-item'
+      'div[data-node-type="output"].node-item',
     ];
 
     for (const selector of selectors) {
@@ -143,7 +141,7 @@ test.describe('Regression Tests for All 20 Bugs', () => {
   test('Bug #009: Config Panel Animation', async () => {
     // Create node and test panel animation
     const nodeId = await framework.createInputNode({ type: 'text' });
-    
+
     // Open config
     await page.locator(`#node-${nodeId}`).click();
     await page.waitForSelector('#configPanel.open', { timeout: 1000 });
@@ -170,7 +168,7 @@ test.describe('Regression Tests for All 20 Bugs', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ status: 'success', results: {} })
+        body: JSON.stringify({ status: 'success', results: {} }),
       });
     });
 
@@ -190,12 +188,12 @@ test.describe('Regression Tests for All 20 Bugs', () => {
     const connectionPointStyles = await page.evaluate(() => {
       const output = document.querySelector('.drawflow .output');
       const input = document.querySelector('.drawflow .input');
-      
+
       if (!output || !input) return null;
-      
+
       return {
         outputCursor: window.getComputedStyle(output).cursor,
-        inputCursor: window.getComputedStyle(input).cursor
+        inputCursor: window.getComputedStyle(input).cursor,
       };
     });
 
@@ -238,19 +236,23 @@ test.describe('Regression Tests for All 20 Bugs', () => {
       const mockResults = {
         status: 'success',
         results: {
-          '1': { type: 'input', status: 'success', result: 'Test' },
-          '2': { type: 'llm', status: 'success', result: { 
-            ollama: { response: 'Test response' } 
-          }}
-        }
+          1: { type: 'input', status: 'success', result: 'Test' },
+          2: {
+            type: 'llm',
+            status: 'success',
+            result: {
+              ollama: { response: 'Test response' },
+            },
+          },
+        },
       };
-      
+
       window.workflowBuilder.showResults(mockResults);
     });
 
     // Verify modal appears
     await expect(page.locator('#resultsModal')).toBeVisible({ timeout: 5000 });
-    
+
     // Verify content is displayed
     const modalText = await page.locator('#resultsModal').textContent();
     expect(modalText).toContain('Test response');
@@ -258,16 +260,16 @@ test.describe('Regression Tests for All 20 Bugs', () => {
 
   test('Full Pipeline Smoke Test', async () => {
     // Create complete workflow
-    const inputId = await framework.createInputNode({ 
-      type: 'text', 
-      content: 'Hello world' 
+    const inputId = await framework.createInputNode({
+      type: 'text',
+      content: 'Hello world',
     });
-    const llmId = await framework.createAINode({ 
+    const llmId = await framework.createAINode({
       model: 'ollama',
-      prompt: 'Translate to Chinese: {input}'
+      prompt: 'Translate to Chinese: {input}',
     });
-    const outputId = await framework.createOutputNode({ 
-      format: 'text' 
+    const outputId = await framework.createOutputNode({
+      format: 'text',
     });
 
     // Connect nodes
@@ -286,8 +288,8 @@ test.describe('Regression Tests for All 20 Bugs', () => {
     const connections = await page.evaluate(() => {
       const data = window.workflowBuilder.editor.export().drawflow.Home.data;
       let connectionCount = 0;
-      Object.values(data).forEach(node => {
-        Object.values(node.outputs).forEach(output => {
+      Object.values(data).forEach((node) => {
+        Object.values(node.outputs).forEach((output) => {
           connectionCount += output.connections.length;
         });
       });
@@ -312,13 +314,13 @@ test.describe('Critical Bug Regression Tests', () => {
 
     // Check none are at (0,0)
     const positions = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('.drawflow-node')).map(node => ({
+      return Array.from(document.querySelectorAll('.drawflow-node')).map((node) => ({
         x: parseInt(node.style.left),
-        y: parseInt(node.style.top)
+        y: parseInt(node.style.top),
       }));
     });
 
-    positions.forEach(pos => {
+    positions.forEach((pos) => {
       expect(pos.x).toBeGreaterThan(0);
       expect(pos.y).toBeGreaterThan(0);
     });
@@ -350,7 +352,7 @@ test.describe('Critical Bug Regression Tests', () => {
 
     // Check both inline and config panel
     await framework.createAINode({ model: 'ollama' });
-    
+
     // Inline checkbox
     const inlineOllama = page.locator('.drawflow-node.llm input[value="ollama"]');
     await expect(inlineOllama).toBeVisible();
@@ -358,7 +360,7 @@ test.describe('Critical Bug Regression Tests', () => {
     // Config panel checkbox
     await page.locator('.drawflow-node.llm').first().click();
     await page.waitForSelector('#configPanel.open');
-    
+
     const configOllama = page.locator('#configPanel input[value="ollama"]');
     await expect(configOllama).toBeVisible();
 

@@ -11,6 +11,7 @@
 ## 🐛 Bugs Fixed (19 Total)
 
 ### Critical Bugs Fixed ✅
+
 1. **Node Stacking** - Nodes now properly space out
 2. **Config Panel Blocking** - Panel closes correctly
 3. **Ollama UI Support** - Added Ollama checkbox
@@ -22,15 +23,18 @@
 9. **Default Model Selection** - No model pre-selected
 
 ### Medium Priority Fixed ✅
+
 10. **Port Configuration** - Tests use correct ports
 11. **UI Element Selectors** - All selectors corrected
 12. **Config Panel Timing** - Animation issues resolved
 13. **Navigation Issues** - Fixed close button behavior
 
 ### Workarounds Applied ⚠️
+
 14. **Ollama Model Selection** - UI workaround in place
 
 ### Remaining Issues 🔍
+
 15. **Connection Visual Feedback** - No drag feedback
 16. **Execution Results Display** - Results not shown in UI
 17. **Backend Connection Stability** - Intermittent issues
@@ -40,6 +44,7 @@
 ## 🧪 Test Framework Features
 
 ### ✅ Implemented
+
 - Node creation (Input, LLM, Compare, Output)
 - Node positioning and spacing
 - Programmatic connections via Drawflow API
@@ -50,6 +55,7 @@
 - Result extraction attempts
 
 ### 📝 Test Scenarios
+
 1. **Simple Ollama Workflow** - Basic translation test
 2. **Full Translation Pipeline** - Multi-language chain
 3. **Node Manipulation** - Add/remove/connect nodes
@@ -60,6 +66,7 @@
 ## 🚀 How to Run Tests
 
 ### Prerequisites
+
 ```bash
 # 1. Start Ollama
 ollama serve
@@ -75,6 +82,7 @@ python3 -m http.server 3000
 ```
 
 ### Run Tests
+
 ```bash
 # Run all E2E tests
 npm run test:e2e

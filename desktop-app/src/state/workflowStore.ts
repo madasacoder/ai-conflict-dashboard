@@ -111,6 +111,7 @@ interface WorkflowState {
   // Node management
   addNode: (type: NodeType, position: { x: number; y: number }) => void
   updateNodeData: (nodeId: string, data: Partial<CustomNodeData>) => void
+  updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void
   removeNode: (nodeId: string) => void
   duplicateNode: (nodeId: string) => void
   
@@ -283,6 +284,18 @@ export const useWorkflowStore = create<WorkflowState>()(
         const newNodes = state.nodes.map(node =>
           node.id === nodeId
             ? { ...node, data: { ...node.data, ...sanitizedData, isConfigured: true } }
+            : node
+        )
+        LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
+        return { nodes: newNodes }
+      })
+    },
+    
+    updateNodePosition: (nodeId: string, position: { x: number; y: number }) => {
+      set(state => {
+        const newNodes = state.nodes.map(node =>
+          node.id === nodeId
+            ? { ...node, position }
             : node
         )
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
@@ -661,3 +674,8 @@ export const useWorkflowEdges = () => useWorkflowStore(state => state.edges)
 export const useSelectedNode = () => useWorkflowStore(state => state.selectedNode)
 export const useCurrentWorkflow = () => useWorkflowStore(state => state.workflow)
 export const useIsExecuting = () => useWorkflowStore(state => state.isExecuting)
+
+// Expose store to window for testing
+if (typeof window !== 'undefined') {
+  (window as any).workflowStore = useWorkflowStore
+}

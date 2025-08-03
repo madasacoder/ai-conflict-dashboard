@@ -66,43 +66,45 @@ test.describe('Simple Ollama Workflow', () => {
 
     // Step 6: Execute workflow
     console.log('▶️ Executing workflow...');
-    
+
     // Enable console logging
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       console.log(`Browser console [${msg.type()}]: ${msg.text()}`);
     });
-    
+
     // Click the Run button
     const runButton = page.locator('button:has-text("Run")');
     await expect(runButton).toBeVisible();
     await runButton.click();
-    
+
     console.log('⏳ Waiting for execution...\n');
-    
+
     // Wait for some indication of execution
     await page.waitForTimeout(5000);
-    
+
     // Check for any errors
     const errorElements = await page.locator('.error, .alert-danger').count();
     if (errorElements > 0) {
       console.log('❌ Errors detected during execution');
       const errors = await page.locator('.error, .alert-danger').allTextContents();
-      errors.forEach(err => console.log(`   Error: ${err}`));
+      errors.forEach((err) => console.log(`   Error: ${err}`));
     }
 
     // Step 7: Check results
     console.log('📊 Checking for results...\n');
-    
+
     // Click on the output node to see results
     const outputNode = page.locator('.drawflow-node.output').first();
     await outputNode.click();
     await page.waitForTimeout(1000);
 
     // Look for output in config panel
-    const outputText = await page.locator('#configPanel textarea, #configPanel .output').first()
+    const outputText = await page
+      .locator('#configPanel textarea, #configPanel .output')
+      .first()
       .textContent()
       .catch(() => 'No output found');
-    
+
     if (outputText && outputText !== 'No output found') {
       console.log('🎯 OUTPUT FOUND:');
       console.log('─'.repeat(50));
@@ -124,7 +126,7 @@ test.describe('Simple Ollama Workflow', () => {
     // Step 9: Verify workflow structure
     const nodeCount = await page.locator('.drawflow-node').count();
     expect(nodeCount).toBe(3);
-    
+
     const connectionCount = await page.locator('.connection, .drawflow-connection').count();
     expect(connectionCount).toBeGreaterThanOrEqual(2);
 

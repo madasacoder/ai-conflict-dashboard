@@ -141,8 +141,55 @@ ai-conflict-dashboard/
 1. Check existing patterns in codebase
 2. Write tests first (TDD approach)
 3. Implement with type hints and docstrings
-4. Run Black, Ruff, and tests
-5. Update documentation
+4. Run quality checks: make lint format test
+5. Use pre-commit hooks (auto-installed)
+6. Update documentation
+```
+
+### **🛠️ Toolchain Requirements (MANDATORY)**
+
+All code changes MUST pass these automated checks:
+
+#### **Python Backend**
+```bash
+# Before committing Python code:
+cd backend
+./venv/bin/ruff check . --fix    # Auto-fix linting issues
+./venv/bin/black .               # Format code
+./venv/bin/mypy .                # Type checking
+./venv/bin/bandit -r .           # Security scan
+./venv/bin/pytest               # Run tests with 90%+ coverage
+```
+
+#### **JavaScript Frontend**
+```bash
+# Before committing JavaScript code:
+cd frontend
+npm run lint:fix                 # Fix ESLint issues
+npm run format                   # Format with Prettier
+npm run security                 # Security scan
+npm test                         # Unit tests
+npm run test:e2e                 # E2E tests
+```
+
+#### **Rust Desktop App**
+```bash
+# Before committing Rust code:
+cd desktop-app/src-tauri
+cargo fmt                        # Format code
+cargo clippy -- -D warnings     # Strict linting
+cargo audit                      # Security audit
+cargo test                       # Run tests
+```
+
+#### **Quick Commands (All Components)**
+```bash
+# From project root:
+make quality                     # Run all quality checks
+make format                      # Format all code
+make lint                        # Lint all code
+make test                        # Run all tests
+make security                    # Run all security scans
 ```
 
 ### AI Code Checklist:
@@ -154,6 +201,9 @@ ai-conflict-dashboard/
 - ✅ Circuit breaker for external calls
 - ✅ 90%+ test coverage
 - ✅ Error handling with root cause fixes
+- ✅ **TOOLCHAIN COMPLIANCE**: All code must pass quality checks
+- ✅ **PRE-COMMIT HOOKS**: Run automatically on commit
+- ✅ **FORMAT CHECK**: Use `make format` before committing
 
 ---
 
@@ -164,6 +214,13 @@ ai-conflict-dashboard/
 - Direct console.log or print statements (use structured logging)
 - Hardcoding configuration values
 - Exposing API keys in logs
+- **TOOLCHAIN VIOLATIONS:**
+  - ❌ Committing without running `make quality`
+  - ❌ Bypassing pre-commit hooks with `--no-verify`
+  - ❌ Using deprecated type annotations (`typing.List` vs `list`)
+  - ❌ Ignoring linting errors (Ruff, ESLint, Clippy)
+  - ❌ Not fixing security vulnerabilities (Bandit, npm audit)
+  - ❌ Unsafe DOM manipulation (XSS vulnerabilities)
 
 ---
 
@@ -179,6 +236,9 @@ ai-conflict-dashboard/
 | Documentation    | Google docstrings, Markdown, inline comments          |
 | Logging          | structlog with JSON output, request correlation       |
 | Error Handling   | Circuit breakers, graceful degradation                |
+| **Toolchain**    | **Ruff, Black, MyPy, Bandit, ESLint, Prettier, Clippy** |
+| **Automation**   | **Pre-commit hooks, Makefile, CI/CD integration**     |
+| **Quality Gates**| **90% Python coverage, 85% JS coverage, 0 security issues** |
 
 ### Key Metrics Achieved
 - Backend Test Coverage: 92.23% ✅

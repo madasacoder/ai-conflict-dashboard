@@ -190,7 +190,11 @@ export class WorkflowTestFramework {
       }
 
       // Check if this is an Ollama model
-      if (config.model === 'ollama' || config.model.includes('ollama:') || config.model === 'gemma3:4b') {
+      if (
+        config.model === 'ollama' ||
+        config.model.includes('ollama:') ||
+        config.model === 'gemma3:4b'
+      ) {
         // For Ollama models, look for the Ollama checkbox
         const ollamaCheckbox = this.page.locator(
           '#configPanel input[type="checkbox"][value="ollama"]'

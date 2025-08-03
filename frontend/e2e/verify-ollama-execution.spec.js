@@ -13,22 +13,22 @@ test('verify Ollama actually executes and returns output', async ({ page }) => {
   await framework.initialize();
 
   // Enable all console logging
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     console.log(`[${msg.type()}] ${msg.text()}`);
   });
 
   // Monitor network for API calls
-  page.on('request', request => {
+  page.on('request', (request) => {
     if (request.url().includes('/api/workflows/execute')) {
       console.log('🌐 API Request:', request.method(), request.url());
       console.log('📤 Request body:', request.postData());
     }
   });
 
-  page.on('response', response => {
+  page.on('response', (response) => {
     if (response.url().includes('/api/workflows/execute')) {
       console.log('🌐 API Response:', response.status(), response.statusText());
-      response.text().then(body => {
+      response.text().then((body) => {
         console.log('📥 Response body:', body);
       });
     }
@@ -37,7 +37,7 @@ test('verify Ollama actually executes and returns output', async ({ page }) => {
   console.log('\n🎯 CREATING MINIMAL WORKFLOW FOR TESTING\n');
 
   // Simple test input
-  const testInput = "Hello world";
+  const testInput = 'Hello world';
   console.log('📝 INPUT TEXT:', testInput);
 
   // Create just 2 nodes - input and LLM
@@ -56,7 +56,7 @@ test('verify Ollama actually executes and returns output', async ({ page }) => {
 
   // Connect them
   await framework.connectNodes(inputNodeId, llmNodeId);
-  
+
   console.log('\n🔗 Workflow created: Input -> Ollama LLM\n');
 
   // Take screenshot before execution
@@ -67,10 +67,10 @@ test('verify Ollama actually executes and returns output', async ({ page }) => {
 
   // Execute workflow
   console.log('▶️ CLICKING RUN BUTTON...\n');
-  
+
   const runButton = page.locator('button:has-text("Run")');
   await runButton.click();
-  
+
   // Wait longer for Ollama to process
   console.log('⏳ Waiting for Ollama to process (30 seconds)...\n');
   await page.waitForTimeout(30000);
@@ -104,7 +104,7 @@ test('verify Ollama actually executes and returns output', async ({ page }) => {
   // Method 3: Check for any output elements
   const outputElements = await page.locator('.node-output, .output-content, .result').all();
   console.log(`\nFound ${outputElements.length} potential output elements`);
-  
+
   for (let i = 0; i < outputElements.length; i++) {
     const text = await outputElements[i].textContent();
     if (text && text.trim()) {
@@ -130,7 +130,7 @@ test('verify Ollama actually executes and returns output', async ({ page }) => {
 
   // Final check - did anything actually happen?
   const hasAnyOutput = outputElements.length > 0 || configContent?.includes('Hola');
-  
+
   if (!hasAnyOutput) {
     console.log('\n❌ NO OUTPUT FOUND - Workflow execution may not be working');
     console.log('\nPossible issues:');

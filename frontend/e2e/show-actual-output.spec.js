@@ -13,9 +13,9 @@ test('show actual Chinese translation output', async ({ page }) => {
   await framework.initialize();
 
   // Monitor everything
-  page.on('console', msg => console.log(`[Console] ${msg.text()}`));
-  
-  page.on('request', request => {
+  page.on('console', (msg) => console.log(`[Console] ${msg.text()}`));
+
+  page.on('request', (request) => {
     if (request.url().includes('/api/')) {
       console.log(`\n📤 API Request: ${request.method()} ${request.url()}`);
       if (request.method() === 'POST') {
@@ -24,7 +24,7 @@ test('show actual Chinese translation output', async ({ page }) => {
     }
   });
 
-  page.on('response', async response => {
+  page.on('response', async (response) => {
     if (response.url().includes('/api/')) {
       console.log(`\n📥 API Response: ${response.status()} ${response.url()}`);
       try {
@@ -35,9 +35,9 @@ test('show actual Chinese translation output', async ({ page }) => {
   });
 
   // INPUT TEXT
-  const INPUT_TEXT = "Hello, how are you?";
-  const PROMPT = "Translate to Chinese: {input}";
-  
+  const INPUT_TEXT = 'Hello, how are you?';
+  const PROMPT = 'Translate to Chinese: {input}';
+
   console.log('\n' + '═'.repeat(70));
   console.log('WORKFLOW TEST: English to Chinese Translation');
   console.log('═'.repeat(70));
@@ -48,7 +48,7 @@ test('show actual Chinese translation output', async ({ page }) => {
 
   // Create workflow
   console.log('Creating workflow...\n');
-  
+
   const inputNodeId = await framework.createInputNode({
     type: 'text',
     content: INPUT_TEXT,
@@ -63,20 +63,20 @@ test('show actual Chinese translation output', async ({ page }) => {
   });
 
   await framework.connectNodes(inputNodeId, llmNodeId);
-  
+
   console.log('✅ Workflow created and connected\n');
 
   // Execute
   console.log('Executing workflow...');
   await page.locator('button:has-text("Run")').click();
-  
+
   // Wait for response
   console.log('Waiting for Ollama response (60 seconds max)...\n');
-  
+
   let responseReceived = false;
   try {
     await page.waitForResponse(
-      response => {
+      (response) => {
         if (response.url().includes('/api/workflows/execute')) {
           responseReceived = true;
           return true;
@@ -101,11 +101,17 @@ test('show actual Chinese translation output', async ({ page }) => {
   const nodes = await page.locator('.drawflow-node').all();
   for (let i = 0; i < nodes.length; i++) {
     const nodeClass = await nodes[i].getAttribute('class');
-    const nodeType = nodeClass.includes('llm') ? 'LLM' : nodeClass.includes('input') ? 'Input' : 'Unknown';
+    const nodeType = nodeClass.includes('llm')
+      ? 'LLM'
+      : nodeClass.includes('input')
+        ? 'Input'
+        : 'Unknown';
     console.log(`Node ${i + 1} (${nodeType}): ${nodeClass}`);
-    
+
     // Check for any status indicators
-    const statusElements = await nodes[i].locator('[class*="status"], [class*="result"], [class*="output"]').all();
+    const statusElements = await nodes[i]
+      .locator('[class*="status"], [class*="result"], [class*="output"]')
+      .all();
     for (const status of statusElements) {
       const text = await status.textContent();
       if (text) console.log(`  Status: ${text}`);
@@ -125,11 +131,11 @@ test('show actual Chinese translation output', async ({ page }) => {
   const pageContent = await page.content();
   const chineseRegex = /[\u4e00-\u9fa5]+/g;
   const chineseMatches = pageContent.match(chineseRegex);
-  
+
   if (chineseMatches && chineseMatches.length > 0) {
     console.log('\n✅ FOUND CHINESE TEXT:');
     console.log('─'.repeat(70));
-    chineseMatches.forEach(match => {
+    chineseMatches.forEach((match) => {
       console.log(match);
     });
     console.log('─'.repeat(70));
@@ -140,7 +146,7 @@ test('show actual Chinese translation output', async ({ page }) => {
   // 4. Take screenshot
   await page.screenshot({
     path: 'test-results/workflow-output-check.png',
-    fullPage: true
+    fullPage: true,
   });
 
   // Final summary

@@ -40,6 +40,105 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// Mock DataTransfer for drag-and-drop tests
+class DataTransferMock {
+  data: Record<string, string> = {}
+  effectAllowed: string = 'all'
+  dropEffect: string = 'none'
+  files: File[] = []
+  items: DataTransferItem[] = []
+  types: string[] = []
+
+  setData(format: string, data: string): void {
+    this.data[format] = data
+    if (!this.types.includes(format)) {
+      this.types.push(format)
+    }
+  }
+
+  getData(format: string): string {
+    return this.data[format] || ''
+  }
+
+  clearData(format?: string): void {
+    if (format) {
+      delete this.data[format]
+      this.types = this.types.filter(t => t !== format)
+    } else {
+      this.data = {}
+      this.types = []
+    }
+  }
+
+  setDragImage(image: Element, x: number, y: number): void {
+    // Mock implementation
+  }
+}
+
+global.DataTransfer = DataTransferMock as any
+
+// Mock DragEvent
+global.DragEvent = class DragEvent extends Event {
+  dataTransfer: DataTransfer
+
+  constructor(type: string, eventInitDict?: DragEventInit) {
+    super(type, eventInitDict)
+    this.dataTransfer = new DataTransferMock() as any
+  }
+} as any
+
+// Mock React Flow - inline to avoid path issues
+vi.mock('reactflow', () => {
+  const React = require('react')
+  
+  const MockReactFlow = React.forwardRef((props, ref) => {
+    return React.createElement('div', {
+      className: 'react-flow__renderer',
+      'data-testid': 'react-flow-wrapper'
+    })
+  })
+  
+  const MockHandle = (props) => {
+    return React.createElement('div', {
+      className: `react-flow__handle react-flow__handle-${props.type}`,
+      'data-testid': `handle-${props.type}`
+    })
+  }
+  
+  return {
+    default: MockReactFlow,
+    ReactFlowProvider: ({ children }) => React.createElement('div', {}, children),
+    Background: () => React.createElement('div', { className: 'react-flow__background' }),
+    Controls: () => React.createElement('div', { className: 'react-flow__controls' }),
+    MiniMap: () => React.createElement('div', { className: 'react-flow__minimap' }),
+    Handle: MockHandle,
+    useReactFlow: () => ({
+      fitView: vi.fn(),
+      zoomIn: vi.fn(),
+      zoomOut: vi.fn(),
+      getNodes: vi.fn(() => []),
+      getEdges: vi.fn(() => [])
+    }),
+    applyNodeChanges: vi.fn((changes, nodes) => nodes),
+    applyEdgeChanges: vi.fn((changes, edges) => edges),
+    addEdge: vi.fn((connection, edges) => [...edges, connection]),
+    Position: {
+      Top: 'top',
+      Right: 'right',
+      Bottom: 'bottom',
+      Left: 'left'
+    },
+    ConnectionMode: {
+      Strict: 'strict',
+      Loose: 'loose'
+    },
+    BackgroundVariant: {
+      Lines: 'lines',
+      Dots: 'dots'
+    }
+  }
+})
+
 // Add custom matchers
 expect.extend({
   toBeValidNode(received: any) {

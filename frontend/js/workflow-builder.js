@@ -127,10 +127,10 @@ class WorkflowBuilder {
       if (targetNode) {
         targetNode.classList.remove('connection-target');
       }
-      
+
       // Add success feedback
       this.showConnectionFeedback(connection.output_id, connection.input_id, 'success');
-      
+
       logger.workflow('connection_created', {
         connection_id: connection.id,
         source_node: connection.output_id,
@@ -150,7 +150,9 @@ class WorkflowBuilder {
 
     this.editor.on('connectionSelected', (connection) => {
       // Highlight selected connection
-      const svgConnection = document.querySelector(`svg .connection.node_in_node-${connection.input_id}.node_out_node-${connection.output_id}`);
+      const svgConnection = document.querySelector(
+        `svg .connection.node_in_node-${connection.input_id}.node_out_node-${connection.output_id}`
+      );
       if (svgConnection) {
         svgConnection.classList.add('selected');
       }
@@ -158,7 +160,7 @@ class WorkflowBuilder {
 
     this.editor.on('connectionUnselected', () => {
       // Remove highlight from all connections
-      document.querySelectorAll('svg .connection.selected').forEach(conn => {
+      document.querySelectorAll('svg .connection.selected').forEach((conn) => {
         conn.classList.remove('selected');
       });
     });
@@ -167,7 +169,10 @@ class WorkflowBuilder {
     this.editor.on('mouseMove', (position) => {
       // Check if we're hovering over an input/output
       const element = document.elementFromPoint(position.x, position.y);
-      if (element && (element.classList.contains('input') || element.classList.contains('output'))) {
+      if (
+        element &&
+        (element.classList.contains('input') || element.classList.contains('output'))
+      ) {
         element.style.cursor = 'crosshair';
       }
     });
@@ -191,7 +196,7 @@ class WorkflowBuilder {
 
     // Drag and drop from palette
     this.setupDragAndDrop();
-    
+
     // Setup connection point hover effects
     this.setupConnectionPointEffects();
   }
@@ -201,16 +206,17 @@ class WorkflowBuilder {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) { // Element node
+          if (node.nodeType === 1) {
+            // Element node
             // Find all input/output elements
             const connectionPoints = node.querySelectorAll('.input, .output');
-            connectionPoints.forEach(point => {
+            connectionPoints.forEach((point) => {
               // Add hover effect
               point.addEventListener('mouseenter', () => {
                 point.style.transform = 'scale(1.3)';
                 point.style.transition = 'transform 0.2s ease';
               });
-              
+
               point.addEventListener('mouseleave', () => {
                 point.style.transform = 'scale(1)';
               });
@@ -225,7 +231,7 @@ class WorkflowBuilder {
     if (drawflowContainer) {
       observer.observe(drawflowContainer, {
         childList: true,
-        subtree: true
+        subtree: true,
       });
     }
   }
@@ -729,7 +735,7 @@ class WorkflowBuilder {
   // Run workflow
   async runWorkflow() {
     const exportData = this.editor.export();
-    
+
     console.log('🚀 Running workflow with data:', exportData);
 
     // Validate workflow
@@ -761,30 +767,33 @@ class WorkflowBuilder {
       };
 
       // Execute workflow
-      console.log('📤 Sending workflow to backend:', { workflow: workflowData, api_keys: Object.keys(apiKeys) });
-      
+      console.log('📤 Sending workflow to backend:', {
+        workflow: workflowData,
+        api_keys: Object.keys(apiKeys),
+      });
+
       try {
         const response = await fetch('http://localhost:8000/api/workflows/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workflow: workflowData,
-          api_keys: apiKeys,
-        }),
-      });
-      
-      console.log('📥 Response status:', response.status);
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            workflow: workflowData,
+            api_keys: apiKeys,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Execution failed: ${response.statusText}`);
-      }
+        console.log('📥 Response status:', response.status);
 
-      const results = await response.json();
+        if (!response.ok) {
+          throw new Error(`Execution failed: ${response.statusText}`);
+        }
 
-      // Display results
-      this.showResults(results);
+        const results = await response.json();
+
+        // Display results
+        this.showResults(results);
       } catch (error) {
         console.error('Fetch error:', error);
         throw error;
@@ -897,22 +906,25 @@ class WorkflowBuilder {
             // Add success/error class
             if (nodeResult.status === 'success') {
               nodeElement.classList.add('execution-success');
-              
+
               // For LLM nodes, show the output
               if (nodeResult.type === 'llm' && nodeResult.result) {
                 // Get the first model's response
                 const modelResponses = nodeResult.result;
                 const firstModel = Object.keys(modelResponses)[0];
                 const response = modelResponses[firstModel];
-                
+
                 if (response && typeof response === 'object' && response.response) {
                   // Add output preview to node
                   const contentDiv = nodeElement.querySelector('.content');
                   if (contentDiv) {
                     const outputDiv = document.createElement('div');
                     outputDiv.className = 'node-output-preview';
-                    outputDiv.style.cssText = 'margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px; max-height: 100px; overflow-y: auto;';
-                    outputDiv.textContent = response.response.substring(0, 200) + (response.response.length > 200 ? '...' : '');
+                    outputDiv.style.cssText =
+                      'margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px; max-height: 100px; overflow-y: auto;';
+                    outputDiv.textContent =
+                      response.response.substring(0, 200) +
+                      (response.response.length > 200 ? '...' : '');
                     contentDiv.appendChild(outputDiv);
                   }
                 }
@@ -966,23 +978,23 @@ class WorkflowBuilder {
 
   formatResultsHtml(results) {
     let html = '<div class="results-container">';
-    
+
     if (results.status === 'success' && results.results) {
       html += '<h6>Node Execution Results:</h6>';
-      
+
       Object.entries(results.results).forEach(([nodeId, nodeResult]) => {
         html += `<div class="node-result mb-3 p-3 border rounded">`;
         html += `<h6>Node ${nodeId} (${nodeResult.type})</h6>`;
-        
+
         if (nodeResult.status === 'success') {
           html += '<span class="badge bg-success">Success</span>';
-          
+
           if (nodeResult.type === 'llm' && nodeResult.result) {
             // Show LLM responses
             Object.entries(nodeResult.result).forEach(([model, response]) => {
               html += `<div class="model-response mt-2">`;
               html += `<strong>${model}:</strong><br>`;
-              
+
               if (response.error) {
                 html += `<span class="text-danger">Error: ${response.error}</span>`;
               } else if (response.response) {
@@ -992,7 +1004,7 @@ class WorkflowBuilder {
               } else {
                 html += `<pre class="bg-light p-2">${JSON.stringify(response, null, 2)}</pre>`;
               }
-              
+
               html += '</div>';
             });
           } else if (nodeResult.result) {
@@ -1002,13 +1014,13 @@ class WorkflowBuilder {
           html += '<span class="badge bg-danger">Error</span>';
           html += `<p class="text-danger mt-2">${nodeResult.error || 'Unknown error'}</p>`;
         }
-        
+
         html += '</div>';
       });
     } else {
       html += '<p class="text-danger">No results available</p>';
     }
-    
+
     html += '</div>';
     return html;
   }
@@ -1038,7 +1050,7 @@ class WorkflowBuilder {
     // Provide visual feedback for connection creation
     const sourceNode = document.getElementById(`node-${sourceId}`);
     const targetNode = document.getElementById(`node-${targetId}`);
-    
+
     if (type === 'success') {
       // Flash green on both nodes
       if (sourceNode) {

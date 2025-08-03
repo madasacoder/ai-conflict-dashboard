@@ -248,7 +248,7 @@ class TestOllamaErrorInvestigation:
                 findings["models_available"] = self.test_ollama_models_available()
             else:
                 findings["service_status"] = "not_running"
-        except:
+        except Exception:
             findings["service_status"] = "error"
 
         findings["error_patterns"] = self.test_ollama_error_patterns_in_logs()

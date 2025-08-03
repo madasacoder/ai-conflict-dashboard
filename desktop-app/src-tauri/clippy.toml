@@ -1,0 +1,26 @@
+# Clippy configuration
+# https://rust-lang.github.io/rust-clippy/
+
+# Maximum cognitive complexity allowed
+cognitive-complexity-threshold = 30
+
+# Maximum number of lines in a function
+too-many-lines-threshold = 100
+
+# Maximum number of arguments in a function
+too-many-arguments-threshold = 7
+
+# Type complexity threshold
+type-complexity-threshold = 250
+
+# Maximum nesting level
+excessive-nesting-threshold = 5
+
+# Disallowed names
+disallowed-names = ["foo", "bar", "baz", "quux"]
+
+# Documentation
+missing-docs-in-crate-items = true
+
+# MSRV (Minimum Supported Rust Version)
+msrv = "1.70.0"

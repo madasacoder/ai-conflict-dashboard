@@ -96,7 +96,7 @@ class TestExtremeParallel:
 
         # Count how many show circuit breaker open
         circuit_open_count = sum(
-            1 for _, error in results if "circuit" in error.lower()
+            1 for _, error in results if error and "circuit" in error.lower()
         )
 
         # After 5 failures, circuit should open, so most should show circuit open

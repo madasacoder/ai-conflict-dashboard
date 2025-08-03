@@ -13,7 +13,7 @@ test('should execute a basic workflow', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   // Enable console logging
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     if (msg.type() === 'error') {
       console.log(`❌ Browser error: ${msg.text()}`);
     } else {
@@ -22,7 +22,7 @@ test('should execute a basic workflow', async ({ page }) => {
   });
 
   // Monitor network requests
-  page.on('response', response => {
+  page.on('response', (response) => {
     if (response.url().includes('/api/workflows/execute')) {
       console.log(`📡 API Response: ${response.status()} ${response.statusText()}`);
     }
@@ -33,12 +33,12 @@ test('should execute a basic workflow', async ({ page }) => {
   // Click Run button directly (even with empty workflow)
   const runButton = page.locator('button:has-text("Run")');
   await expect(runButton).toBeVisible();
-  
+
   console.log('▶️ Clicking Run button...');
   await runButton.click();
-  
+
   // Wait for any response
   await page.waitForTimeout(5000);
-  
+
   console.log('\n✅ Basic workflow execution test completed');
 });

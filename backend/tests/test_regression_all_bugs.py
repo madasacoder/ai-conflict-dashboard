@@ -40,7 +40,7 @@ class TestRegressionBugs1to10:
         for _ in range(5):  # Default fail_max is 5
             try:
                 breaker1(lambda: 1 / 0)()  # This will fail
-            except:
+            except Exception:
                 pass
 
         # breaker1 should be open, breaker2 should still be closed

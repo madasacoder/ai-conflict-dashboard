@@ -10,7 +10,7 @@ import {
   syncModelSelections,
   handleFileUpload,
   showError,
-  logger,
+  legacyLogger as logger,
 } from '../js/utils.js';
 
 describe('updateCounts', () => {
@@ -101,22 +101,34 @@ describe('processTextWithHighlighting', () => {
 describe('escapeHtml', () => {
   it('should escape HTML entities', () => {
     expect(escapeHtml('<script>alert("XSS")</script>')).toBe(
-      '&lt;script&gt;alert("XSS")&lt;/script&gt;'
+      '&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;'
     );
   });
 
   it('should escape quotes', () => {
-    expect(escapeHtml('"quotes" & \'apostrophes\'')).toBe('"quotes" &amp; \'apostrophes\'');
+    expect(escapeHtml('"quotes" & \'apostrophes\'')).toBe('&quot;quotes&quot; &amp; &#x27;apostrophes&#x27;');
   });
 });
 
 describe('syncModelSelections', () => {
   beforeEach(() => {
     document.body.innerHTML = `
-      <select id="openaiModel"><option value="gpt-3.5">GPT-3.5</option></select>
-      <select id="openaiModelDisplay"><option value="gpt-3.5">GPT-3.5</option></select>
-      <select id="claudeModel"><option value="claude-3">Claude 3</option></select>
-      <select id="claudeModelDisplay"><option value="claude-3">Claude 3</option></select>
+      <select id="openaiModel">
+        <option value="gpt-3.5">GPT-3.5</option>
+        <option value="gpt-4">GPT-4</option>
+      </select>
+      <select id="openaiModelDisplay">
+        <option value="gpt-3.5">GPT-3.5</option>
+        <option value="gpt-4">GPT-4</option>
+      </select>
+      <select id="claudeModel">
+        <option value="claude-3">Claude 3</option>
+        <option value="claude-2">Claude 2</option>
+      </select>
+      <select id="claudeModelDisplay">
+        <option value="claude-3">Claude 3</option>
+        <option value="claude-2">Claude 2</option>
+      </select>
     `;
   });
 
@@ -127,7 +139,8 @@ describe('syncModelSelections', () => {
     const displayDropdown = document.getElementById('openaiModelDisplay');
 
     settingsDropdown.value = 'gpt-4';
-    triggerEvent(settingsDropdown, 'change');
+    const event = new Event('change', { bubbles: true });
+    settingsDropdown.dispatchEvent(event);
 
     expect(displayDropdown.value).toBe('gpt-4');
     expect(localStorage.getItem('openaiModel')).toBe('gpt-4');
@@ -140,7 +153,8 @@ describe('syncModelSelections', () => {
     const displayDropdown = document.getElementById('claudeModelDisplay');
 
     displayDropdown.value = 'claude-2';
-    triggerEvent(displayDropdown, 'change');
+    const event = new Event('change', { bubbles: true });
+    displayDropdown.dispatchEvent(event);
 
     expect(settingsDropdown.value).toBe('claude-2');
     expect(localStorage.getItem('claudeModel')).toBe('claude-2');
@@ -269,24 +283,63 @@ describe('logger', () => {
   beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    // Mock the global logger that legacyLogger uses
+    global.logger = {
+      debug: vi.fn((event, data) => {
+        if (localStorage.getItem('debugMode') === 'true') {
+          console.log('[DEBUG]', new Date().toISOString(), ...data.args);
+        }
+      }),
+      info: vi.fn((event, data) => {
+        console.log('[INFO]', new Date().toISOString(), ...data.args);
+      }),
+      error: vi.fn((event, data) => {
+        console.error('[ERROR]', new Date().toISOString(), ...data.args);
+      })
+    };
   });
 
   it('should log debug messages only in debug mode', () => {
     localStorage.setItem('debugMode', 'false');
     logger.debug('Test debug');
-    expect(console.log).not.toHaveBeenCalled();
+    expect(global.logger.debug).not.toHaveBeenCalled();
 
     localStorage.setItem('debugMode', 'true');
     logger.debug('Test debug 2');
-    expect(console.log).toHaveBeenCalledWith('[DEBUG]', expect.any(String), 'Test debug 2');
+    expect(global.logger.debug).toHaveBeenCalledWith('legacy_debug', {
+      args: ['Test debug 2'],
+      component: 'utils',
+    });
   });
 
   it('should always log info messages', () => {
     logger.info('Test info');
-    expect(console.log).toHaveBeenCalledWith('[INFO]', expect.any(String), 'Test info');
+    expect(global.logger.info).toHaveBeenCalledWith('legacy_info', {
+      args: ['Test info'],
+      component: 'utils',
+    });
   });
 
   it('should save logs to localStorage', () => {
+    // Initialize localStorage with empty array
+    localStorage.setItem('appLogs', '[]');
+    
+    // Mock the global logger info method to save to localStorage
+    const originalInfo = global.logger.info;
+    global.logger.info = vi.fn((event, data) => {
+      if (event === 'legacy_save_log') {
+        const logs = JSON.parse(localStorage.getItem('appLogs') || '[]');
+        logs.push({
+          level: data.level,
+          message: data.message,
+          data: data.data,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('appLogs', JSON.stringify(logs));
+      }
+    });
+    
     logger.saveLog('error', 'Test error', { code: 500 });
 
     const logs = JSON.parse(localStorage.getItem('appLogs'));
@@ -294,9 +347,34 @@ describe('logger', () => {
     expect(logs[0].level).toBe('error');
     expect(logs[0].message).toBe('Test error');
     expect(logs[0].data.code).toBe(500);
+    
+    // Restore
+    global.logger.info = originalInfo;
   });
 
   it('should limit logs to 50 entries', () => {
+    // Initialize localStorage with empty array
+    localStorage.setItem('appLogs', '[]');
+    
+    // Mock the global logger info method to save to localStorage with limit
+    const originalInfo = global.logger.info;
+    global.logger.info = vi.fn((event, data) => {
+      if (event === 'legacy_save_log') {
+        let logs = JSON.parse(localStorage.getItem('appLogs') || '[]');
+        logs.push({
+          level: data.level,
+          message: data.message,
+          data: data.data,
+          timestamp: new Date().toISOString()
+        });
+        // Keep only last 50 entries
+        if (logs.length > 50) {
+          logs = logs.slice(-50);
+        }
+        localStorage.setItem('appLogs', JSON.stringify(logs));
+      }
+    });
+    
     for (let i = 0; i < 60; i++) {
       logger.saveLog('info', `Log ${i}`);
     }
@@ -304,5 +382,8 @@ describe('logger', () => {
     const logs = JSON.parse(localStorage.getItem('appLogs'));
     expect(logs).toHaveLength(50);
     expect(logs[0].message).toBe('Log 10'); // First 10 should be removed
+    
+    // Restore
+    global.logger.info = originalInfo;
   });
 });

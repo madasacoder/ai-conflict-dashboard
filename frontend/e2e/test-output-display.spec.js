@@ -17,7 +17,7 @@ test('test output display with mock data', async ({ page }) => {
 
   // Create a simple workflow
   console.log('\n1️⃣ Creating workflow...');
-  
+
   // Create input node
   await page.locator('div[data-node-type="input"]').click();
   await page.waitForTimeout(500);
@@ -35,30 +35,30 @@ test('test output display with mock data', async ({ page }) => {
 
   // Mock the showResults function to test display
   console.log('\n2️⃣ Testing results display...');
-  
+
   await page.evaluate(() => {
     // Mock results data
     const mockResults = {
       status: 'success',
       results: {
-        '1': {
+        1: {
           type: 'input',
           status: 'success',
-          result: 'Hello, how are you today?'
+          result: 'Hello, how are you today?',
         },
-        '2': {
+        2: {
           type: 'llm',
           status: 'success',
           result: {
-            'ollama': {
+            ollama: {
               response: '你好，你今天怎么样？\n\n这是中文翻译。',
-              error: null
-            }
-          }
-        }
+              error: null,
+            },
+          },
+        },
       },
       node_count: 2,
-      execution_time: Date.now()
+      execution_time: Date.now(),
     };
 
     // Call showResults directly
@@ -92,7 +92,7 @@ test('test output display with mock data', async ({ page }) => {
   // Check for output preview on node
   const outputPreviews = await page.locator('.node-output-preview').all();
   console.log(`\n📝 Output preview elements: ${outputPreviews.length}`);
-  
+
   if (outputPreviews.length > 0) {
     const previewText = await outputPreviews[0].textContent();
     console.log('Preview text:', previewText);
@@ -101,14 +101,14 @@ test('test output display with mock data', async ({ page }) => {
   // Take screenshot
   await page.screenshot({
     path: 'test-results/output-display-test.png',
-    fullPage: true
+    fullPage: true,
   });
 
   console.log('\n📸 Screenshot: test-results/output-display-test.png');
 
   // Test error display
   console.log('\n3️⃣ Testing error display...');
-  
+
   // Close modal first
   await page.locator('#resultsModal .btn-close').click();
   await page.waitForTimeout(500);
@@ -118,24 +118,24 @@ test('test output display with mock data', async ({ page }) => {
     const errorResults = {
       status: 'success',
       results: {
-        '1': {
+        1: {
           type: 'input',
           status: 'success',
-          result: 'Test input'
+          result: 'Test input',
         },
-        '2': {
+        2: {
           type: 'llm',
           status: 'error',
-          error: 'Failed to connect to Ollama'
-        }
-      }
+          error: 'Failed to connect to Ollama',
+        },
+      },
     };
 
     window.workflowBuilder.showResults(errorResults);
   });
 
   await page.waitForSelector('#resultsModal', { timeout: 5000 });
-  
+
   const errorBadge = await page.locator('.badge.bg-danger').count();
   console.log(`\n✅ Error badges found: ${errorBadge}`);
 

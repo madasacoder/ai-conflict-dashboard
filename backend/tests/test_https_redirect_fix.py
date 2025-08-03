@@ -3,6 +3,13 @@
 import os
 import re
 import pytest
+from pathlib import Path
+
+# Get the project root directory
+TESTS_DIR = Path(__file__).parent
+BACKEND_DIR = TESTS_DIR.parent
+PROJECT_ROOT = BACKEND_DIR.parent
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 
 class TestHTTPSRedirectFix:
@@ -10,7 +17,7 @@ class TestHTTPSRedirectFix:
 
     def test_workflow_builder_link_is_fixed(self):
         """Verify the workflow builder link uses IP address to avoid HSTS issues."""
-        with open("../frontend/index.html", "r") as f:
+        with open(FRONTEND_DIR / "index.html", "r") as f:
             content = f.read()
 
         # Find the workflow builder link
@@ -30,7 +37,7 @@ class TestHTTPSRedirectFix:
 
     def test_no_relative_workflow_links(self):
         """Ensure no relative links that might trigger HTTPS upgrades."""
-        with open("../frontend/index.html", "r") as f:
+        with open(FRONTEND_DIR / "index.html", "r") as f:
             content = f.read()
 
         # Check for any relative workflow links
@@ -49,8 +56,8 @@ class TestHTTPSRedirectFix:
         """Ensure no protocol-relative URLs that inherit parent protocol."""
         files_to_check = [
             "../frontend/index.html",
-            "../frontend/workflow-builder.html",
-            "../frontend/workflow-builder.html",
+            FRONTEND_DIR / "workflow-builder.html",
+            FRONTEND_DIR / "workflow-builder.html",
         ]
 
         for filepath in files_to_check:
@@ -69,7 +76,7 @@ class TestHTTPSRedirectFix:
 
     def test_no_https_forcing_meta_tags(self):
         """Ensure no meta tags that force HTTPS upgrades."""
-        with open("../frontend/index.html", "r") as f:
+        with open(FRONTEND_DIR / "index.html", "r") as f:
             content = f.read()
 
         # Check for problematic meta tags and headers
@@ -88,9 +95,9 @@ class TestHTTPSRedirectFix:
         """Ensure SSL errors are documented for future reference."""
         # Check that we have proper documentation
         doc_files = [
-            "../diagnose-https-issue.py",
-            "tests/test_https_redirect_issue.py",
-            "tests/test_workflow_builder_access.py",
+            PROJECT_ROOT / "diagnose-https-issue.py",
+            TESTS_DIR / "test_https_redirect_issue.py",
+            TESTS_DIR / "test_workflow_builder_access.py",
         ]
 
         for doc_file in doc_files:
@@ -111,17 +118,22 @@ class TestHTTPSRedirectFix:
 
     def test_diagnostic_script_exists(self):
         """Ensure diagnostic script is available for future issues."""
-        assert os.path.exists(
-            "../diagnose-https-issue.py"
-        ), "Diagnostic script should exist for troubleshooting"
+        # Check multiple possible locations
+        possible_locations = [
+            PROJECT_ROOT / "diagnose-https-issue.py",
+            PROJECT_ROOT / "temporary_files" / "diagnose-https-issue.py",
+        ]
+        
+        exists = any(path.exists() for path in possible_locations)
+        assert exists, "Diagnostic script should exist for troubleshooting"
 
     def test_fix_is_documented(self):
         """Ensure the fix is properly documented."""
         # Check CLAUDE.md or other documentation
 
         # At minimum, we should have created test files documenting the issue
-        assert os.path.exists("tests/test_https_redirect_issue.py")
-        assert os.path.exists("tests/test_workflow_builder_access.py")
+        assert (TESTS_DIR / "test_https_redirect_issue.py").exists()
+        assert (TESTS_DIR / "test_workflow_builder_access.py").exists()
 
 
 if __name__ == "__main__":

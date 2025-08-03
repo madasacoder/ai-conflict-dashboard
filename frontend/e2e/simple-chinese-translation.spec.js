@@ -13,12 +13,12 @@ test('translate text to Chinese using Ollama', async ({ page }) => {
   await framework.initialize();
 
   // Monitor console
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     console.log(`[${msg.type()}] ${msg.text()}`);
   });
 
   // Monitor API calls
-  page.on('request', request => {
+  page.on('request', (request) => {
     if (request.url().includes('/api/workflows/execute')) {
       console.log('📤 API Request to:', request.url());
       console.log('   Method:', request.method());
@@ -26,7 +26,7 @@ test('translate text to Chinese using Ollama', async ({ page }) => {
     }
   });
 
-  page.on('response', async response => {
+  page.on('response', async (response) => {
     if (response.url().includes('/api/workflows/execute')) {
       console.log('📥 API Response:', response.status());
       const body = await response.text();
@@ -35,7 +35,7 @@ test('translate text to Chinese using Ollama', async ({ page }) => {
   });
 
   // INPUT TEXT TO TRANSLATE
-  const inputText = "Hello, how are you today?";
+  const inputText = 'Hello, how are you today?';
   console.log('\n📝 INPUT TEXT:', inputText);
   console.log('─'.repeat(50));
 
@@ -52,7 +52,8 @@ test('translate text to Chinese using Ollama', async ({ page }) => {
   console.log('\n2️⃣ Creating Ollama LLM node...');
   const llmNodeId = await framework.createAINode({
     model: 'ollama',
-    prompt: 'Translate the following text to Chinese (Simplified). Only provide the translation, no explanations:\n\n{input}',
+    prompt:
+      'Translate the following text to Chinese (Simplified). Only provide the translation, no explanations:\n\n{input}',
     temperature: 0.3,
     label: 'Chinese Translation',
   });
@@ -79,19 +80,20 @@ test('translate text to Chinese using Ollama', async ({ page }) => {
 
   // Step 5: Wait for execution
   console.log('\n5️⃣ Waiting for Ollama to process...');
-  
+
   // Wait for API call to complete
-  await page.waitForResponse(
-    response => response.url().includes('/api/workflows/execute'),
-    { timeout: 60000 }
-  ).catch(() => console.log('   ⚠️ No API response received'));
+  await page
+    .waitForResponse((response) => response.url().includes('/api/workflows/execute'), {
+      timeout: 60000,
+    })
+    .catch(() => console.log('   ⚠️ No API response received'));
 
   // Additional wait for processing
   await page.waitForTimeout(10000);
 
   // Step 6: Get the output
   console.log('\n6️⃣ CHECKING FOR OUTPUT...');
-  
+
   // Click on the LLM node to see results
   const llmNode = page.locator('.drawflow-node.llm').first();
   await llmNode.click();
@@ -103,7 +105,7 @@ test('translate text to Chinese using Ollama', async ({ page }) => {
     const panelText = await configPanel.textContent();
     console.log('\n📋 Config Panel Content:');
     console.log(panelText);
-    
+
     // Look specifically for Chinese characters
     const hasChineseChars = /[\u4e00-\u9fa5]/.test(panelText);
     if (hasChineseChars) {

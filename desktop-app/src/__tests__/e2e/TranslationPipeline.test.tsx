@@ -1,0 +1,269 @@
+/**
+ * Translation Pipeline E2E Test - Desktop App
+ * Migrated from web app execute-translation-pipeline.spec.js
+ * 
+ * Tests the complete translation workflow: English → Chinese → French → English
+ */
+
+import { test, expect } from '@playwright/experimental-ct-react'
+import { WorkflowBuilder } from '../../components/WorkflowBuilder'
+import { DesktopWorkflowFramework } from '../helpers/DesktopWorkflowFramework'
+
+test.describe('Translation Pipeline E2E Tests', () => {
+  let framework: DesktopWorkflowFramework
+
+  test.beforeEach(async ({ mount, page }) => {
+    framework = new DesktopWorkflowFramework(page, mount)
+    await framework.initialize()
+  })
+
+  test('should execute story translation pipeline and show results', async ({ page }) => {
+    test.setTimeout(300000) // 5 minutes for execution
+
+    console.log('🚀 Starting story translation pipeline execution...\n')
+
+    // Original story
+    const originalStory = `Once upon a time, in a small village nestled between mountains, 
+there lived a young girl named Luna who discovered she could speak to the wind. 
+The wind would whisper secrets of distant lands and carry messages across the valley. 
+One day, the wind brought news of a terrible storm approaching. 
+Luna warned the villagers, who prepared and saved their harvest. 
+From that day, Luna became the village's guardian, listening to nature's warnings.`
+
+    console.log('📖 ORIGINAL STORY:')
+    console.log('─'.repeat(50))
+    console.log(originalStory)
+    console.log('─'.repeat(50) + '\n')
+
+    // Step 1: Create input node with story
+    console.log('📝 Creating input node with story...')
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: originalStory,
+      position: { x: 100, y: 200 }
+    })
+
+    // Step 2: Create enhancement/analysis node
+    console.log('🔍 Creating story analysis node...')
+    const analysisNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Analyze this story and provide key insights about themes, characters, and meaning. Keep your analysis to 2-3 sentences: {input}',
+      temperature: 0.7,
+      position: { x: 400, y: 100 }
+    })
+
+    // Step 3: Create Chinese translation node
+    console.log('🇨🇳 Creating Chinese translation node...')
+    const chineseNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Translate the following text to Chinese (Simplified). Provide only the translation: {input}',
+      temperature: 0.3,
+      position: { x: 700, y: 100 }
+    })
+
+    // Step 4: Create French translation node
+    console.log('🇫🇷 Creating French translation node...')
+    const frenchNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Translate the following text from Chinese to French. Provide only the translation: {input}',
+      temperature: 0.3,
+      position: { x: 1000, y: 100 }
+    })
+
+    // Step 5: Create English back-translation node
+    console.log('🇺🇸 Creating English back-translation node...')
+    const englishBackNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Translate the following text from French back to English. Provide only the translation: {input}',
+      temperature: 0.3,
+      position: { x: 1300, y: 100 }
+    })
+
+    // Step 6: Create comparison node
+    console.log('📊 Creating comparison node...')
+    const compareNode = await framework.createCompareNode({
+      comparisonType: 'differences',
+      highlightLevel: 'detailed',
+      position: { x: 1600, y: 200 }
+    })
+
+    // Verify all nodes created
+    const nodeCount = await page.locator('.react-flow__node').count()
+    console.log(`\n✅ Created ${nodeCount} nodes successfully\n`)
+    expect(nodeCount).toBe(6)
+
+    // Connect the pipeline
+    console.log('🔗 Connecting nodes in translation pipeline...')
+    
+    // Input → Analysis
+    await framework.connectNodes(inputNode.id, analysisNode.id)
+    
+    // Analysis → Chinese
+    await framework.connectNodes(analysisNode.id, chineseNode.id)
+    
+    // Chinese → French
+    await framework.connectNodes(chineseNode.id, frenchNode.id)
+    
+    // French → English
+    await framework.connectNodes(frenchNode.id, englishBackNode.id)
+    
+    // Original → Compare (first input)
+    await framework.connectNodes(inputNode.id, compareNode.id, 'input_1')
+    
+    // Back-translation → Compare (second input)
+    await framework.connectNodes(englishBackNode.id, compareNode.id, 'input_2')
+
+    // Verify connections
+    const edgeCount = await page.locator('.react-flow__edge').count()
+    console.log(`✅ Created ${edgeCount} connections\n`)
+    expect(edgeCount).toBe(6)
+
+    // Execute the workflow
+    console.log('▶️ Executing workflow...')
+    console.log('⏳ This will take a moment as it processes through multiple AI models...\n')
+
+    const results = await framework.executeWorkflow()
+
+    // Check execution results
+    expect(results).toBeTruthy()
+    expect(results.status).not.toBe('error')
+
+    if (results.nodes) {
+      // Display analysis results
+      if (results.nodes[analysisNode.id]?.output) {
+        console.log('📍 STORY ANALYSIS:')
+        console.log('─'.repeat(50))
+        console.log(results.nodes[analysisNode.id].output)
+        console.log('─'.repeat(50) + '\n')
+      }
+
+      // Display Chinese translation
+      if (results.nodes[chineseNode.id]?.output) {
+        console.log('🇨🇳 CHINESE TRANSLATION:')
+        console.log('─'.repeat(50))
+        console.log(results.nodes[chineseNode.id].output)
+        console.log('─'.repeat(50) + '\n')
+      }
+
+      // Display French translation
+      if (results.nodes[frenchNode.id]?.output) {
+        console.log('🇫🇷 FRENCH TRANSLATION:')
+        console.log('─'.repeat(50))
+        console.log(results.nodes[frenchNode.id].output)
+        console.log('─'.repeat(50) + '\n')
+      }
+
+      // Display back-translation
+      if (results.nodes[englishBackNode.id]?.output) {
+        console.log('🇺🇸 BACK TO ENGLISH:')
+        console.log('─'.repeat(50))
+        console.log(results.nodes[englishBackNode.id].output)
+        console.log('─'.repeat(50) + '\n')
+      }
+
+      // Display comparison results
+      if (results.nodes[compareNode.id]?.output) {
+        console.log('📊 COMPARISON RESULTS:')
+        console.log('─'.repeat(50))
+        const comparison = results.nodes[compareNode.id].output
+        if (typeof comparison === 'object') {
+          console.log('Differences found:', comparison.differences || 'None')
+          console.log('Similarity score:', comparison.similarity || 'N/A')
+        } else {
+          console.log(comparison)
+        }
+        console.log('─'.repeat(50) + '\n')
+      }
+    }
+
+    // Take a screenshot of the final workflow
+    await page.screenshot({
+      path: 'test-results/desktop-translation-pipeline.png',
+      fullPage: true
+    })
+    console.log('📸 Screenshot saved: test-results/desktop-translation-pipeline.png')
+
+    // Summary
+    console.log('\n' + '═'.repeat(60))
+    console.log('📊 PIPELINE EXECUTION SUMMARY:')
+    console.log('═'.repeat(60))
+    console.log('✅ Original Story: Provided')
+    console.log('✅ Nodes Created: 6 (Input, Analysis, Chinese, French, English, Compare)')
+    console.log('✅ Connections: 6 edges connecting the pipeline')
+    console.log('✅ Workflow Structure: Complete')
+    
+    if (results.error) {
+      console.log('⚠️ Execution Error:', results.error)
+      console.log('⚠️ Note: Actual execution requires API keys to be configured')
+    } else {
+      console.log('✅ Execution: Successful')
+    }
+    
+    console.log('═'.repeat(60))
+
+    // Verify visual elements
+    await expect(page.locator('[data-testid="execution-complete"]')).toBeVisible({ timeout: 10000 })
+    
+    // Verify all nodes show completion status
+    const completedNodes = await page.locator('.react-flow__node.execution-success').count()
+    expect(completedNodes).toBeGreaterThan(0)
+  })
+
+  test('should handle errors gracefully in translation pipeline', async ({ page }) => {
+    // Create a simpler pipeline with intentional error
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: 'Test error handling',
+      position: { x: 100, y: 100 }
+    })
+
+    // Create node with invalid model
+    const errorNode = await framework.createLLMNode({
+      model: 'invalid-model',
+      prompt: 'This should fail: {input}',
+      position: { x: 400, y: 100 }
+    })
+
+    await framework.connectNodes(inputNode.id, errorNode.id)
+
+    // Execute and expect error handling
+    const results = await framework.executeWorkflow()
+    
+    // Should show error state
+    await expect(page.locator('[data-testid="error-message"]')).toBeVisible({ timeout: 5000 })
+    
+    // Error node should have error styling
+    await expect(page.locator(`[data-id="${errorNode.id}"].error`)).toBeVisible()
+  })
+
+  test('should support Ollama for local translation', async ({ page }) => {
+    console.log('🦙 Testing Ollama integration for translation...')
+
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: 'Hello, world! This is a test.',
+      position: { x: 100, y: 100 }
+    })
+
+    const ollamaNode = await framework.createLLMNode({
+      model: 'ollama',
+      prompt: 'Translate to Spanish: {input}',
+      position: { x: 400, y: 100 }
+    })
+
+    await framework.connectNodes(inputNode.id, ollamaNode.id)
+
+    // Check if Ollama is selected in the config
+    await page.locator(`[data-id="${ollamaNode.id}"]`).dblclick()
+    await expect(page.locator('[data-testid="model-select"]')).toHaveValue('ollama')
+    await page.click('[data-testid="save-config"]')
+
+    const results = await framework.executeWorkflow()
+    
+    if (results.nodes?.[ollamaNode.id]?.output) {
+      console.log('✅ Ollama Response:', results.nodes[ollamaNode.id].output)
+    } else if (results.error) {
+      console.log('⚠️ Ollama not available:', results.error)
+    }
+  })
+})

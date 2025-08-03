@@ -76,7 +76,7 @@ def test_simulate_https_to_http_connection():
         # But receive: \x16\x03\x01... (binary SSL data)
         request_line = ssl_handshake.split(b" ", 2)
         assert len(request_line) < 3  # Can't parse as HTTP
-    except:
+    except Exception:
         pass  # Expected to fail
 
 

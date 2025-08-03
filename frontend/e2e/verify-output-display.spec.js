@@ -15,11 +15,11 @@ test.describe('Workflow Output Display', () => {
     const backendPath = path.join(process.cwd(), '../backend');
     backendProcess = spawn('python', ['-m', 'uvicorn', 'main:app', '--port', '8000'], {
       cwd: backendPath,
-      env: { ...process.env, PYTHONPATH: backendPath }
+      env: { ...process.env, PYTHONPATH: backendPath },
     });
 
     // Wait for backend to start
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       backendProcess.stdout.on('data', (data) => {
         if (data.toString().includes('Uvicorn running')) {
           console.log('✅ Backend started');
@@ -42,12 +42,12 @@ test.describe('Workflow Output Display', () => {
     test.setTimeout(300000); // 5 minutes
 
     // Monitor console
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       console.log(`[Browser] ${msg.text()}`);
     });
 
     // Monitor requests/responses
-    page.on('request', request => {
+    page.on('request', (request) => {
       if (request.url().includes('/api/workflows/execute')) {
         console.log('\n📤 API Request:', request.method(), request.url());
         const postData = request.postData();
@@ -58,7 +58,7 @@ test.describe('Workflow Output Display', () => {
       }
     });
 
-    page.on('response', async response => {
+    page.on('response', async (response) => {
       if (response.url().includes('/api/workflows/execute')) {
         console.log('\n📥 API Response:', response.status());
         try {
@@ -86,10 +86,10 @@ test.describe('Workflow Output Display', () => {
     const inputNode = page.locator('.drawflow-node.input').first();
     await inputNode.click();
     await page.waitForSelector('#configPanel.open');
-    
+
     const inputTextarea = page.locator('#configPanel textarea').first();
     await inputTextarea.fill('Hello, how are you today?');
-    
+
     // Close config
     await page.evaluate(() => {
       document.getElementById('configPanel').classList.remove('open');
@@ -131,7 +131,7 @@ test.describe('Workflow Output Display', () => {
 
     // Wait for execution
     console.log('\n⏳ Waiting for results...');
-    
+
     // Wait for modal to appear
     await page.waitForSelector('#resultsModal', { timeout: 60000 });
     console.log('\n✅ Results modal appeared!');
@@ -149,7 +149,7 @@ test.describe('Workflow Output Display', () => {
       const chineseText = modalContent.match(/[\u4e00-\u9fa5]+[，。！？\u4e00-\u9fa5\s]*/g);
       console.log('\n🇨🇳 CHINESE TRANSLATION FOUND:');
       if (chineseText) {
-        chineseText.forEach(text => console.log('  ', text));
+        chineseText.forEach((text) => console.log('  ', text));
       }
     }
 
@@ -159,9 +159,12 @@ test.describe('Workflow Output Display', () => {
       const classes = await node.getAttribute('class');
       if (classes.includes('execution-success')) {
         console.log('\n✅ Node has execution-success class');
-        
+
         // Check for output preview
-        const outputPreview = await node.locator('.node-output-preview').textContent().catch(() => null);
+        const outputPreview = await node
+          .locator('.node-output-preview')
+          .textContent()
+          .catch(() => null);
         if (outputPreview) {
           console.log('📝 Output preview:', outputPreview);
         }
@@ -171,7 +174,7 @@ test.describe('Workflow Output Display', () => {
     // Take screenshot
     await page.screenshot({
       path: 'test-results/workflow-with-output-display.png',
-      fullPage: true
+      fullPage: true,
     });
 
     console.log('\n📸 Screenshot: test-results/workflow-with-output-display.png');
@@ -180,9 +183,15 @@ test.describe('Workflow Output Display', () => {
     console.log('\n' + '═'.repeat(70));
     console.log('TEST SUMMARY:');
     console.log('═'.repeat(70));
-    console.log('Modal displayed:', await page.locator('#resultsModal').isVisible() ? '✅' : '❌');
+    console.log(
+      'Modal displayed:',
+      (await page.locator('#resultsModal').isVisible()) ? '✅' : '❌'
+    );
     console.log('Chinese output found:', hasChineseChars ? '✅' : '❌');
-    console.log('Visual feedback:', await page.locator('.execution-success').count() > 0 ? '✅' : '❌');
+    console.log(
+      'Visual feedback:',
+      (await page.locator('.execution-success').count()) > 0 ? '✅' : '❌'
+    );
     console.log('═'.repeat(70));
   });
 });

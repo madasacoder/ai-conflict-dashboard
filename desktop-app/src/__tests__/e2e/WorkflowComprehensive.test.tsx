@@ -1,0 +1,392 @@
+/**
+ * Comprehensive E2E tests for Desktop Workflow Builder
+ * Migrated from web app workflow-builder-comprehensive.spec.js
+ */
+
+import { test, expect } from '@playwright/experimental-ct-react'
+import { WorkflowBuilder } from '../../components/WorkflowBuilder'
+import { DesktopWorkflowFramework } from '../helpers/DesktopWorkflowFramework'
+
+test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
+  let framework: DesktopWorkflowFramework
+
+  test.beforeEach(async ({ mount, page }) => {
+    // Initialize test framework
+    framework = new DesktopWorkflowFramework(page, mount)
+    await framework.initialize()
+
+    // Set up console error monitoring
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleLogs.push(msg.text())
+      }
+    })
+  })
+
+  test('should load workflow builder with all required components', async ({ page }) => {
+    // Verify React Flow canvas is loaded
+    await expect(page.locator('.react-flow__renderer')).toBeVisible()
+    
+    // Verify node palette is visible
+    await expect(page.locator('[data-testid="node-palette"]')).toBeVisible()
+    
+    // Verify all node types are available
+    await expect(page.locator('[data-testid="node-palette-input"]')).toBeVisible()
+    await expect(page.locator('[data-testid="node-palette-llm"]')).toBeVisible()
+    await expect(page.locator('[data-testid="node-palette-output"]')).toBeVisible()
+    await expect(page.locator('[data-testid="node-palette-compare"]')).toBeVisible()
+    await expect(page.locator('[data-testid="node-palette-summarize"]')).toBeVisible()
+
+    // Verify Zustand store is available
+    const storeAvailable = await page.evaluate(() => {
+      return !!(window as any).workflowStore
+    })
+    expect(storeAvailable).toBe(true)
+  })
+
+  test('should create workflow using node palette', async ({ page }) => {
+    // Add Input node
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: 'Test input text',
+      position: { x: 100, y: 100 }
+    })
+    
+    // Add LLM node
+    const llmNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Analyze this text: {input}',
+      position: { x: 400, y: 100 }
+    })
+    
+    // Add Output node
+    const outputNode = await framework.createCompareNode({
+      position: { x: 700, y: 100 }
+    })
+
+    // Verify all three nodes exist
+    await expect(page.locator('.react-flow__node')).toHaveCount(3)
+    
+    // Verify node types
+    await expect(page.locator('.react-flow__node-input')).toHaveCount(1)
+    await expect(page.locator('.react-flow__node-llm')).toHaveCount(1)
+    await expect(page.locator('.react-flow__node-compare')).toHaveCount(1)
+  })
+
+  test('should connect nodes and create edges', async ({ page }) => {
+    // Create nodes
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: 'Test content',
+      position: { x: 100, y: 100 }
+    })
+    
+    const llmNode = await framework.createLLMNode({
+      model: 'claude-3-opus',
+      prompt: 'Process: {input}',
+      position: { x: 400, y: 100 }
+    })
+
+    // Connect nodes
+    await framework.connectNodes(inputNode.id, llmNode.id)
+
+    // Verify edge was created
+    await expect(page.locator('.react-flow__edge')).toHaveCount(1)
+  })
+
+  test('should configure node properties', async ({ page }) => {
+    // Add an LLM node
+    const llmNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Initial prompt',
+      position: { x: 200, y: 200 }
+    })
+
+    // Double-click to open configuration
+    await page.locator(`[data-id="${llmNode.id}"]`).dblclick()
+    
+    // Wait for config modal
+    await expect(page.locator('[data-testid="node-config-modal"]')).toBeVisible()
+    
+    // Verify configuration options
+    await expect(page.locator('[data-testid="prompt-input"]')).toBeVisible()
+    await expect(page.locator('[data-testid="model-select"]')).toBeVisible()
+    
+    // Update configuration
+    await page.fill('[data-testid="prompt-input"]', 'Analyze this text for sentiment: {input}')
+    await page.selectOption('[data-testid="model-select"]', 'claude-3-opus')
+    
+    // Save configuration
+    await page.click('[data-testid="save-config"]')
+    await expect(page.locator('[data-testid="node-config-modal"]')).not.toBeVisible()
+    
+    // Verify node shows as configured
+    await expect(page.locator(`[data-id="${llmNode.id}"] .configured`)).toBeVisible()
+  })
+
+  test('should save and load workflow from database', async ({ page }) => {
+    // Create a workflow
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: 'Persistent text',
+      position: { x: 100, y: 100 }
+    })
+    
+    const outputNode = await framework.createCompareNode({
+      position: { x: 400, y: 100 }
+    })
+    
+    await framework.connectNodes(inputNode.id, outputNode.id)
+
+    // Save workflow
+    await page.click('[data-testid="save-workflow"]')
+    await page.fill('[data-testid="workflow-name-input"]', 'Test Workflow')
+    await page.click('[data-testid="confirm-save"]')
+
+    // Clear the canvas
+    await framework.clearWorkflow()
+    await expect(page.locator('.react-flow__node')).toHaveCount(0)
+
+    // Load the saved workflow
+    await page.click('[data-testid="load-workflow"]')
+    await page.click('[data-testid="workflow-item-Test Workflow"]')
+
+    // Verify workflow was restored
+    await expect(page.locator('.react-flow__node')).toHaveCount(2)
+    await expect(page.locator('.react-flow__edge')).toHaveCount(1)
+  })
+
+  test('should export workflow to file', async ({ page }) => {
+    // Create workflow
+    await framework.createInputNode({ position: { x: 100, y: 100 } })
+    await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Test prompt',
+      position: { x: 400, y: 100 }
+    })
+
+    // Set up download promise
+    const downloadPromise = page.waitForEvent('download')
+
+    // Trigger export
+    await page.click('[data-testid="export-workflow"]')
+
+    // Wait for download and verify
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toContain('workflow')
+    expect(download.suggestedFilename()).toContain('.json')
+  })
+
+  test('should import workflow from file', async ({ page }) => {
+    // Create test workflow data
+    const workflowData = {
+      nodes: [
+        {
+          id: 'test-1',
+          type: 'input',
+          position: { x: 100, y: 100 },
+          data: {
+            label: 'Input Node',
+            inputType: 'text',
+            value: 'Imported text'
+          }
+        }
+      ],
+      edges: []
+    }
+
+    // Create file input and trigger import
+    const fileContent = JSON.stringify(workflowData)
+    await page.setInputFiles('[data-testid="import-workflow-input"]', {
+      name: 'test-workflow.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(fileContent)
+    })
+
+    // Verify workflow was imported
+    await expect(page.locator('.react-flow__node')).toHaveCount(1)
+    await expect(page.locator('.react-flow__node-input')).toHaveCount(1)
+  })
+
+  test('should validate workflow before execution', async ({ page }) => {
+    // Try to run empty workflow
+    await page.click('[data-testid="execute-workflow"]')
+
+    // Should show validation error
+    await expect(page.locator('[data-testid="validation-error"]')).toBeVisible()
+    await expect(page.locator('[data-testid="validation-error"]')).toContainText('at least one node')
+  })
+
+  test('should handle API key configuration', async ({ page }) => {
+    // Open settings
+    await page.click('[data-testid="settings-button"]')
+    await page.click('[data-testid="api-keys-tab"]')
+
+    // Fill in test API keys
+    await page.fill('[data-testid="openai-key-input"]', 'sk-test-key-for-testing')
+    await page.fill('[data-testid="claude-key-input"]', 'sk-ant-test-key')
+
+    // Save configuration
+    await page.click('[data-testid="save-api-keys"]')
+
+    // Verify success message
+    await expect(page.locator('[data-testid="success-message"]')).toBeVisible()
+    
+    // Verify keys are masked in UI
+    const openaiInput = page.locator('[data-testid="openai-key-input"]')
+    await expect(openaiInput).toHaveAttribute('type', 'password')
+  })
+
+  test('should implement proper error handling', async ({ page }) => {
+    // Mock API failure
+    await page.route('**/api/workflow/execute', (route) => {
+      route.fulfill({
+        status: 500,
+        body: JSON.stringify({ error: 'Internal server error' })
+      })
+    })
+
+    // Create valid workflow
+    const inputNode = await framework.createInputNode({
+      type: 'text',
+      content: 'Test',
+      position: { x: 100, y: 100 }
+    })
+    
+    const llmNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Test',
+      position: { x: 400, y: 100 }
+    })
+
+    await framework.connectNodes(inputNode.id, llmNode.id)
+
+    // Try to run workflow
+    await page.click('[data-testid="execute-workflow"]')
+
+    // Should show error message
+    await expect(page.locator('[data-testid="error-message"]')).toBeVisible()
+    await expect(page.locator('[data-testid="error-message"]')).toContainText('error')
+  })
+
+  test('should support keyboard shortcuts', async ({ page }) => {
+    // Add a node
+    const node = await framework.createInputNode({ position: { x: 200, y: 200 } })
+
+    // Select the node
+    await page.click(`[data-id="${node.id}"]`)
+
+    // Delete with keyboard
+    await page.keyboard.press('Delete')
+
+    // Node should be deleted
+    await expect(page.locator('.react-flow__node')).toHaveCount(0)
+
+    // Test undo
+    await page.keyboard.press('Control+z')
+    await expect(page.locator('.react-flow__node')).toHaveCount(1)
+
+    // Test select all
+    await framework.createLLMNode({ position: { x: 400, y: 200 } })
+    await page.keyboard.press('Control+a')
+    
+    // Both nodes should be selected
+    await expect(page.locator('.react-flow__node.selected')).toHaveCount(2)
+  })
+
+  test('should prevent XSS attacks through node configuration', async ({ page }) => {
+    // Add LLM node
+    const llmNode = await framework.createLLMNode({
+      model: 'gpt-4',
+      prompt: 'Initial',
+      position: { x: 200, y: 200 }
+    })
+
+    // Open configuration
+    await page.locator(`[data-id="${llmNode.id}"]`).dblclick()
+    await expect(page.locator('[data-testid="node-config-modal"]')).toBeVisible()
+
+    // Try to inject script
+    const maliciousScript = '<script>window.xssExecuted = true;</script>'
+    await page.fill('[data-testid="prompt-input"]', maliciousScript)
+
+    // Save and verify script didn't execute
+    await page.click('[data-testid="save-config"]')
+    
+    const xssExecuted = await page.evaluate(() => (window as any).xssExecuted)
+    expect(xssExecuted).toBeFalsy()
+
+    // Verify the text was escaped in the display
+    const nodeElement = page.locator(`[data-id="${llmNode.id}"]`)
+    await expect(nodeElement).not.toContainText('<script>')
+  })
+
+  test('should handle large workflows efficiently', async ({ page }) => {
+    // Create large workflow (stress test)
+    const startTime = Date.now()
+    
+    for (let i = 0; i < 20; i++) {
+      await framework.createLLMNode({
+        model: 'gpt-4',
+        prompt: `Node ${i}`,
+        position: { x: (i % 5) * 200 + 100, y: Math.floor(i / 5) * 150 + 100 }
+      })
+    }
+
+    const creationTime = Date.now() - startTime
+
+    // Should handle 20 nodes without significant lag (under 10 seconds)
+    expect(creationTime).toBeLessThan(10000)
+    await expect(page.locator('.react-flow__node')).toHaveCount(20)
+
+    // Test zoom controls work with many nodes
+    await page.click('[data-testid="zoom-in"]')
+    await page.click('[data-testid="zoom-out"]')
+    await page.click('[data-testid="fit-view"]')
+    
+    // All nodes should still be visible
+    await expect(page.locator('.react-flow__node')).toHaveCount(20)
+  })
+
+  test('should follow accessibility standards', async ({ page }) => {
+    // Check for ARIA labels
+    const ariaElements = await page.locator('[aria-label]').count()
+    expect(ariaElements).toBeGreaterThan(0)
+
+    // Check for role attributes
+    const roleElements = await page.locator('[role]').count()
+    expect(roleElements).toBeGreaterThan(0)
+
+    // Test keyboard navigation
+    await page.keyboard.press('Tab')
+    const focusedElement = await page.locator(':focus')
+    await expect(focusedElement).toBeVisible()
+
+    // Continue tabbing through interactive elements
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.press('Tab')
+      await expect(page.locator(':focus')).toBeVisible()
+    }
+
+    // Check that important buttons have accessible names
+    await expect(page.locator('[data-testid="execute-workflow"]')).toHaveAttribute('aria-label')
+    await expect(page.locator('[data-testid="save-workflow"]')).toHaveAttribute('aria-label')
+  })
+
+  test('should support dark mode', async ({ page }) => {
+    // Toggle dark mode
+    await page.click('[data-testid="theme-toggle"]')
+
+    // Verify dark mode class is applied
+    await expect(page.locator('body')).toHaveClass(/dark/)
+
+    // Verify nodes are visible in dark mode
+    await framework.createInputNode({ position: { x: 200, y: 200 } })
+    await expect(page.locator('.react-flow__node')).toBeVisible()
+
+    // Toggle back to light mode
+    await page.click('[data-testid="theme-toggle"]')
+    await expect(page.locator('body')).not.toHaveClass(/dark/)
+  })
+})

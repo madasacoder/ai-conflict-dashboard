@@ -64,8 +64,42 @@ coverage/
 htmlcov/
 .pytest_cache/
 .nyc_output
+test-results/
+playwright-report/
+blob-report/
 
 # Temporary files
 temporary_files/
 *.tmp
 *.temp
+
+# Tool artifacts and cache
+.ruff_cache/
+.mypy_cache/
+.black_cache/
+.eslintcache
+.prettiercache
+
+# Rust/Cargo
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Bandit reports
+bandit_report*.json
+bandit_report*.csv
+
+# Pre-commit
+.pre-commit-config.yaml.bak
+
+# Quality reports
+QUALITY_REPORT.md
+plato_reports/
+reports/
+
+# VS Code settings (keep local)
+.vscode/settings.json
+.vscode/launch.json
+
+# Secrets baseline
+.secrets.baseline

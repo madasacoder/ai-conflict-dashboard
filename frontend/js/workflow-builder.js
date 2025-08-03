@@ -105,13 +105,71 @@ class WorkflowBuilder {
     });
 
     // Connection events
+    this.editor.on('connectionStart', (obj) => {
+      // Add visual feedback when starting a connection
+      const sourceNode = document.getElementById(`node-${obj.output_id}`);
+      if (sourceNode) {
+        sourceNode.classList.add('connection-source');
+      }
+      logger.workflow('connection_start', {
+        source_node: obj.output_id,
+        output_class: obj.output_class,
+      });
+    });
+
     this.editor.on('connectionCreated', (connection) => {
+      // Remove visual feedback after connection is created
+      const sourceNode = document.getElementById(`node-${connection.output_id}`);
+      const targetNode = document.getElementById(`node-${connection.input_id}`);
+      if (sourceNode) {
+        sourceNode.classList.remove('connection-source');
+      }
+      if (targetNode) {
+        targetNode.classList.remove('connection-target');
+      }
+      
+      // Add success feedback
+      this.showConnectionFeedback(connection.output_id, connection.input_id, 'success');
+      
       logger.workflow('connection_created', {
         connection_id: connection.id,
         source_node: connection.output_id,
         target_node: connection.input_id,
       });
       this.saveWorkflow();
+    });
+
+    this.editor.on('connectionRemoved', (connection) => {
+      logger.workflow('connection_removed', {
+        connection_id: connection.id,
+        source_node: connection.output_id,
+        target_node: connection.input_id,
+      });
+      this.saveWorkflow();
+    });
+
+    this.editor.on('connectionSelected', (connection) => {
+      // Highlight selected connection
+      const svgConnection = document.querySelector(`svg .connection.node_in_node-${connection.input_id}.node_out_node-${connection.output_id}`);
+      if (svgConnection) {
+        svgConnection.classList.add('selected');
+      }
+    });
+
+    this.editor.on('connectionUnselected', () => {
+      // Remove highlight from all connections
+      document.querySelectorAll('svg .connection.selected').forEach(conn => {
+        conn.classList.remove('selected');
+      });
+    });
+
+    // Add mouse events for connection hover
+    this.editor.on('mouseMove', (position) => {
+      // Check if we're hovering over an input/output
+      const element = document.elementFromPoint(position.x, position.y);
+      if (element && (element.classList.contains('input') || element.classList.contains('output'))) {
+        element.style.cursor = 'crosshair';
+      }
     });
 
     // Node events
@@ -133,6 +191,43 @@ class WorkflowBuilder {
 
     // Drag and drop from palette
     this.setupDragAndDrop();
+    
+    // Setup connection point hover effects
+    this.setupConnectionPointEffects();
+  }
+
+  setupConnectionPointEffects() {
+    // Add hover effects to connection points
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element node
+            // Find all input/output elements
+            const connectionPoints = node.querySelectorAll('.input, .output');
+            connectionPoints.forEach(point => {
+              // Add hover effect
+              point.addEventListener('mouseenter', () => {
+                point.style.transform = 'scale(1.3)';
+                point.style.transition = 'transform 0.2s ease';
+              });
+              
+              point.addEventListener('mouseleave', () => {
+                point.style.transform = 'scale(1)';
+              });
+            });
+          }
+        });
+      });
+    });
+
+    // Observe the drawflow container for new nodes
+    const drawflowContainer = document.getElementById('drawflow');
+    if (drawflowContainer) {
+      observer.observe(drawflowContainer, {
+        childList: true,
+        subtree: true
+      });
+    }
   }
 
   setupDragAndDrop() {
@@ -937,6 +1032,30 @@ class WorkflowBuilder {
       error_message: message,
       component: 'WorkflowBuilder',
     });
+  }
+
+  showConnectionFeedback(sourceId, targetId, type) {
+    // Provide visual feedback for connection creation
+    const sourceNode = document.getElementById(`node-${sourceId}`);
+    const targetNode = document.getElementById(`node-${targetId}`);
+    
+    if (type === 'success') {
+      // Flash green on both nodes
+      if (sourceNode) {
+        sourceNode.style.transition = 'box-shadow 0.3s ease';
+        sourceNode.style.boxShadow = '0 0 0 4px #28a745, 0 0 20px rgba(40, 167, 69, 0.5)';
+        setTimeout(() => {
+          sourceNode.style.boxShadow = '';
+        }, 800);
+      }
+      if (targetNode) {
+        targetNode.style.transition = 'box-shadow 0.3s ease';
+        targetNode.style.boxShadow = '0 0 0 4px #28a745, 0 0 20px rgba(40, 167, 69, 0.5)';
+        setTimeout(() => {
+          targetNode.style.boxShadow = '';
+        }, 800);
+      }
+    }
   }
 
   /**

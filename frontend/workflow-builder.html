@@ -207,6 +207,76 @@
         transform: translateX(0);
       }
 
+      /* Connection Visual Feedback */
+      .drawflow .connection {
+        stroke-width: 3px !important;
+        stroke: #007bff !important;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+      }
+
+      .drawflow .connection:hover {
+        stroke-width: 5px !important;
+        stroke: #0056b3 !important;
+        opacity: 1;
+      }
+
+      .drawflow .connection.selected {
+        stroke: #28a745 !important;
+        stroke-width: 4px !important;
+        opacity: 1;
+      }
+
+      /* Connection points (inputs/outputs) */
+      .drawflow .input,
+      .drawflow .output {
+        width: 15px;
+        height: 15px;
+        border: 2px solid #007bff;
+        background: white;
+        border-radius: 50%;
+        cursor: crosshair;
+        transition: all 0.3s ease;
+      }
+
+      .drawflow .input:hover,
+      .drawflow .output:hover {
+        transform: scale(1.3);
+        border-color: #0056b3;
+        background: #e3f2fd;
+      }
+
+      .drawflow .output {
+        background: #007bff;
+      }
+
+      .drawflow .output:hover {
+        background: #0056b3;
+      }
+
+      /* Connection creation feedback */
+      .drawflow .connection-creating {
+        stroke: #ffc107 !important;
+        stroke-width: 4px !important;
+        stroke-dasharray: 5, 5;
+        animation: dash 1s linear infinite;
+      }
+
+      @keyframes dash {
+        to {
+          stroke-dashoffset: -10;
+        }
+      }
+
+      /* Node connection states */
+      .drawflow-node.connection-source {
+        box-shadow: 0 0 0 2px #007bff, 0 0 10px rgba(0, 123, 255, 0.3);
+      }
+
+      .drawflow-node.connection-target {
+        box-shadow: 0 0 0 2px #28a745, 0 0 10px rgba(40, 167, 69, 0.3);
+      }
+
       /* Execution States */
       .drawflow-node.execution-success {
         box-shadow: 0 0 0 3px #27ae60;

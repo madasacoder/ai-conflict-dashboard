@@ -469,6 +469,69 @@ Added "OPTIONS" to the allowed methods in the CORS middleware configuration in m
 
 ---
 
+## Bug #019: GPT-4 Checkbox Checked by Default
+
+**Status**: ✅ FIXED  
+**Severity**: Medium  
+**Component**: Workflow Builder UI
+
+### Description
+
+When creating new LLM nodes, GPT-4 checkbox was checked by default in the inline node display, even though the test was selecting Ollama.
+
+### Root Cause
+
+The `getNodeContentHTML` method had hardcoded `checked` attribute on the GPT-4 checkbox.
+
+### Fix Applied
+
+Removed the `checked` attribute from the GPT-4 checkbox in the inline HTML generation.
+
+---
+
+## Bug #020: No Visual Output Display After Workflow Execution
+
+**Status**: ✅ FIXED  
+**Severity**: High  
+**Component**: Workflow Builder Results Display
+
+### Description
+
+After workflow execution completes successfully, results were only shown via alert() and console.log. No visual feedback was provided in the UI, and users couldn't see the actual LLM output.
+
+### Root Cause
+
+The `showResults()` method only displayed an alert message instead of properly showing the execution results in the UI.
+
+### Fix Applied
+
+1. Enhanced `showResults()` to:
+   - Display results in a Bootstrap modal
+   - Add visual feedback on nodes (success/error states)
+   - Show output preview directly on LLM nodes
+
+2. Added new methods:
+   - `showResultsModal()` - Creates and displays results modal
+   - `formatResultsHtml()` - Formats results for display
+
+3. Added CSS styles for:
+   - `.execution-success` - Green border for successful nodes
+   - `.execution-error` - Red border for failed nodes  
+   - `.node-output-preview` - Preview box on nodes
+
+4. Output preview shows first 200 characters of LLM response directly on the node.
+
+### Test Results
+
+Created mock data test that validates:
+- Modal displays correctly ✅
+- Chinese text renders properly ✅
+- Visual states update ✅
+- Output previews appear ✅
+- Error handling works ✅
+
+---
+
 ## Additional Bugs Found During Testing
 
 ### Connection-Related Bugs:
@@ -479,9 +542,9 @@ Added "OPTIONS" to the allowed methods in the CORS middleware configuration in m
 
 ### Execution-Related Bugs:
 
-- Workflow execution doesn't send requests to Ollama
-- No visual feedback during execution
-- Results not displayed in UI after completion
+- ~~Workflow execution doesn't send requests to Ollama~~ (Fixed via Bug #006, #015, #018)
+- ~~No visual feedback during execution~~ (Fixed via Bug #020)
+- ~~Results not displayed in UI after completion~~ (Fixed via Bug #020)
 
 ### UI Interaction Bugs:
 
@@ -491,7 +554,18 @@ Added "OPTIONS" to the allowed methods in the CORS middleware configuration in m
 
 ---
 
+## Summary Statistics
+
+- **Total Bugs Found**: 20
+- **Fixed**: 19
+- **Pending**: 1 (Bug #013 - Connection visual feedback)
+- **Critical**: 8
+- **High**: 8  
+- **Medium**: 4
+
+---
+
 **Last Updated**: 2025-08-03  
 **Test Framework Version**: 1.0.0  
-**Workflow Builder Version**: Current
-**Total Bugs Documented**: 18
+**Workflow Builder Version**: Current with output display
+**Total Bugs Documented**: 20

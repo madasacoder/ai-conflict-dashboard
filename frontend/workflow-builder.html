@@ -207,6 +207,45 @@
         transform: translateX(0);
       }
 
+      /* Execution States */
+      .drawflow-node.execution-success {
+        box-shadow: 0 0 0 3px #27ae60;
+      }
+
+      .drawflow-node.execution-error {
+        box-shadow: 0 0 0 3px #e74c3c;
+      }
+
+      .node-output-preview {
+        margin-top: 10px;
+        padding: 8px;
+        background: #f0f0f0;
+        border-radius: 4px;
+        font-size: 12px;
+        max-height: 100px;
+        overflow-y: auto;
+        color: #333;
+      }
+
+      [data-theme='dark'] .node-output-preview {
+        background: #495057;
+        color: #f8f9fa;
+      }
+
+      /* Results Modal */
+      .node-result {
+        background: #f8f9fa;
+      }
+
+      [data-theme='dark'] .node-result {
+        background: #2c3034;
+      }
+
+      .model-response pre {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
       /* Responsive */
       @media (max-width: 768px) {
         .node-palette {

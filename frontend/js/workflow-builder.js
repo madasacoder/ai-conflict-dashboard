@@ -246,7 +246,7 @@ class WorkflowBuilder {
         inputs: 1,
         outputs: 1,
         data: {
-          models: ['gpt-4'],
+          models: [],
           prompt: 'Analyze the following text:\n\n{input}',
           temperature: 0.5,
           maxTokens: 2000,
@@ -339,7 +339,7 @@ class WorkflowBuilder {
                     <div class="mb-2">
                         <small class="text-muted">Models:</small>
                         <div class="form-check form-check-sm">
-                            <input class="form-check-input" type="checkbox" value="gpt-4" checked>
+                            <input class="form-check-input" type="checkbox" value="gpt-4">
                             <label class="form-check-label small">GPT-4</label>
                         </div>
                         <div class="form-check form-check-sm">
@@ -668,7 +668,8 @@ class WorkflowBuilder {
       // Execute workflow
       console.log('📤 Sending workflow to backend:', { workflow: workflowData, api_keys: Object.keys(apiKeys) });
       
-      const response = await fetch('http://localhost:8000/api/workflows/execute', {
+      try {
+        const response = await fetch('http://localhost:8000/api/workflows/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -689,6 +690,10 @@ class WorkflowBuilder {
 
       // Display results
       this.showResults(results);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+      }
     } catch (error) {
       alert('Workflow execution failed: ' + error.message);
       logger.error(
@@ -780,8 +785,137 @@ class WorkflowBuilder {
       success: true,
     });
 
-    // For now, just show an alert
-    alert('Workflow completed successfully! Check console for results.');
+    console.log('📊 Workflow Results:', results);
+
+    // Update node visual states with results
+    if (results.results) {
+      Object.entries(results.results).forEach(([nodeId, nodeResult]) => {
+        const node = this.editor.getNodeFromId(nodeId);
+        if (node) {
+          // Store result in node data
+          node.data.executionResult = nodeResult;
+          this.editor.updateNodeDataFromId(nodeId, node.data);
+
+          // Update visual indicator
+          const nodeElement = document.getElementById(`node-${nodeId}`);
+          if (nodeElement) {
+            // Add success/error class
+            if (nodeResult.status === 'success') {
+              nodeElement.classList.add('execution-success');
+              
+              // For LLM nodes, show the output
+              if (nodeResult.type === 'llm' && nodeResult.result) {
+                // Get the first model's response
+                const modelResponses = nodeResult.result;
+                const firstModel = Object.keys(modelResponses)[0];
+                const response = modelResponses[firstModel];
+                
+                if (response && typeof response === 'object' && response.response) {
+                  // Add output preview to node
+                  const contentDiv = nodeElement.querySelector('.content');
+                  if (contentDiv) {
+                    const outputDiv = document.createElement('div');
+                    outputDiv.className = 'node-output-preview';
+                    outputDiv.style.cssText = 'margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px; max-height: 100px; overflow-y: auto;';
+                    outputDiv.textContent = response.response.substring(0, 200) + (response.response.length > 200 ? '...' : '');
+                    contentDiv.appendChild(outputDiv);
+                  }
+                }
+              }
+            } else {
+              nodeElement.classList.add('execution-error');
+            }
+          }
+        }
+      });
+    }
+
+    // Show results in a modal
+    this.showResultsModal(results);
+  }
+
+  showResultsModal(results) {
+    // Create modal HTML
+    const modalHtml = `
+      <div class="modal fade" id="resultsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Workflow Execution Results</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              ${this.formatResultsHtml(results)}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('resultsModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', DOMPurify.sanitize(modalHtml));
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('resultsModal'));
+    modal.show();
+  }
+
+  formatResultsHtml(results) {
+    let html = '<div class="results-container">';
+    
+    if (results.status === 'success' && results.results) {
+      html += '<h6>Node Execution Results:</h6>';
+      
+      Object.entries(results.results).forEach(([nodeId, nodeResult]) => {
+        html += `<div class="node-result mb-3 p-3 border rounded">`;
+        html += `<h6>Node ${nodeId} (${nodeResult.type})</h6>`;
+        
+        if (nodeResult.status === 'success') {
+          html += '<span class="badge bg-success">Success</span>';
+          
+          if (nodeResult.type === 'llm' && nodeResult.result) {
+            // Show LLM responses
+            Object.entries(nodeResult.result).forEach(([model, response]) => {
+              html += `<div class="model-response mt-2">`;
+              html += `<strong>${model}:</strong><br>`;
+              
+              if (response.error) {
+                html += `<span class="text-danger">Error: ${response.error}</span>`;
+              } else if (response.response) {
+                html += `<pre class="bg-light p-2" style="white-space: pre-wrap;">${response.response}</pre>`;
+              } else if (typeof response === 'string') {
+                html += `<pre class="bg-light p-2" style="white-space: pre-wrap;">${response}</pre>`;
+              } else {
+                html += `<pre class="bg-light p-2">${JSON.stringify(response, null, 2)}</pre>`;
+              }
+              
+              html += '</div>';
+            });
+          } else if (nodeResult.result) {
+            html += `<pre class="bg-light p-2 mt-2">${JSON.stringify(nodeResult.result, null, 2)}</pre>`;
+          }
+        } else {
+          html += '<span class="badge bg-danger">Error</span>';
+          html += `<p class="text-danger mt-2">${nodeResult.error || 'Unknown error'}</p>`;
+        }
+        
+        html += '</div>';
+      });
+    } else {
+      html += '<p class="text-danger">No results available</p>';
+    }
+    
+    html += '</div>';
+    return html;
   }
 
   showError(message) {

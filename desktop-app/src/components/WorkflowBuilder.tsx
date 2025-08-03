@@ -189,7 +189,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
   }, [])
 
   return (
-    <div className={`workflow-builder ${className || ''} ${currentTheme}`}>
+    <div className={`workflow-builder ${className || ''} ${currentTheme}`} data-testid="workflow-builder">
       {/* Main Canvas */}
       <div 
         className={`workflow-canvas ${isDraggingOver ? 'dragging-over' : ''}`}

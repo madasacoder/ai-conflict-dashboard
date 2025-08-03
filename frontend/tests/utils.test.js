@@ -106,7 +106,9 @@ describe('escapeHtml', () => {
   });
 
   it('should escape quotes', () => {
-    expect(escapeHtml('"quotes" & \'apostrophes\'')).toBe('&quot;quotes&quot; &amp; &#x27;apostrophes&#x27;');
+    expect(escapeHtml('"quotes" & \'apostrophes\'')).toBe(
+      '&quot;quotes&quot; &amp; &#x27;apostrophes&#x27;'
+    );
   });
 });
 
@@ -283,7 +285,7 @@ describe('logger', () => {
   beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     // Mock the global logger that legacyLogger uses
     global.logger = {
       debug: vi.fn((event, data) => {
@@ -296,7 +298,7 @@ describe('logger', () => {
       }),
       error: vi.fn((event, data) => {
         console.error('[ERROR]', new Date().toISOString(), ...data.args);
-      })
+      }),
     };
   });
 
@@ -324,7 +326,7 @@ describe('logger', () => {
   it('should save logs to localStorage', () => {
     // Initialize localStorage with empty array
     localStorage.setItem('appLogs', '[]');
-    
+
     // Mock the global logger info method to save to localStorage
     const originalInfo = global.logger.info;
     global.logger.info = vi.fn((event, data) => {
@@ -334,12 +336,12 @@ describe('logger', () => {
           level: data.level,
           message: data.message,
           data: data.data,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         localStorage.setItem('appLogs', JSON.stringify(logs));
       }
     });
-    
+
     logger.saveLog('error', 'Test error', { code: 500 });
 
     const logs = JSON.parse(localStorage.getItem('appLogs'));
@@ -347,7 +349,7 @@ describe('logger', () => {
     expect(logs[0].level).toBe('error');
     expect(logs[0].message).toBe('Test error');
     expect(logs[0].data.code).toBe(500);
-    
+
     // Restore
     global.logger.info = originalInfo;
   });
@@ -355,7 +357,7 @@ describe('logger', () => {
   it('should limit logs to 50 entries', () => {
     // Initialize localStorage with empty array
     localStorage.setItem('appLogs', '[]');
-    
+
     // Mock the global logger info method to save to localStorage with limit
     const originalInfo = global.logger.info;
     global.logger.info = vi.fn((event, data) => {
@@ -365,7 +367,7 @@ describe('logger', () => {
           level: data.level,
           message: data.message,
           data: data.data,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         // Keep only last 50 entries
         if (logs.length > 50) {
@@ -374,7 +376,7 @@ describe('logger', () => {
         localStorage.setItem('appLogs', JSON.stringify(logs));
       }
     });
-    
+
     for (let i = 0; i < 60; i++) {
       logger.saveLog('info', `Log ${i}`);
     }
@@ -382,7 +384,7 @@ describe('logger', () => {
     const logs = JSON.parse(localStorage.getItem('appLogs'));
     expect(logs).toHaveLength(50);
     expect(logs[0].message).toBe('Log 10'); // First 10 should be removed
-    
+
     // Restore
     global.logger.info = originalInfo;
   });

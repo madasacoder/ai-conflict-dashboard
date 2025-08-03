@@ -1,10 +1,11 @@
 """Adversarial and edge-case tests to find real bugs."""
 
-import pytest
 import asyncio
-import random
 import json
-from unittest.mock import patch, AsyncMock
+import random
+from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from main import app
@@ -23,9 +24,7 @@ class TestAdversarialInputs:
         # 50,000 character word with no spaces
         long_word = "a" * 50000
 
-        response = client.post(
-            "/api/analyze", json={"text": long_word, "openai_key": "test-key"}
-        )
+        response = client.post("/api/analyze", json={"text": long_word, "openai_key": "test-key"})
 
         # This might break chunking logic that relies on spaces
         assert response.status_code == 200
@@ -33,9 +32,7 @@ class TestAdversarialInputs:
 
     def test_malicious_json_injection(self, client):
         """Test JSON injection in text field."""
-        malicious_text = (
-            '"},"responses":[{"model":"hacked","response":"pwned"}],"original_text":"'
-        )
+        malicious_text = '"},"responses":[{"model":"hacked","response":"pwned"}],"original_text":"'
 
         response = client.post(
             "/api/analyze", json={"text": malicious_text, "openai_key": "test-key"}
@@ -51,9 +48,7 @@ class TestAdversarialInputs:
         # These can cause display issues or security problems
         tricky_text = "Hello \u202e dlrow"  # Right-to-left override
 
-        response = client.post(
-            "/api/analyze", json={"text": tricky_text, "openai_key": "test-key"}
-        )
+        response = client.post("/api/analyze", json={"text": tricky_text, "openai_key": "test-key"})
 
         assert response.status_code == 200
         # But is it displayed correctly in the UI?
@@ -77,9 +72,7 @@ class TestAdversarialInputs:
             nested_md += "> " * (i % 10) + "Quote\n"
             nested_md += "```" + "python" * (i % 2) + "\n"
 
-        response = client.post(
-            "/api/analyze", json={"text": nested_md, "openai_key": "test-key"}
-        )
+        response = client.post("/api/analyze", json={"text": nested_md, "openai_key": "test-key"})
 
         # This might break markdown parsing or cause performance issues
         assert response.status_code == 200
@@ -283,9 +276,7 @@ class TestSecurityAssumptions:
         ]>
         <test>&xxe;</test>"""
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             # Return a safe response that doesn't include the file path
             mock.return_value = {
                 "model": "openai",
@@ -318,9 +309,7 @@ class TestBrowserQuirks:
         ]
 
         for text in texts:
-            response = client.post(
-                "/api/analyze", json={"text": text, "openai_key": "key"}
-            )
+            response = client.post("/api/analyze", json={"text": text, "openai_key": "key"})
             assert response.status_code == 200
             # But do they display correctly?
 
@@ -329,9 +318,7 @@ class TestBrowserQuirks:
         # These can break length calculations
         emoji_text = "👨‍👩‍👧‍👦👨🏽‍💻👩🏻‍🔬🧑🏿‍🚀"
 
-        response = client.post(
-            "/api/analyze", json={"text": emoji_text, "openai_key": "key"}
-        )
+        response = client.post("/api/analyze", json={"text": emoji_text, "openai_key": "key"})
 
         # Token counting might be way off
         assert response.status_code == 200

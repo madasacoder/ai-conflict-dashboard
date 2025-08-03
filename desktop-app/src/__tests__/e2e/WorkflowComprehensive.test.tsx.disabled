@@ -17,7 +17,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
 
     // Set up console error monitoring
     const consoleLogs: string[] = []
-    page.on('console', (msg) => {
+    page.on('console', msg => {
       if (msg.type() === 'error') {
         consoleLogs.push(msg.text())
       }
@@ -27,10 +27,10 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
   test('should load workflow builder with all required components', async ({ page }) => {
     // Verify React Flow canvas is loaded
     await expect(page.locator('.react-flow__renderer')).toBeVisible()
-    
+
     // Verify node palette is visible
     await expect(page.locator('[data-testid="node-palette"]')).toBeVisible()
-    
+
     // Verify all node types are available
     await expect(page.locator('[data-testid="node-palette-input"]')).toBeVisible()
     await expect(page.locator('[data-testid="node-palette-llm"]')).toBeVisible()
@@ -50,24 +50,24 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     const inputNode = await framework.createInputNode({
       type: 'text',
       content: 'Test input text',
-      position: { x: 100, y: 100 }
+      position: { x: 100, y: 100 },
     })
-    
+
     // Add LLM node
     const llmNode = await framework.createLLMNode({
       model: 'gpt-4',
       prompt: 'Analyze this text: {input}',
-      position: { x: 400, y: 100 }
+      position: { x: 400, y: 100 },
     })
-    
+
     // Add Output node
     const outputNode = await framework.createCompareNode({
-      position: { x: 700, y: 100 }
+      position: { x: 700, y: 100 },
     })
 
     // Verify all three nodes exist
     await expect(page.locator('.react-flow__node')).toHaveCount(3)
-    
+
     // Verify node types
     await expect(page.locator('.react-flow__node-input')).toHaveCount(1)
     await expect(page.locator('.react-flow__node-llm')).toHaveCount(1)
@@ -79,13 +79,13 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     const inputNode = await framework.createInputNode({
       type: 'text',
       content: 'Test content',
-      position: { x: 100, y: 100 }
+      position: { x: 100, y: 100 },
     })
-    
+
     const llmNode = await framework.createLLMNode({
       model: 'claude-3-opus',
       prompt: 'Process: {input}',
-      position: { x: 400, y: 100 }
+      position: { x: 400, y: 100 },
     })
 
     // Connect nodes
@@ -100,27 +100,27 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     const llmNode = await framework.createLLMNode({
       model: 'gpt-4',
       prompt: 'Initial prompt',
-      position: { x: 200, y: 200 }
+      position: { x: 200, y: 200 },
     })
 
     // Double-click to open configuration
     await page.locator(`[data-id="${llmNode.id}"]`).dblclick()
-    
+
     // Wait for config modal
     await expect(page.locator('[data-testid="node-config-modal"]')).toBeVisible()
-    
+
     // Verify configuration options
     await expect(page.locator('[data-testid="prompt-input"]')).toBeVisible()
     await expect(page.locator('[data-testid="model-select"]')).toBeVisible()
-    
+
     // Update configuration
     await page.fill('[data-testid="prompt-input"]', 'Analyze this text for sentiment: {input}')
     await page.selectOption('[data-testid="model-select"]', 'claude-3-opus')
-    
+
     // Save configuration
     await page.click('[data-testid="save-config"]')
     await expect(page.locator('[data-testid="node-config-modal"]')).not.toBeVisible()
-    
+
     // Verify node shows as configured
     await expect(page.locator(`[data-id="${llmNode.id}"] .configured`)).toBeVisible()
   })
@@ -130,13 +130,13 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     const inputNode = await framework.createInputNode({
       type: 'text',
       content: 'Persistent text',
-      position: { x: 100, y: 100 }
+      position: { x: 100, y: 100 },
     })
-    
+
     const outputNode = await framework.createCompareNode({
-      position: { x: 400, y: 100 }
+      position: { x: 400, y: 100 },
     })
-    
+
     await framework.connectNodes(inputNode.id, outputNode.id)
 
     // Save workflow
@@ -163,7 +163,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     await framework.createLLMNode({
       model: 'gpt-4',
       prompt: 'Test prompt',
-      position: { x: 400, y: 100 }
+      position: { x: 400, y: 100 },
     })
 
     // Set up download promise
@@ -189,11 +189,11 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
           data: {
             label: 'Input Node',
             inputType: 'text',
-            value: 'Imported text'
-          }
-        }
+            value: 'Imported text',
+          },
+        },
       ],
-      edges: []
+      edges: [],
     }
 
     // Create file input and trigger import
@@ -201,7 +201,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     await page.setInputFiles('[data-testid="import-workflow-input"]', {
       name: 'test-workflow.json',
       mimeType: 'application/json',
-      buffer: Buffer.from(fileContent)
+      buffer: Buffer.from(fileContent),
     })
 
     // Verify workflow was imported
@@ -215,7 +215,9 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
 
     // Should show validation error
     await expect(page.locator('[data-testid="validation-error"]')).toBeVisible()
-    await expect(page.locator('[data-testid="validation-error"]')).toContainText('at least one node')
+    await expect(page.locator('[data-testid="validation-error"]')).toContainText(
+      'at least one node'
+    )
   })
 
   test('should handle API key configuration', async ({ page }) => {
@@ -232,7 +234,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
 
     // Verify success message
     await expect(page.locator('[data-testid="success-message"]')).toBeVisible()
-    
+
     // Verify keys are masked in UI
     const openaiInput = page.locator('[data-testid="openai-key-input"]')
     await expect(openaiInput).toHaveAttribute('type', 'password')
@@ -240,10 +242,10 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
 
   test('should implement proper error handling', async ({ page }) => {
     // Mock API failure
-    await page.route('**/api/workflow/execute', (route) => {
+    await page.route('**/api/workflow/execute', route => {
       route.fulfill({
         status: 500,
-        body: JSON.stringify({ error: 'Internal server error' })
+        body: JSON.stringify({ error: 'Internal server error' }),
       })
     })
 
@@ -251,13 +253,13 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     const inputNode = await framework.createInputNode({
       type: 'text',
       content: 'Test',
-      position: { x: 100, y: 100 }
+      position: { x: 100, y: 100 },
     })
-    
+
     const llmNode = await framework.createLLMNode({
       model: 'gpt-4',
       prompt: 'Test',
-      position: { x: 400, y: 100 }
+      position: { x: 400, y: 100 },
     })
 
     await framework.connectNodes(inputNode.id, llmNode.id)
@@ -290,7 +292,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     // Test select all
     await framework.createLLMNode({ position: { x: 400, y: 200 } })
     await page.keyboard.press('Control+a')
-    
+
     // Both nodes should be selected
     await expect(page.locator('.react-flow__node.selected')).toHaveCount(2)
   })
@@ -300,7 +302,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     const llmNode = await framework.createLLMNode({
       model: 'gpt-4',
       prompt: 'Initial',
-      position: { x: 200, y: 200 }
+      position: { x: 200, y: 200 },
     })
 
     // Open configuration
@@ -313,7 +315,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
 
     // Save and verify script didn't execute
     await page.click('[data-testid="save-config"]')
-    
+
     const xssExecuted = await page.evaluate(() => (window as any).xssExecuted)
     expect(xssExecuted).toBeFalsy()
 
@@ -325,12 +327,12 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
   test('should handle large workflows efficiently', async ({ page }) => {
     // Create large workflow (stress test)
     const startTime = Date.now()
-    
+
     for (let i = 0; i < 20; i++) {
       await framework.createLLMNode({
         model: 'gpt-4',
         prompt: `Node ${i}`,
-        position: { x: (i % 5) * 200 + 100, y: Math.floor(i / 5) * 150 + 100 }
+        position: { x: (i % 5) * 200 + 100, y: Math.floor(i / 5) * 150 + 100 },
       })
     }
 
@@ -344,7 +346,7 @@ test.describe('Desktop Workflow Builder - Comprehensive E2E Tests', () => {
     await page.click('[data-testid="zoom-in"]')
     await page.click('[data-testid="zoom-out"]')
     await page.click('[data-testid="fit-view"]')
-    
+
     // All nodes should still be visible
     await expect(page.locator('.react-flow__node')).toHaveCount(20)
   })

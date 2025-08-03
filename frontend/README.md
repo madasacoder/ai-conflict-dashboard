@@ -25,6 +25,7 @@ Open http://localhost:8080 in your browser.
 ## 📋 Features
 
 ### User Interface
+
 - **Responsive Design**: Mobile-first with Bootstrap 5
 - **Dark Mode**: Automatic theme switching with smooth transitions
 - **Drag & Drop**: Visual workflow builder for AI pipelines
@@ -34,6 +35,7 @@ Open http://localhost:8080 in your browser.
 - **File Upload**: Multiple file support with drag & drop
 
 ### Technical Features
+
 - **Progressive Enhancement**: Works without JavaScript
 - **Local Storage**: API keys and preferences saved locally
 - **IndexedDB**: Searchable conversation history
@@ -43,6 +45,7 @@ Open http://localhost:8080 in your browser.
 ## 🛠️ Development Toolchain
 
 ### Quick Quality Checks
+
 ```bash
 # Run all checks
 npm run check
@@ -57,27 +60,33 @@ npm run quality   # Code complexity analysis
 ### Tools Configuration
 
 #### **ESLint** (Linting + Security)
+
 - Configuration: `.eslintrc` in `package.json`
 - Security plugins: `no-secrets`, `security`, `no-unsanitized`
 - Additional: `jsdoc`, `sonarjs` for quality
+
 ```bash
 npm run lint      # Check for issues
 npm run lint:fix  # Auto-fix issues
 ```
 
 #### **Prettier** (Code Formatting)
+
 - Configuration: `.prettierrc`
 - Line width: 100
 - Single quotes, trailing commas
+
 ```bash
 npm run format       # Format all files
 npm run format:check # Check without modifying
 ```
 
 #### **Vitest** (Unit Testing)
+
 - Fast, modern testing framework
 - React Testing Library for components
 - happy-dom for 3x faster DOM
+
 ```bash
 npm test             # Run tests
 npm run test:ui      # Interactive UI
@@ -85,17 +94,21 @@ npm run test:coverage # Coverage report
 ```
 
 #### **Playwright** (E2E Testing)
+
 - Cross-browser testing (5 browsers)
 - Mobile device emulation
 - Visual regression testing
+
 ```bash
 npm run test:e2e     # Run E2E tests
 ```
 
 #### **Security Tools**
+
 - `npm audit` for dependency scanning
 - ESLint security plugins
 - Husky pre-commit hooks
+
 ```bash
 npm run security     # Run all security checks
 npm audit fix        # Fix vulnerabilities
@@ -104,12 +117,14 @@ npm audit fix        # Fix vulnerabilities
 ## 📊 Quality Metrics
 
 ### Current Status
+
 - **Test Coverage**: 85%+ target
 - **Security Issues**: 0 ✅
 - **Accessibility**: WCAG 2.1 AA compliant
 - **Performance**: Lighthouse score 95+
 
 ### Testing Standards
+
 ```javascript
 // ✅ No console.log - use structured logging
 logger.info('user_action', { action: 'click', component: 'button' });
@@ -126,6 +141,7 @@ beforeEach(() => {
 ## 🏗️ Architecture
 
 ### Project Structure
+
 ```
 frontend/
 ├── index.html              # Main application
@@ -149,12 +165,14 @@ frontend/
 ### Key Components
 
 #### Main Interface (`index.html`)
+
 - API key management
 - Model selection
 - Query input and history
 - Response comparison
 
 #### Workflow Builder (`workflow-builder.html`)
+
 - Drag & drop nodes
 - Connection management
 - Node configuration
@@ -163,6 +181,7 @@ frontend/
 ## 🔧 Configuration
 
 ### ESLint Rules
+
 ```javascript
 // Enforced rules (see package.json)
 {
@@ -174,6 +193,7 @@ frontend/
 ```
 
 ### Testing Configuration
+
 ```javascript
 // vitest.config.js
 {
@@ -193,6 +213,7 @@ frontend/
 ## 📖 Usage Guide
 
 ### Development Workflow
+
 1. **Start dev server**: `npm run serve`
 2. **Make changes**: Edit files in `js/`
 3. **Run tests**: `npm test`
@@ -200,6 +221,7 @@ frontend/
 5. **Commit**: Pre-commit hooks run automatically
 
 ### Adding New Features
+
 1. Create feature in `js/`
 2. Add tests in `tests/`
 3. Update E2E tests if needed
@@ -207,6 +229,7 @@ frontend/
 5. Update documentation
 
 ### Code Standards
+
 ```javascript
 // Use modern ES6+ syntax
 const processData = async (data) => {
@@ -241,6 +264,7 @@ const cleanup = () => {
 ### Common Issues
 
 #### "Module not found"
+
 ```bash
 # Clear cache and reinstall
 rm -rf node_modules package-lock.json
@@ -248,12 +272,14 @@ npm install
 ```
 
 #### "Port already in use"
+
 ```bash
 # Use a different port
 python3 -m http.server 8081
 ```
 
 #### "Tests failing"
+
 ```bash
 # Run with more details
 npm test -- --reporter=verbose
@@ -264,6 +290,7 @@ npm test -- --timeout=10000
 ## 🚦 Testing
 
 ### Unit Tests (Vitest)
+
 ```bash
 # Run all tests
 npm test
@@ -279,6 +306,7 @@ npm run test:coverage
 ```
 
 ### E2E Tests (Playwright)
+
 ```bash
 # Run all E2E tests
 npm run test:e2e
@@ -291,6 +319,7 @@ npx playwright test --debug
 ```
 
 ### Manual Testing Checklist
+
 - [ ] API key management works
 - [ ] File upload handles large files
 - [ ] Dark mode transitions smoothly
@@ -307,7 +336,9 @@ npx playwright test --debug
 5. **Accessibility**: Test with keyboard and screen reader
 
 ### Pre-commit Hooks
+
 Automatically runs:
+
 - ESLint checks
 - Prettier formatting
 - Security scanning

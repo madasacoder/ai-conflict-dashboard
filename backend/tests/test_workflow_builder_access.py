@@ -1,15 +1,16 @@
 """Test workflow builder access and HTTPS redirect issues."""
 
-import pytest
 import re
 from unittest.mock import Mock
+
+import pytest
 import requests
 
 
 def test_workflow_builder_link_uses_explicit_http():
     """Ensure workflow builder link uses explicit HTTP protocol."""
     # Read the main index.html file
-    with open("../frontend/index.html", "r") as f:
+    with open("../frontend/index.html") as f:
         content = f.read()
 
     # Find workflow builder link
@@ -34,22 +35,18 @@ def test_no_https_localhost_references():
 
     for filepath in html_files:
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 content = f.read()
 
             # Check for HTTPS localhost references
-            assert (
-                "https://localhost" not in content
-            ), f"{filepath} contains https://localhost"
+            assert "https://localhost" not in content, f"{filepath} contains https://localhost"
 
             # Check for protocol-relative URLs that might become HTTPS
             # (but allow http://localhost)
             lines = content.split("\n")
             for i, line in enumerate(lines):
                 if "//localhost" in line and "http://localhost" not in line:
-                    assert (
-                        False
-                    ), f"{filepath}:{i+1} contains protocol-relative //localhost URL"
+                    assert False, f"{filepath}:{i + 1} contains protocol-relative //localhost URL"
         except FileNotFoundError:
             pass  # Skip if file doesn't exist
 
@@ -64,7 +61,7 @@ def test_no_upgrade_insecure_requests():
 
     for filepath in html_files:
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 content = f.read()
 
             # Check for upgrade-insecure-requests
@@ -93,15 +90,11 @@ def test_workflow_builder_accessible_via_http():
         )
 
         # Should get 200 OK, not redirect to HTTPS
-        assert (
-            response.status_code == 200
-        ), f"Expected 200 OK, got {response.status_code}"
+        assert response.status_code == 200, f"Expected 200 OK, got {response.status_code}"
 
         # Check response headers for any HTTPS upgrade hints
         headers = response.headers
-        assert (
-            "Strict-Transport-Security" not in headers
-        ), "Server should not send HSTS header"
+        assert "Strict-Transport-Security" not in headers, "Server should not send HSTS header"
         assert (
             "Upgrade-Insecure-Requests" not in headers
         ), "Server should not send upgrade-insecure-requests"

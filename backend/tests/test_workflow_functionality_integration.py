@@ -1,8 +1,9 @@
 """Integration tests for workflow builder functionality - BUG-038."""
 
+from pathlib import Path
+
 import pytest
 import requests
-from pathlib import Path
 
 
 class TestWorkflowBuilderIntegration:
@@ -16,9 +17,7 @@ class TestWorkflowBuilderIntegration:
     def test_workflow_builder_page_loads(self):
         """Test that workflow builder page loads without errors."""
         try:
-            response = requests.get(
-                "http://127.0.0.1:3000/workflow-builder.html", timeout=5
-            )
+            response = requests.get("http://127.0.0.1:3000/workflow-builder.html", timeout=5)
             assert (
                 response.status_code == 200
             ), f"Workflow builder page failed to load: {response.status_code}"
@@ -37,9 +36,7 @@ class TestWorkflowBuilderIntegration:
     def test_workflow_javascript_loads(self):
         """Test that workflow JavaScript file loads successfully."""
         try:
-            response = requests.get(
-                "http://127.0.0.1:3000/js/workflow-builder.js", timeout=5
-            )
+            response = requests.get("http://127.0.0.1:3000/js/workflow-builder.js", timeout=5)
             assert (
                 response.status_code == 200
             ), f"Workflow JavaScript failed to load: {response.status_code}"
@@ -50,9 +47,7 @@ class TestWorkflowBuilderIntegration:
             assert "class WorkflowBuilder" in content, "Missing WorkflowBuilder class"
             assert "setupDragAndDrop" in content, "Missing drag and drop setup"
             assert "addEventListener" in content, "Missing event listeners"
-            assert (
-                "dataset.nodeType" in content
-            ), "Missing correct data attribute access"
+            assert "dataset.nodeType" in content, "Missing correct data attribute access"
 
         except requests.ConnectionError:
             pytest.skip("Frontend server not running")
@@ -71,9 +66,7 @@ class TestWorkflowBuilderIntegration:
 
             # Basic sanity check
             content = response.text
-            assert (
-                "Drawflow" in content
-            ), "Drawflow library doesn't contain expected class"
+            assert "Drawflow" in content, "Drawflow library doesn't contain expected class"
 
         except requests.ConnectionError:
             pytest.fail("Cannot reach Drawflow CDN - workflow will fail")
@@ -84,7 +77,7 @@ class TestWorkflowBuilderIntegration:
         """Test that all workflow dependencies are available."""
         html_file = Path("../frontend/workflow-builder.html")
 
-        with open(html_file, "r") as f:
+        with open(html_file) as f:
             content = f.read()
 
         # Check for required CDN resources
@@ -105,7 +98,7 @@ class TestWorkflowBuilderIntegration:
         """Test that all required node types are properly configured."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Required node types that must be handled
@@ -118,15 +111,13 @@ class TestWorkflowBuilderIntegration:
         for node_type in required_node_types:
             # This is a basic check - actual functionality needs manual testing
             # But ensures the infrastructure is there
-            assert (
-                node_type in content
-            ), f"Node type '{node_type}' not referenced in JavaScript"
+            assert node_type in content, f"Node type '{node_type}' not referenced in JavaScript"
 
     def test_event_listener_setup(self):
         """Test that event listeners are properly set up."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Critical event listeners that must exist
@@ -139,15 +130,14 @@ class TestWorkflowBuilderIntegration:
 
         for event in required_events:
             assert (
-                f"addEventListener('{event}'" in content
-                or f'addEventListener("{event}"' in content
+                f"addEventListener('{event}'" in content or f'addEventListener("{event}"' in content
             ), f"Missing event listener for '{event}'"
 
     def test_workflow_initialization_code(self):
         """Test that workflow initialization code exists."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Check for proper initialization
@@ -164,10 +154,10 @@ class TestWorkflowBuilderIntegration:
         html_file = Path("../frontend/workflow-builder.html")
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(html_file, "r") as f:
+        with open(html_file) as f:
             html_content = f.read()
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             js_content = f.read()
 
         # Critical DOM elements that JavaScript depends on
@@ -191,16 +181,14 @@ class TestWorkflowBuilderIntegration:
         """Test that adequate console logging exists for debugging."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Should have console logging for debugging workflow issues
         log_patterns = ["console.log(", "console.error(", "console.warn("]
 
         log_count = sum(content.count(pattern) for pattern in log_patterns)
-        assert (
-            log_count >= 5
-        ), f"Insufficient console logging for debugging (found {log_count})"
+        assert log_count >= 5, f"Insufficient console logging for debugging (found {log_count})"
 
         # Specific debug points that should be logged
         debug_points = [
@@ -221,7 +209,7 @@ class TestWorkflowRegressionPrevention:
         """Ensure workflow builder fails loudly, not silently."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Should have error handling and logging

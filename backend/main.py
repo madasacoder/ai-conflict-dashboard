@@ -1,40 +1,40 @@
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
-from uuid import uuid4
-from contextlib import asynccontextmanager
-import time
 import os
+import time
+from contextlib import asynccontextmanager
+from uuid import uuid4
 
-# Import our structured logging configuration
-from structured_logging import (
-    setup_structured_logging,
-    get_logger,
-    RequestContext,
-    log_api_request,
-    log_api_response,
-)
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 # Import secure CORS configuration
 from cors_config import get_allowed_origins
 
+# Import memory management
+from memory_management import (
+    RequestContext as MemoryContext,
+    limit_response_size,
+    memory_manager,
+)
+
 # Import rate limiting
 from rate_limiting import RateLimiter, get_identifier
 
-# Import memory management
-from memory_management import (
-    memory_manager,
-    RequestContext as MemoryContext,
-    limit_response_size,
+# Import our structured logging configuration
+from structured_logging import (
+    RequestContext,
+    get_logger,
+    log_api_request,
+    log_api_response,
+    setup_structured_logging,
 )
 
 # Import timeout handling
 from timeout_handler import (
-    timeout_handler,
-    get_timeout_stats,
     TimeoutError as AppTimeoutError,
+    get_timeout_stats,
+    timeout_handler,
 )
 
 # Setup structured logging (DEBUG in development)
@@ -174,21 +174,21 @@ async def rate_limit_requests(request: Request, call_next):
 # Request/Response models
 class AnalyzeRequest(BaseModel):
     text: str
-    openai_key: Optional[str] = None
-    claude_key: Optional[str] = None
-    gemini_key: Optional[str] = None
-    grok_key: Optional[str] = None
-    openai_model: Optional[str] = "gpt-3.5-turbo"  # Default model
-    claude_model: Optional[str] = "claude-3-haiku-20240307"  # Default model
-    gemini_model: Optional[str] = "gemini-1.5-flash"  # Default model
-    grok_model: Optional[str] = "grok-2-latest"  # Default model
-    ollama_model: Optional[str] = None  # Ollama model to use
+    openai_key: str | None = None
+    claude_key: str | None = None
+    gemini_key: str | None = None
+    grok_key: str | None = None
+    openai_model: str | None = "gpt-3.5-turbo"  # Default model
+    claude_model: str | None = "claude-3-haiku-20240307"  # Default model
+    gemini_model: str | None = "gemini-1.5-flash"  # Default model
+    grok_model: str | None = "grok-2-latest"  # Default model
+    ollama_model: str | None = None  # Ollama model to use
 
 
 class ModelResponse(BaseModel):
     model: str
     response: str
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class AnalyzeResponse(BaseModel):
@@ -196,7 +196,7 @@ class AnalyzeResponse(BaseModel):
     original_text: str
     responses: list[ModelResponse]
     chunked: bool = False
-    chunk_info: Optional[dict] = None
+    chunk_info: dict | None = None
 
 
 @app.get("/")
@@ -263,9 +263,7 @@ async def execute_workflow(request: Request):
         edges = workflow_data.get("edges", [])
 
         if not nodes:
-            raise HTTPException(
-                status_code=400, detail="Workflow must contain at least one node"
-            )
+            raise HTTPException(status_code=400, detail="Workflow must contain at least one node")
 
         # Log workflow execution
         logger.info(
@@ -291,12 +289,10 @@ async def execute_workflow(request: Request):
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error("Workflow execution failed", error=str(e))
-        raise HTTPException(
-            status_code=500, detail=f"Workflow execution failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Workflow execution failed: {e!s}") from e
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
@@ -322,8 +318,8 @@ async def analyze_text(request: AnalyzeRequest):
 
     # Import here to avoid circular imports
     from llm_providers import analyze_with_models
-    from token_utils import check_token_limits
     from smart_chunking import chunk_text_smart
+    from token_utils import check_token_limits
 
     # Check token limits
     token_check = check_token_limits(request.text)
@@ -407,9 +403,7 @@ async def analyze_text(request: AnalyzeRequest):
                         "request_id": request_id,
                         "model": resp["model"],
                         "has_error": bool(resp["error"]),
-                        "response_length": (
-                            len(resp["response"]) if resp["response"] else 0
-                        ),
+                        "response_length": (len(resp["response"]) if resp["response"] else 0),
                     },
                 )
 
@@ -417,9 +411,7 @@ async def analyze_text(request: AnalyzeRequest):
             model_responses = []
             for resp in responses:
                 # Limit response size to prevent memory issues
-                limited_response = (
-                    limit_response_size(resp["response"]) if resp["response"] else ""
-                )
+                limited_response = limit_response_size(resp["response"]) if resp["response"] else ""
                 model_responses.append(
                     ModelResponse(
                         model=resp["model"],
@@ -461,9 +453,7 @@ async def analyze_text(request: AnalyzeRequest):
                     "elapsed": e.elapsed,
                 },
             )
-            raise HTTPException(
-                status_code=504, detail=f"Request timed out after {e.elapsed:.1f}s"
-            )
+            raise HTTPException(status_code=504, detail=f"Request timed out after {e.elapsed:.1f}s") from e
         except Exception as e:
             logger.error(
                 f"Analysis failed for request {request_id}",
@@ -479,10 +469,10 @@ async def analyze_text(request: AnalyzeRequest):
             if log_level == "DEBUG":
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Analysis failed: {type(e).__name__}: {str(e)}",
-                )
+                    detail=f"Analysis failed: {type(e).__name__}: {e!s}",
+                ) from e
             else:
-                raise HTTPException(status_code=500, detail="Analysis failed")
+                raise HTTPException(status_code=500, detail="Analysis failed") from e
 
 
 @app.get("/api/ollama/models")
@@ -516,7 +506,7 @@ async def list_ollama_models():
             }
 
     except Exception as e:
-        logger.error(f"Failed to list Ollama models: {str(e)}")
+        logger.error(f"Failed to list Ollama models: {e!s}")
         return {"available": False, "error": str(e)}
 
 
@@ -556,7 +546,7 @@ async def restart_backend():
     # Run restart in background
     import asyncio
 
-    asyncio.create_task(delayed_restart())
+    _ = asyncio.create_task(delayed_restart())
 
     return {
         "status": "success",

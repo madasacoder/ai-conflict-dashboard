@@ -1,7 +1,8 @@
 """Test coverage audit - BUG-040: Test Coverage Claims vs Reality Gap."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 class TestCoverageAudit:
@@ -58,10 +59,7 @@ class TestCoverageAudit:
             # Look for test files that might cover this workflow
             found = False
             for test_file in test_names:
-                if any(
-                    keyword in test_file.lower()
-                    for keyword in workflow["workflow"].split("_")
-                ):
+                if any(keyword in test_file.lower() for keyword in workflow["workflow"].split("_")):
                     found = True
                     break
 
@@ -102,7 +100,7 @@ class TestCoverageAudit:
         integration_tests = []
 
         for test_file in test_files:
-            with open(test_file, "r") as f:
+            with open(test_file) as f:
                 content = f.read()
 
             # Classify based on content
@@ -116,9 +114,7 @@ class TestCoverageAudit:
 
         # We need a reasonable ratio of integration tests
         total_tests = len(test_files)
-        integration_ratio = (
-            len(integration_tests) / total_tests if total_tests > 0 else 0
-        )
+        integration_ratio = len(integration_tests) / total_tests if total_tests > 0 else 0
 
         assert (
             integration_ratio >= 0.2
@@ -186,9 +182,7 @@ class TestCoverageAudit:
                 print(f"  - {issue}")
 
         # Log this for analysis
-        assert (
-            gap_severity < 10
-        ), f"Test coverage gap is manageable (found {gap_severity} issues)"
+        assert gap_severity < 10, f"Test coverage gap is manageable (found {gap_severity} issues)"
 
     def test_manual_testing_requirements(self):
         """Document what requires manual testing until automation exists."""
@@ -255,7 +249,7 @@ class TestCoverageAudit:
         bugs_md_path = Path("../docs/BUGS.md")
 
         if bugs_md_path.exists():
-            with open(bugs_md_path, "r") as f:
+            with open(bugs_md_path) as f:
                 bugs_content = f.read()
 
             # Bugs that should be documented
@@ -272,9 +266,7 @@ class TestCoverageAudit:
                 if bug not in bugs_content:
                     missing_bugs.append(bug)
 
-            assert (
-                len(missing_bugs) == 0
-            ), f"Bugs not documented in BUGS.md: {missing_bugs}"
+            assert len(missing_bugs) == 0, f"Bugs not documented in BUGS.md: {missing_bugs}"
 
 
 if __name__ == "__main__":

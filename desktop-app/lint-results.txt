@@ -1,0 +1,15 @@
+
+> ai-conflict-dashboard-desktop@0.1.0 lint
+> eslint src --ext .js,.jsx,.ts,.tsx
+
+
+Oops! Something went wrong! :(
+
+ESLint: 8.57.1
+
+ESLint couldn't find the config "@typescript-eslint/recommended" to extend from. Please check that the name of the config is correct.
+
+The config "@typescript-eslint/recommended" was referenced from the config file in "/Users/ahmed/src/ai-conflict-dashboard/desktop-app/.eslintrc.json".
+
+If you still have problems, please stop by https://eslint.org/chat/help to chat with the team.
+

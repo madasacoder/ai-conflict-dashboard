@@ -5,8 +5,9 @@ This ensures that none of the 35 bugs we've found and fixed reappear.
 Each test is mapped to a specific bug in docs/BUGS.md
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock
 
 
 class TestRegressionBugs1to10:
@@ -14,7 +15,7 @@ class TestRegressionBugs1to10:
 
     def test_bug001_circuit_breaker_per_key_isolation(self, client):
         """BUG-001: Circuit breakers should be per-API-key, not global."""
-        from llm_providers import get_circuit_breaker, circuit_breakers
+        from llm_providers import circuit_breakers, get_circuit_breaker
 
         # Clear any existing breakers
         for provider in circuit_breakers:
@@ -49,8 +50,9 @@ class TestRegressionBugs1to10:
 
     def test_bug002_cors_restricted_origins(self):
         """BUG-002: CORS should restrict origins in production."""
-        from cors_config import get_cors_config
         import os
+
+        from cors_config import get_cors_config
 
         # Test production config
         os.environ["ENVIRONMENT"] = "production"
@@ -87,9 +89,7 @@ class TestRegressionBugs1to10:
         chunks = chunk_text_smart(text, chunk_size=4000)
 
         # Verify code block is not split
-        code_block_chunks = [
-            i for i, chunk in enumerate(chunks) if "```python" in chunk
-        ]
+        code_block_chunks = [i for i, chunk in enumerate(chunks) if "```python" in chunk]
 
         # The chunk with the code block should have an even number of ``` markers (opening and closing)
         assert len(code_block_chunks) == 1
@@ -328,10 +328,10 @@ class TestRegressionBugs31to35:
     def test_bug032_circuit_breaker_test_isolation(self):
         """BUG-032: Circuit breakers should reset between tests."""
         # This is handled by test fixtures
-        from llm_providers import circuit_breakers, get_circuit_breaker
-
         # Create a fresh circuit breaker with a unique key
         import uuid
+
+        from llm_providers import circuit_breakers, get_circuit_breaker
 
         test_key = f"test-key-{uuid.uuid4()}"
 

@@ -9,11 +9,14 @@ This module provides:
 """
 
 import asyncio
+import builtins
 import time
-from typing import Optional, Dict, Any, Callable, TypeVar, Coroutine
+from collections.abc import Callable, Coroutine
 from functools import wraps
-import structlog
 from statistics import mean, stdev
+from typing import Any, TypeVar
+
+import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -44,7 +47,7 @@ class ResponseTimeTracker:
 
     def __init__(self, window_size: int = 100):
         self.window_size = window_size
-        self.response_times: Dict[str, list[float]] = {}
+        self.response_times: dict[str, list[float]] = {}
 
     def record(self, operation: str, duration: float):
         """Record a response time for an operation."""
@@ -68,10 +71,7 @@ class ResponseTimeTracker:
         Returns:
             Recommended timeout in seconds
         """
-        if (
-            operation not in self.response_times
-            or len(self.response_times[operation]) < 5
-        ):
+        if operation not in self.response_times or len(self.response_times[operation]) < 5:
             # Not enough data, use default
             return TIMEOUT_CONFIG.get(operation, TIMEOUT_CONFIG["default"])
 
@@ -124,7 +124,7 @@ async def with_timeout(
     timeout: float,
     operation: str = "unknown",
     raise_on_timeout: bool = True,
-) -> Optional[T]:
+) -> T | None:
     """Execute a coroutine with timeout.
 
     Args:
@@ -157,7 +157,7 @@ async def with_timeout(
 
         return result
 
-    except asyncio.TimeoutError:
+    except builtins.TimeoutError:
         elapsed = time.time() - start_time
 
         logger.warning(
@@ -173,7 +173,7 @@ async def with_timeout(
                 operation=operation,
                 timeout=timeout,
                 elapsed=elapsed,
-            )
+            ) from None
 
         return None
 
@@ -181,11 +181,11 @@ async def with_timeout(
 async def with_retry(
     coro_func: Callable[[], Coroutine[Any, Any, T]],
     operation: str = "unknown",
-    timeout: Optional[float] = None,
-    max_attempts: Optional[int] = None,
-    base_delay: Optional[float] = None,
-    max_delay: Optional[float] = None,
-    exponential_backoff: Optional[bool] = None,
+    timeout: float | None = None,
+    max_attempts: int | None = None,
+    base_delay: float | None = None,
+    max_delay: float | None = None,
+    exponential_backoff: bool | None = None,
 ) -> T:
     """Execute a coroutine with timeout and retry logic.
 
@@ -252,7 +252,7 @@ async def with_retry(
 
             return result
 
-        except (TimeoutError, asyncio.TimeoutError) as e:
+        except TimeoutError as e:
             last_error = e
 
             if attempt < max_attempts - 1:
@@ -308,8 +308,8 @@ async def with_retry(
 
 
 def timeout_handler(
-    operation: Optional[str] = None,
-    timeout: Optional[float] = None,
+    operation: str | None = None,
+    timeout: float | None = None,
     retry: bool = True,
     **retry_kwargs,
 ):
@@ -340,9 +340,7 @@ def timeout_handler(
                 )
             else:
                 # Just timeout, no retry
-                timeout_val = timeout or response_tracker.get_recommended_timeout(
-                    op_name
-                )
+                timeout_val = timeout or response_tracker.get_recommended_timeout(op_name)
                 return await with_timeout(
                     func(*args, **kwargs),
                     timeout=timeout_val,
@@ -356,7 +354,7 @@ def timeout_handler(
 
 
 # Monitoring functions
-def get_timeout_stats() -> Dict[str, Any]:
+def get_timeout_stats() -> dict[str, Any]:
     """Get timeout statistics for monitoring."""
     stats = {}
 
@@ -407,30 +405,25 @@ if __name__ == "__main__":
     async def test():
         # Test basic timeout
         try:
-            result = await with_timeout(
-                slow_operation(), timeout=1.0, operation="slow_op"
-            )
-            print(f"Result: {result}")
+            result = await with_timeout(slow_operation(), timeout=1.0, operation="slow_op")
+            logger.info("Timeout test result", result=result)
         except TimeoutError as e:
-            print(f"Timeout: {e}")
+            logger.info("Timeout occurred", error=str(e))
 
         # Test with retry
         try:
             result = await with_retry(
                 flaky_operation, operation="flaky_op", timeout=2.0, max_attempts=3
             )
-            print(f"Flaky result: {result}")
+            logger.info("Retry test result", result=result)
         except TimeoutError as e:
-            print(f"Failed after retries: {e}")
+            logger.info("Retry test failed", error=str(e))
 
         # Test decorated function
         result = await decorated_operation()
-        print(f"Decorated result: {result}")
+        logger.info("Decorated test result", result=result)
 
         # Show stats
-        print("\nTimeout stats:")
-        import json
-
-        print(json.dumps(get_timeout_stats(), indent=2))
+        logger.info("Timeout stats", stats=get_timeout_stats())
 
     asyncio.run(test())

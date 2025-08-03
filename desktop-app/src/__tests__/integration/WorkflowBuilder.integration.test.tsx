@@ -52,7 +52,7 @@ describe('WorkflowBuilder Integration Tests', () => {
 
   it('should disable launch button when API is unhealthy', async () => {
     // Override the mock for this test
-    ;(global.fetch as any).mockReset()
+    (global.fetch as any).mockReset()
     ;(global.fetch as any).mockRejectedValueOnce(new Error('Connection failed'))
 
     render(<App />)
@@ -152,7 +152,7 @@ describe('WorkflowBuilder Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should show error toast on API connection failure', async () => {
-      ;(global.fetch as any).mockReset()
+      (global.fetch as any).mockReset()
       ;(global.fetch as any).mockRejectedValueOnce(new Error('Network error'))
 
       render(<App />)

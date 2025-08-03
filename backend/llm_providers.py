@@ -9,10 +9,10 @@ circuit breakers per API key, and structured logging.
 import asyncio
 import os
 import threading
-from typing import Optional, Dict, List
-from pybreaker import CircuitBreaker
+
 import anthropic
 import openai
+from pybreaker import CircuitBreaker
 
 from structured_logging import get_logger
 
@@ -26,7 +26,7 @@ BREAKER_FAIL_MAX = 5
 BREAKER_TIMEOUT = 60
 
 # Store circuit breakers per API key
-circuit_breakers: Dict[str, Dict[str, CircuitBreaker]] = {
+circuit_breakers: dict[str, dict[str, CircuitBreaker]] = {
     "openai": {},
     "claude": {},
     "gemini": {},
@@ -85,14 +85,10 @@ def on_circuit_close(breaker: CircuitBreaker) -> None:
     """Log when circuit breaker closes."""
     from structured_logging import log_circuit_breaker_event
 
-    log_circuit_breaker_event(
-        logger, breaker_name=breaker.name, state="closed", fail_count=0
-    )
+    log_circuit_breaker_event(logger, breaker_name=breaker.name, state="closed", fail_count=0)
 
 
-async def call_openai(
-    text: str, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"
-) -> dict:
+async def call_openai(text: str, api_key: str | None = None, model: str = "gpt-3.5-turbo") -> dict:
     """Call OpenAI API with circuit breaker protection.
 
     Args:
@@ -129,7 +125,7 @@ async def call_openai(
     try:
         result = await _call_openai_with_breaker(text, api_key, model, breaker)
         return result
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("OpenAI request timeout", timeout=TIMEOUT_SECONDS)
         return {
             "model": "openai",
@@ -137,7 +133,7 @@ async def call_openai(
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"OpenAI call failed: {str(e)}", error=str(e))
+        logger.error(f"OpenAI call failed: {e!s}", error=str(e))
         return {"model": "openai", "response": "", "error": str(e)}
 
 
@@ -161,9 +157,7 @@ async def _call_openai_with_breaker(
         return _make_openai_call(text, api_key, model)
 
     # Use asyncio.wait_for for timeout
-    result = await asyncio.wait_for(
-        asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS
-    )
+    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
     return result
 
 
@@ -193,7 +187,7 @@ def _make_openai_call(text: str, api_key: str, model: str) -> dict:
 
 # Similar changes for Claude, Gemini, and Grok...
 async def call_claude(
-    text: str, api_key: Optional[str] = None, model: str = "claude-3-haiku-20240307"
+    text: str, api_key: str | None = None, model: str = "claude-3-haiku-20240307"
 ) -> dict:
     """Call Claude API with per-key circuit breaker protection."""
     if not api_key:
@@ -221,7 +215,7 @@ async def call_claude(
     try:
         result = await _call_claude_with_breaker(text, api_key, model, breaker)
         return result
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Claude request timeout", timeout=TIMEOUT_SECONDS)
         return {
             "model": "claude",
@@ -229,7 +223,7 @@ async def call_claude(
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"Claude call failed: {str(e)}", error=str(e))
+        logger.error(f"Claude call failed: {e!s}", error=str(e))
         return {"model": "claude", "response": "", "error": str(e)}
 
 
@@ -255,9 +249,7 @@ async def _call_claude_with_breaker(
             "error": None,
         }
 
-    result = await asyncio.wait_for(
-        asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS
-    )
+    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
     return result
 
 
@@ -274,16 +266,16 @@ async def cleanup_old_breakers():
 
 async def analyze_with_models(
     text: str,
-    openai_key: Optional[str] = None,
-    claude_key: Optional[str] = None,
-    gemini_key: Optional[str] = None,
-    grok_key: Optional[str] = None,
-    ollama_model: Optional[str] = None,  # Added for Ollama
+    openai_key: str | None = None,
+    claude_key: str | None = None,
+    gemini_key: str | None = None,
+    grok_key: str | None = None,
+    ollama_model: str | None = None,  # Added for Ollama
     openai_model: str = "gpt-3.5-turbo",
     claude_model: str = "claude-3-haiku-20240307",
     gemini_model: str = "gemini-1.5-flash",
     grok_model: str = "grok-2-latest",
-) -> List[dict]:
+) -> list[dict]:
     """Analyze text with multiple models concurrently.
 
     Each model now has its own circuit breaker per API key,
@@ -327,9 +319,7 @@ async def analyze_with_models(
     for i, result in enumerate(results):
         if isinstance(result, Exception):
             model_name = model_names[i] if i < len(model_names) else "unknown"
-            processed_results.append(
-                {"model": model_name, "response": "", "error": str(result)}
-            )
+            processed_results.append({"model": model_name, "response": "", "error": str(result)})
         else:
             processed_results.append(result)
 
@@ -337,7 +327,7 @@ async def analyze_with_models(
 
 
 async def call_gemini(
-    text: str, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"
+    text: str, api_key: str | None = None, model: str = "gemini-1.5-flash"
 ) -> dict:
     """Call Gemini API with per-key circuit breaker protection.
 
@@ -374,7 +364,7 @@ async def call_gemini(
     try:
         result = await _call_gemini_with_breaker(text, api_key, model, breaker)
         return result
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Gemini request timeout", timeout=TIMEOUT_SECONDS)
         return {
             "model": "gemini",
@@ -382,7 +372,7 @@ async def call_gemini(
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"Gemini call failed: {str(e)}", error=str(e))
+        logger.error(f"Gemini call failed: {e!s}", error=str(e))
         return {"model": "gemini", "response": "", "error": str(e)}
 
 
@@ -401,15 +391,11 @@ async def _call_gemini_with_breaker(
             "error": None,
         }
 
-    result = await asyncio.wait_for(
-        asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS
-    )
+    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
     return result
 
 
-async def call_grok(
-    text: str, api_key: Optional[str] = None, model: str = "grok-2-latest"
-) -> dict:
+async def call_grok(text: str, api_key: str | None = None, model: str = "grok-2-latest") -> dict:
     """Call Grok (xAI) API with per-key circuit breaker protection.
 
     Args:
@@ -445,7 +431,7 @@ async def call_grok(
     try:
         result = await _call_grok_with_breaker(text, api_key, model, breaker)
         return result
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Grok request timeout", timeout=TIMEOUT_SECONDS)
         return {
             "model": "grok",
@@ -453,7 +439,7 @@ async def call_grok(
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"Grok call failed: {str(e)}", error=str(e))
+        logger.error(f"Grok call failed: {e!s}", error=str(e))
         return {"model": "grok", "response": "", "error": str(e)}
 
 
@@ -472,15 +458,11 @@ async def _call_grok_with_breaker(
             "error": None,
         }
 
-    result = await asyncio.wait_for(
-        asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS
-    )
+    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
     return result
 
 
-async def call_ollama_fixed(
-    text: str, model: str = "llama2", base_url: Optional[str] = None
-) -> dict:
+async def call_ollama_fixed(text: str, model: str = "llama2", base_url: str | None = None) -> dict:
     """Call Ollama for local LLM processing.
 
     Args:
@@ -501,7 +483,7 @@ async def call_ollama_fixed(
         result = await call_ollama(text, model=model, base_url=base_url)
 
         # Ensure consistent response format
-        if "error" in result and result["error"]:
+        if result.get("error"):
             logger.warning(f"Ollama error: {result['error']}")
         else:
             logger.info(f"Ollama response received for model {model}")
@@ -509,9 +491,9 @@ async def call_ollama_fixed(
         return result
 
     except Exception as e:
-        logger.error(f"Ollama call failed: {str(e)}", error=str(e))
+        logger.error(f"Ollama call failed: {e!s}", error=str(e))
         return {
             "model": f"ollama/{model}",
             "response": "",
-            "error": f"Ollama error: {str(e)}",
+            "error": f"Ollama error: {e!s}",
         }

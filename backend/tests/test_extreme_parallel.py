@@ -1,10 +1,11 @@
 """Extreme parallel testing to find race conditions."""
 
-import pytest
 import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from main import app
@@ -87,22 +88,16 @@ class TestExtremeParallel:
                 futures = [executor.submit(make_failing_call, i) for i in range(50)]
 
                 for future in as_completed(futures):
-                    assert (
-                        future.result() is True
-                    )  # API should return 200 even with errors
+                    assert future.result() is True  # API should return 200 even with errors
 
         # Check results
         assert len(results) == 50
 
         # Count how many show circuit breaker open
-        circuit_open_count = sum(
-            1 for _, error in results if error and "circuit" in error.lower()
-        )
+        circuit_open_count = sum(1 for _, error in results if error and "circuit" in error.lower())
 
         # After 5 failures, circuit should open, so most should show circuit open
-        assert (
-            circuit_open_count > 40
-        ), f"Only {circuit_open_count}/50 showed circuit open"
+        assert circuit_open_count > 40, f"Only {circuit_open_count}/50 showed circuit open"
 
     def test_rate_limiting_50x_same_user(self, client):
         """Test rate limiting with 50 concurrent requests from same user."""
@@ -130,9 +125,7 @@ class TestExtremeParallel:
 
             # Run 50 calls concurrently from same user
             with ThreadPoolExecutor(max_workers=50) as executor:
-                futures = [
-                    executor.submit(make_rate_limited_call, i) for i in range(50)
-                ]
+                futures = [executor.submit(make_rate_limited_call, i) for i in range(50)]
 
                 for future in as_completed(futures):
                     future.result()

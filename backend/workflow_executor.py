@@ -4,8 +4,9 @@ Handles workflow execution from the visual builder
 """
 
 import asyncio
-from typing import Dict, List, Any
 from collections import defaultdict, deque
+from typing import Any
+
 import structlog
 
 from llm_providers import get_llm_response
@@ -17,12 +18,12 @@ logger = structlog.get_logger(__name__)
 class WorkflowExecutor:
     """Execute visual workflows with proper topological ordering."""
 
-    def __init__(self, api_keys: Dict[str, str]):
+    def __init__(self, api_keys: dict[str, str]):
         self.api_keys = api_keys
         self.token_counter = TokenCounter()
         self.results = {}
 
-    async def execute(self, nodes: List[Dict], edges: List[Dict]) -> Dict[str, Any]:
+    async def execute(self, nodes: list[dict], edges: list[dict]) -> dict[str, Any]:
         """
         Execute a workflow defined by nodes and edges.
 
@@ -71,7 +72,7 @@ class WorkflowExecutor:
 
         return self.results
 
-    async def _execute_node(self, node: Dict, graph: Dict, edges: List[Dict]) -> Any:
+    async def _execute_node(self, node: dict, graph: dict, edges: list[dict]) -> Any:
         """Execute a single node based on its type."""
         node_id = node["id"]
         node_type = node["type"]
@@ -118,7 +119,7 @@ class WorkflowExecutor:
                 "error": str(e),
             }
 
-    async def _execute_input_node(self, data: Dict) -> str:
+    async def _execute_input_node(self, data: dict) -> str:
         """Execute input node - return the content."""
         input_type = data.get("type", "text")
         content = data.get("content", "")
@@ -134,7 +135,7 @@ class WorkflowExecutor:
         else:
             return content
 
-    async def _execute_llm_node(self, data: Dict, input_text: str) -> Dict:
+    async def _execute_llm_node(self, data: dict, input_text: str) -> dict:
         """Execute LLM analysis node."""
         models = data.get("models", ["gpt-4"])
         prompt = data.get("prompt", "Analyze the following text:\n\n{input}")
@@ -169,7 +170,7 @@ class WorkflowExecutor:
                         max_tokens=max_tokens,
                     )
                     responses[model] = response
-                elif backend_model in self.api_keys and self.api_keys[backend_model]:
+                elif self.api_keys.get(backend_model):
                     response = await get_llm_response(
                         backend_model,
                         full_prompt,
@@ -186,7 +187,7 @@ class WorkflowExecutor:
 
         return responses
 
-    async def _execute_compare_node(self, data: Dict, inputs: List[str]) -> Dict:
+    async def _execute_compare_node(self, data: dict, inputs: list[str]) -> dict:
         """Execute comparison node."""
         comparison_type = data.get("comparisonType", "conflicts")
 
@@ -212,7 +213,7 @@ class WorkflowExecutor:
 
         return result
 
-    async def _execute_summarize_node(self, data: Dict, input_text: str) -> str:
+    async def _execute_summarize_node(self, data: dict, input_text: str) -> str:
         """Execute summarization node."""
         length = data.get("length", "medium")
         data.get("style", "paragraph")
@@ -229,7 +230,7 @@ class WorkflowExecutor:
 
         return summary
 
-    async def _execute_output_node(self, data: Dict, input_data: Any) -> Dict:
+    async def _execute_output_node(self, data: dict, input_data: Any) -> dict:
         """Execute output node - format the results."""
         output_format = data.get("format", "markdown")
         include_metadata = data.get("includeMetadata", False)
@@ -244,7 +245,7 @@ class WorkflowExecutor:
 
         return result
 
-    async def _get_node_inputs(self, node_id: str, edges: List[Dict]) -> str:
+    async def _get_node_inputs(self, node_id: str, edges: list[dict]) -> str:
         """Get input for a node from connected sources."""
         inputs = []
 
@@ -261,7 +262,7 @@ class WorkflowExecutor:
 
         return "\n".join(inputs) if inputs else ""
 
-    async def _get_all_node_inputs(self, node_id: str, edges: List[Dict]) -> List[str]:
+    async def _get_all_node_inputs(self, node_id: str, edges: list[dict]) -> list[str]:
         """Get all inputs for a node as a list."""
         inputs = []
 
@@ -274,15 +275,15 @@ class WorkflowExecutor:
 
         return inputs
 
-    def _find_conflicts(self, inputs: List[str]) -> List[str]:
+    def _find_conflicts(self, inputs: list[str]) -> list[str]:
         """Simple conflict detection."""
         # In production, would use NLP
         return ["Different perspectives detected across inputs"]
 
-    def _find_consensus(self, inputs: List[str]) -> List[str]:
+    def _find_consensus(self, inputs: list[str]) -> list[str]:
         """Simple consensus detection."""
         return ["Common themes found across inputs"]
 
-    def _find_differences(self, inputs: List[str]) -> List[str]:
+    def _find_differences(self, inputs: list[str]) -> list[str]:
         """Simple difference detection."""
         return ["Multiple unique viewpoints identified"]

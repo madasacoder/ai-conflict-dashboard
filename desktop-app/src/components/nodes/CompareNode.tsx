@@ -6,15 +6,18 @@
 
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { CompareNodeData } from '@/state/workflowStore'
+import { CompareNodeData, useWorkflowStore } from '@/state/workflowStore'
 import { GitCompare, CheckCircle, AlertCircle, Zap } from 'lucide-react'
+import NodeStatusIndicator from '@/components/ui/NodeStatusIndicator'
 
 interface CompareNodeProps extends NodeProps {
   data: CompareNodeData
 }
 
-export const CompareNode = memo<CompareNodeProps>(({ data, selected }) => {
+export const CompareNode = memo<CompareNodeProps>(({ data, selected, id }) => {
+  const getNodeExecutionStatus = useWorkflowStore(state => state.getNodeExecutionStatus)
   const isConfigured = data.isConfigured
+  const executionStatus = getNodeExecutionStatus(id)
   
   const getComparisonIcon = () => {
     switch (data.comparisonType) {
@@ -27,6 +30,8 @@ export const CompareNode = memo<CompareNodeProps>(({ data, selected }) => {
   
   return (
     <div className={`workflow-node compare-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+      {/* Execution Status Indicator */}
+      <NodeStatusIndicator status={executionStatus} size="small" />
       {/* Input Handle */}
       <Handle
         type="target"

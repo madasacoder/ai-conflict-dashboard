@@ -2,17 +2,18 @@
 Wrapper to adapt chunk_text_smart to the expected test interface.
 """
 
-from typing import List, Dict, Any
+from typing import Any
+
 from smart_chunking import chunk_text_smart
 
 
 def chunk_text(
     text: str,
     max_tokens: int = 3500,
-    chunk_size: int = None,
+    chunk_size: int | None = None,
     overlap: int = 100,
-    overlap_tokens: int = None,
-) -> List[Dict[str, Any]]:
+    overlap_tokens: int | None = None,
+) -> list[dict[str, Any]]:
     """
     Chunk text and return in the format expected by tests.
 
@@ -48,12 +49,9 @@ def chunk_text(
                 "total_chunks": total_chunks,
                 "start_char": start,
                 "end_char": end,
-                "is_complete": i == 0
-                and total_chunks == 1,  # Only true if single chunk
+                "is_complete": i == 0 and total_chunks == 1,  # Only true if single chunk
                 "overlap_with_previous": overlap_tokens or overlap if i > 0 else 0,
-                "overlap_with_next": (
-                    overlap_tokens or overlap if i < total_chunks - 1 else 0
-                ),
+                "overlap_with_next": (overlap_tokens or overlap if i < total_chunks - 1 else 0),
             }
         )
 

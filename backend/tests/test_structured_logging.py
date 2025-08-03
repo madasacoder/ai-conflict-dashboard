@@ -1,16 +1,16 @@
 """Tests for structured logging module."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from structured_logging import (
-    add_timestamp,
-    setup_structured_logging,
-    get_logger,
     RequestContext,
+    add_timestamp,
+    get_logger,
     log_api_request,
     log_api_response,
-    log_llm_call,
     log_circuit_breaker_event,
+    log_llm_call,
+    setup_structured_logging,
 )
 
 
@@ -72,9 +72,7 @@ class TestStructuredLogging:
         """Test API response logging."""
         mock_logger = MagicMock()
 
-        log_api_response(
-            mock_logger, status_code=200, duration_ms=150.5, response_size=1024
-        )
+        log_api_response(mock_logger, status_code=200, duration_ms=150.5, response_size=1024)
 
         mock_logger.info.assert_called_once_with(
             "api_response", status_code=200, duration_ms=150.5, response_size=1024

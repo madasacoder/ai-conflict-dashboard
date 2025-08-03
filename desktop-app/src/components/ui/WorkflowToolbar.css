@@ -3,26 +3,27 @@
 .workflow-toolbar {
   position: fixed;
   top: 20px;
+  left: 20px;
   right: 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 12px 16px;
   box-shadow: var(--shadow-lg);
   z-index: 100;
-  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideInDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes slideInRight {
+@keyframes slideInDown {
   from {
-    transform: translateX(100%);
+    transform: translateY(-100%);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }
@@ -138,4 +139,133 @@
 .toolbar-btn:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+
+/* Workflow Info Section */
+.workflow-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.current-workflow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.workflow-icon {
+  font-size: 16px;
+}
+
+.workflow-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.no-workflow {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Workflow Menu */
+.workflow-menu-container {
+  position: relative;
+}
+
+.workflow-menu-btn {
+  padding: 8px;
+  min-width: auto;
+}
+
+.workflow-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  min-width: 180px;
+  z-index: 1000;
+  animation: slideInDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+}
+
+.dropdown-item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.dropdown-item:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+/* Enhanced responsive design */
+@media (max-width: 768px) {
+  .workflow-toolbar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .toolbar-section {
+    width: 100%;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .toolbar-section:not(:last-child) {
+    padding-right: 0;
+    padding-bottom: 8px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .workflow-name {
+    max-width: 120px;
+  }
+  
+  .workflow-dropdown {
+    left: auto;
+    right: 0;
+  }
+}
+
+/* Dark theme adjustments */
+.dark .workflow-dropdown {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }

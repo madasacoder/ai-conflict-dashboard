@@ -1,17 +1,18 @@
 """Tests for LLM provider integrations."""
 
+import builtins
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from asyncio import TimeoutError
 
 from llm_providers import (
-    call_openai,
+    analyze_with_models,
     call_claude,
     call_gemini,
     call_grok,
-    analyze_with_models,
-    on_circuit_open,
+    call_openai,
     on_circuit_close,
+    on_circuit_open,
 )
 
 
@@ -53,9 +54,7 @@ class TestOpenAIIntegration:
     async def test_call_openai_success(self):
         """Test successful OpenAI API call."""
         # Test through the public interface instead of internal function
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "model": "openai",
                 "response": "Test response from OpenAI",
@@ -70,9 +69,7 @@ class TestOpenAIIntegration:
     @pytest.mark.asyncio
     async def test_call_openai_api_error(self):
         """Test OpenAI API error handling."""
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = Exception("API error: 500")
 
             result = await call_openai("Test text", "test-key")
@@ -83,10 +80,8 @@ class TestOpenAIIntegration:
     @pytest.mark.asyncio
     async def test_call_openai_timeout(self):
         """Test OpenAI API timeout handling."""
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = TimeoutError()
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_call:
+            mock_call.side_effect = builtins.TimeoutError()
 
             result = await call_openai("Test text", "test-key")
             assert result["model"] == "openai"
@@ -102,10 +97,7 @@ class TestOpenAIIntegration:
             mock_get_breaker.return_value = mock_breaker
 
             result = await call_openai("Test text", "test-key")
-            assert (
-                result["error"]
-                == "Service temporarily unavailable (circuit breaker open)"
-            )
+            assert result["error"] == "Service temporarily unavailable (circuit breaker open)"
 
 
 class TestClaudeIntegration:
@@ -123,9 +115,7 @@ class TestClaudeIntegration:
     async def test_call_claude_success(self):
         """Test successful Claude API call."""
         # Test through the public interface instead of internal function
-        with patch(
-            "llm_providers._call_claude_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_claude_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "model": "claude",
                 "response": "Test response from Claude",
@@ -140,9 +130,7 @@ class TestClaudeIntegration:
     @pytest.mark.asyncio
     async def test_call_claude_api_error(self):
         """Test Claude API error handling."""
-        with patch(
-            "llm_providers._call_claude_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_claude_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = Exception("API error: 401")
 
             result = await call_claude("Test text", "test-key")
@@ -153,10 +141,8 @@ class TestClaudeIntegration:
     @pytest.mark.asyncio
     async def test_call_claude_timeout(self):
         """Test Claude API timeout handling."""
-        with patch(
-            "llm_providers._call_claude_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = TimeoutError()
+        with patch("llm_providers._call_claude_with_breaker", new_callable=AsyncMock) as mock_call:
+            mock_call.side_effect = builtins.TimeoutError()
 
             result = await call_claude("Test text", "test-key")
             assert result["model"] == "claude"
@@ -172,10 +158,7 @@ class TestClaudeIntegration:
             mock_get_breaker.return_value = mock_breaker
 
             result = await call_claude("Test text", "test-key")
-            assert (
-                result["error"]
-                == "Service temporarily unavailable (circuit breaker open)"
-            )
+            assert result["error"] == "Service temporarily unavailable (circuit breaker open)"
 
 
 class TestGeminiIntegration:
@@ -192,9 +175,7 @@ class TestGeminiIntegration:
     @pytest.mark.asyncio
     async def test_call_gemini_success(self):
         """Test successful Gemini API call."""
-        with patch(
-            "llm_providers._call_gemini_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_gemini_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "model": "gemini",
                 "response": "Test response from Gemini",
@@ -209,9 +190,7 @@ class TestGeminiIntegration:
     @pytest.mark.asyncio
     async def test_call_gemini_api_error(self):
         """Test Gemini API error handling."""
-        with patch(
-            "llm_providers._call_gemini_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_gemini_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = Exception("Gemini API error: Invalid API key")
 
             result = await call_gemini("Test text", "test-key")
@@ -222,10 +201,8 @@ class TestGeminiIntegration:
     @pytest.mark.asyncio
     async def test_call_gemini_timeout(self):
         """Test Gemini API timeout handling."""
-        with patch(
-            "llm_providers._call_gemini_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = TimeoutError()
+        with patch("llm_providers._call_gemini_with_breaker", new_callable=AsyncMock) as mock_call:
+            mock_call.side_effect = builtins.TimeoutError()
 
             result = await call_gemini("Test text", "test-key")
             assert result["model"] == "gemini"
@@ -241,10 +218,7 @@ class TestGeminiIntegration:
             mock_get_breaker.return_value = mock_breaker
 
             result = await call_gemini("Test text", "test-key")
-            assert (
-                result["error"]
-                == "Service temporarily unavailable (circuit breaker open)"
-            )
+            assert result["error"] == "Service temporarily unavailable (circuit breaker open)"
 
 
 class TestGrokIntegration:
@@ -261,9 +235,7 @@ class TestGrokIntegration:
     @pytest.mark.asyncio
     async def test_call_grok_success(self):
         """Test successful Grok API call."""
-        with patch(
-            "llm_providers._call_grok_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_grok_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "model": "grok",
                 "response": "Test response from Grok",
@@ -278,9 +250,7 @@ class TestGrokIntegration:
     @pytest.mark.asyncio
     async def test_call_grok_api_error(self):
         """Test Grok API error handling."""
-        with patch(
-            "llm_providers._call_grok_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
+        with patch("llm_providers._call_grok_with_breaker", new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = Exception("API error: 403")
 
             result = await call_grok("Test text", "test-key")
@@ -291,10 +261,8 @@ class TestGrokIntegration:
     @pytest.mark.asyncio
     async def test_call_grok_timeout(self):
         """Test Grok API timeout handling."""
-        with patch(
-            "llm_providers._call_grok_with_breaker", new_callable=AsyncMock
-        ) as mock_call:
-            mock_call.side_effect = TimeoutError()
+        with patch("llm_providers._call_grok_with_breaker", new_callable=AsyncMock) as mock_call:
+            mock_call.side_effect = builtins.TimeoutError()
 
             result = await call_grok("Test text", "test-key")
             assert result["model"] == "grok"
@@ -310,10 +278,7 @@ class TestGrokIntegration:
             mock_get_breaker.return_value = mock_breaker
 
             result = await call_grok("Test text", "test-key")
-            assert (
-                result["error"]
-                == "Service temporarily unavailable (circuit breaker open)"
-            )
+            assert result["error"] == "Service temporarily unavailable (circuit breaker open)"
 
 
 class TestAnalyzeWithModels:
@@ -334,15 +299,11 @@ class TestAnalyzeWithModels:
         }
 
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
-            with patch(
-                "llm_providers.call_claude", new_callable=AsyncMock
-            ) as mock_claude:
+            with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
                 mock_openai.return_value = openai_response
                 mock_claude.return_value = claude_response
 
-                results = await analyze_with_models(
-                    "Test text", "openai-key", "claude-key"
-                )
+                results = await analyze_with_models("Test text", "openai-key", "claude-key")
 
                 assert len(results) == 2
                 assert results[0] == openai_response
@@ -386,9 +347,7 @@ class TestAnalyzeWithModels:
     async def test_analyze_with_custom_models(self):
         """Test analyzing with custom model selections."""
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
-            with patch(
-                "llm_providers.call_claude", new_callable=AsyncMock
-            ) as mock_claude:
+            with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
                 mock_openai.return_value = {
                     "model": "openai",
                     "response": "GPT-4",
@@ -437,15 +396,9 @@ class TestAnalyzeWithModels:
         grok_response = {"model": "grok", "response": "Grok response", "error": None}
 
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
-            with patch(
-                "llm_providers.call_claude", new_callable=AsyncMock
-            ) as mock_claude:
-                with patch(
-                    "llm_providers.call_gemini", new_callable=AsyncMock
-                ) as mock_gemini:
-                    with patch(
-                        "llm_providers.call_grok", new_callable=AsyncMock
-                    ) as mock_grok:
+            with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
+                with patch("llm_providers.call_gemini", new_callable=AsyncMock) as mock_gemini:
+                    with patch("llm_providers.call_grok", new_callable=AsyncMock) as mock_grok:
                         mock_openai.return_value = openai_response
                         mock_claude.return_value = claude_response
                         mock_gemini.return_value = gemini_response
@@ -477,9 +430,7 @@ class TestAnalyzeWithModels:
         with patch("llm_providers.call_gemini", new_callable=AsyncMock) as mock_gemini:
             mock_gemini.return_value = gemini_response
 
-            results = await analyze_with_models(
-                "Test text", None, None, "gemini-key", None
-            )
+            results = await analyze_with_models("Test text", None, None, "gemini-key", None)
 
             assert len(results) == 1
             assert results[0] == gemini_response
@@ -492,9 +443,7 @@ class TestAnalyzeWithModels:
         with patch("llm_providers.call_grok", new_callable=AsyncMock) as mock_grok:
             mock_grok.return_value = grok_response
 
-            results = await analyze_with_models(
-                "Test text", None, None, None, "grok-key"
-            )
+            results = await analyze_with_models("Test text", None, None, None, "grok-key")
 
             assert len(results) == 1
             assert results[0] == grok_response

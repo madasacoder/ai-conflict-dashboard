@@ -8,7 +8,6 @@ This module provides intelligent text chunking that:
 """
 
 import re
-from typing import List, Optional
 from dataclasses import dataclass
 
 from structured_logging import get_logger
@@ -22,7 +21,7 @@ class TextBlock:
 
     content: str
     block_type: str  # 'code', 'paragraph', 'heading', 'list', etc.
-    language: Optional[str] = None  # For code blocks
+    language: str | None = None  # For code blocks
     can_split: bool = True  # Whether this block can be split
 
 
@@ -44,7 +43,7 @@ class SmartChunker:
         self.heading_pattern = re.compile(r"^#{1,6}\s+.*$", re.MULTILINE)
         self.list_pattern = re.compile(r"^[\*\-\+\d]+\.\s+.*$", re.MULTILINE)
 
-    def parse_blocks(self, text: str) -> List[TextBlock]:
+    def parse_blocks(self, text: str) -> list[TextBlock]:
         """Parse text into structured blocks.
 
         Args:
@@ -88,7 +87,7 @@ class SmartChunker:
 
         return blocks
 
-    def _parse_regular_text(self, text: str) -> List[TextBlock]:
+    def _parse_regular_text(self, text: str) -> list[TextBlock]:
         """Parse non-code text into paragraphs and other blocks."""
         blocks = []
 
@@ -119,13 +118,11 @@ class SmartChunker:
                     )
                 )
             else:
-                blocks.append(
-                    TextBlock(content=para, block_type="paragraph", can_split=True)
-                )
+                blocks.append(TextBlock(content=para, block_type="paragraph", can_split=True))
 
         return blocks
 
-    def chunk_text(self, text: str) -> List[str]:
+    def chunk_text(self, text: str) -> list[str]:
         """Chunk text intelligently preserving structure.
 
         Args:
@@ -180,9 +177,7 @@ class SmartChunker:
                     # Start new chunk with overlap
                     overlap_blocks = self._get_overlap_blocks(current_chunk)
                     current_chunk = overlap_blocks + [block.content]
-                    current_size = (
-                        sum(len(b) for b in current_chunk) + len(current_chunk) * 2
-                    )
+                    current_size = sum(len(b) for b in current_chunk) + len(current_chunk) * 2
 
             # Otherwise add to current chunk
             else:
@@ -203,7 +198,7 @@ class SmartChunker:
 
         return chunks
 
-    def _split_large_block(self, block: TextBlock) -> List[str]:
+    def _split_large_block(self, block: TextBlock) -> list[str]:
         """Split a large block that can be split."""
         # For blocks that are marked as can_split=False but are too large,
         # we still need to force split them
@@ -218,7 +213,7 @@ class SmartChunker:
             # Fallback: split by sentences
             return self._split_by_sentences(block.content)
 
-    def _split_paragraph(self, text: str) -> List[str]:
+    def _split_paragraph(self, text: str) -> list[str]:
         """Split paragraph by sentences."""
         # Simple sentence splitting (could be improved with NLTK)
         sentences = re.split(r"(?<=[.!?])\s+", text)
@@ -261,7 +256,7 @@ class SmartChunker:
 
         return chunks
 
-    def _split_list(self, text: str) -> List[str]:
+    def _split_list(self, text: str) -> list[str]:
         """Split list by items."""
         items = re.split(r"\n(?=[\*\-\+\d]+\.?\s+)", text)
 
@@ -284,7 +279,7 @@ class SmartChunker:
 
         return chunks
 
-    def _split_by_sentences(self, text: str) -> List[str]:
+    def _split_by_sentences(self, text: str) -> list[str]:
         """Generic sentence-based splitting."""
         # First try to split by sentences
         sentences = re.split(r"(?<=[.!?])\s+", text)
@@ -295,7 +290,7 @@ class SmartChunker:
 
         return self._split_paragraph(text)
 
-    def _force_split_text(self, text: str) -> List[str]:
+    def _force_split_text(self, text: str) -> list[str]:
         """Force split text that has no natural boundaries.
 
         This handles edge cases like very long words or text without spaces.
@@ -337,7 +332,7 @@ class SmartChunker:
 
         return chunks
 
-    def _get_overlap_blocks(self, blocks: List[str]) -> List[str]:
+    def _get_overlap_blocks(self, blocks: list[str]) -> list[str]:
         """Get blocks for overlap from end of chunk."""
         if not blocks:
             return []
@@ -358,7 +353,7 @@ class SmartChunker:
 
 def chunk_text_smart(
     text: str, chunk_size: int = 3500, preserve_code_blocks: bool = True
-) -> List[str]:
+) -> list[str]:
     """Convenience function for smart chunking.
 
     Args:
@@ -402,7 +397,11 @@ More text here."""
 
     chunks = chunk_text_smart(test_text, chunk_size=500)
 
-    print(f"Created {len(chunks)} chunks:")
+    logger.info("Chunking test", chunk_count=len(chunks))
     for i, chunk in enumerate(chunks):
-        print(f"\n--- Chunk {i+1} ({len(chunk)} chars) ---")
-        print(chunk[:200] + "..." if len(chunk) > 200 else chunk)
+        logger.debug(
+            "Chunk content",
+            chunk_id=i + 1,
+            char_count=len(chunk),
+            preview=chunk[:200] + "..." if len(chunk) > 200 else chunk,
+        )

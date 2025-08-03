@@ -5,10 +5,9 @@ origin whitelisting.
 """
 
 import os
-from typing import List
 
 
-def get_allowed_origins() -> List[str]:
+def get_allowed_origins() -> list[str]:
     """Get allowed origins for CORS based on environment.
 
     In production, origins should be explicitly whitelisted.
@@ -32,9 +31,7 @@ def get_allowed_origins() -> List[str]:
     if env == "production":
         # In production, only allow specific domains
         production_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-        allowed_origins = [
-            origin.strip() for origin in production_origins if origin.strip()
-        ]
+        allowed_origins = [origin.strip() for origin in production_origins if origin.strip()]
 
         if not allowed_origins:
             # If no origins specified, be very restrictive

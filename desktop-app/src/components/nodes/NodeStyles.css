@@ -427,11 +427,158 @@
   100% { left: 100%; }
 }
 
+/* Enhanced InputNode styles */
+.input-node.expanded {
+  min-width: 350px;
+  max-width: 450px;
+}
+
+.input-node .node-header {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.input-node .node-header:hover {
+  background: rgba(52, 152, 219, 0.1);
+}
+
+/* Content Preview */
+.content-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+  max-height: 40px;
+  overflow: hidden;
+}
+
+.expand-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Expanded Configuration */
+.node-config {
+  background: var(--bg-primary);
+  margin: 0.5rem 0;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.node-config label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* Text Input Configuration */
+.text-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 60px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* URL Input Configuration */
+.url-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* File Upload in Node */
+.file-input-config .file-upload-container {
+  margin: 0;
+}
+
+.file-input-config .file-upload-area {
+  padding: 1rem;
+  min-height: 80px;
+}
+
+.file-input-config .upload-text {
+  font-size: 11px;
+}
+
+.file-input-config .upload-hint {
+  font-size: 10px;
+}
+
+.file-input-config .files-list {
+  max-height: 120px;
+}
+
+/* Compact file upload styling */
+.file-upload-container.compact .file-upload-area {
+  padding: 0.75rem;
+  min-height: 60px;
+}
+
+.file-upload-container.compact .upload-icon {
+  margin-bottom: 0.25rem;
+}
+
+.file-upload-container.compact .upload-text {
+  font-size: 11px;
+  margin: 0;
+}
+
+.file-upload-container.compact .upload-hint {
+  font-size: 10px;
+  margin: 0;
+}
+
+.file-upload-container.compact .files-header h4 {
+  font-size: 12px;
+}
+
+.file-upload-container.compact .file-item {
+  padding: 0.5rem;
+}
+
+.file-upload-container.compact .file-name {
+  font-size: 12px;
+}
+
+.file-upload-container.compact .file-meta {
+  font-size: 10px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .workflow-node {
     min-width: 160px;
     max-width: 200px;
+  }
+  
+  .input-node.expanded {
+    min-width: 280px;
+    max-width: 320px;
   }
   
   .node-header {
@@ -449,5 +596,9 @@
   .model-pill {
     padding: 3px 6px;
     font-size: 10px;
+  }
+  
+  .node-config {
+    padding: 0.75rem;
   }
 }

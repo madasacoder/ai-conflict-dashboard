@@ -3,10 +3,11 @@
 These tests verify API behavior with various real-world scenarios.
 """
 
-import pytest
 import json
 import time
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from main import app
@@ -140,9 +141,7 @@ This is a test project with multiple files."""
         """Test that each request gets a unique request ID."""
         request_ids = set()
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             mock.return_value = {
                 "model": "openai",
                 "response": "Test response",
@@ -200,12 +199,8 @@ This is a test project with multiple files."""
             time.sleep(0.5)
             return {"model": "slow", "response": "Slow response", "error": None}
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", side_effect=fast_provider
-        ):
-            with patch(
-                "llm_providers._call_claude_with_breaker", side_effect=slow_provider
-            ):
+        with patch("llm_providers._call_openai_with_breaker", side_effect=fast_provider):
+            with patch("llm_providers._call_claude_with_breaker", side_effect=slow_provider):
                 start_time = time.time()
 
                 response = client.post(
@@ -230,9 +225,7 @@ This is a test project with multiple files."""
 
     def test_empty_provider_response_handling(self, client):
         """Test handling of empty responses from providers."""
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             mock.return_value = {
                 "model": "openai",
                 "response": "",  # Empty response
@@ -310,9 +303,7 @@ class TestAPIErrorScenarios:
         # Create a large text (10MB)
         large_text = "x" * (10 * 1024 * 1024)
 
-        response = client.post(
-            "/api/analyze", json={"text": large_text, "openai_key": "test-key"}
-        )
+        response = client.post("/api/analyze", json={"text": large_text, "openai_key": "test-key"})
 
         # Should handle large payloads gracefully
         # Actual limits depend on server configuration
@@ -324,9 +315,7 @@ class TestAPIErrorScenarios:
         success_count = 0
         rate_limited_count = 0
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             mock.return_value = {"model": "openai", "response": "OK", "error": None}
 
             for i in range(100):
@@ -345,9 +334,7 @@ class TestAPIErrorScenarios:
         # So we should see some successful requests and some rate limited
         assert success_count > 0, "Should have some successful requests"
         assert rate_limited_count > 0, "Should have some rate limited requests"
-        assert (
-            success_count + rate_limited_count == 100
-        ), "All requests should be accounted for"
+        assert success_count + rate_limited_count == 100, "All requests should be accounted for"
 
     def test_timeout_handling(self, client):
         """Test request timeout handling."""

@@ -4,17 +4,18 @@ These tests are designed to find real vulnerabilities and edge cases
 that could cause problems in production.
 """
 
-import pytest
 import json
 import time
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
+from cors_config import get_allowed_origins
+from llm_providers import circuit_breakers, get_circuit_breaker
 from main import app
-from llm_providers import get_circuit_breaker, circuit_breakers
 from rate_limiting import RateLimiter, get_identifier
 from smart_chunking import chunk_text_smart
-from cors_config import get_allowed_origins
 
 
 class TestSecurityVulnerabilities:
@@ -42,9 +43,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for payload in sql_payloads:
-            response = client.post(
-                "/api/analyze", json={"text": payload, "openai_key": "test-key"}
-            )
+            response = client.post("/api/analyze", json={"text": payload, "openai_key": "test-key"})
 
             # Should handle safely - no 500 errors
             assert response.status_code in [200, 422]
@@ -76,9 +75,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for payload in xxe_payloads:
-            response = client.post(
-                "/api/analyze", json={"text": payload, "openai_key": "test-key"}
-            )
+            response = client.post("/api/analyze", json={"text": payload, "openai_key": "test-key"})
 
             assert response.status_code in [200, 422]
 
@@ -109,9 +106,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for payload in cmd_payloads:
-            response = client.post(
-                "/api/analyze", json={"text": payload, "openai_key": "test-key"}
-            )
+            response = client.post("/api/analyze", json={"text": payload, "openai_key": "test-key"})
 
             assert response.status_code in [200, 422]
 
@@ -164,9 +159,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for attempt in extraction_attempts:
-            response = client.post(
-                "/api/analyze", json={"text": attempt, "openai_key": "test-key"}
-            )
+            response = client.post("/api/analyze", json={"text": attempt, "openai_key": "test-key"})
 
             if response.status_code == 200:
                 data = response.json()
@@ -192,7 +185,7 @@ class TestRateLimitingComprehensive:
         # Should allow burst
         for i in range(15):
             allowed, retry = limiter.check_rate_limit(identifier)
-            assert allowed, f"Request {i+1} should be allowed (burst)"
+            assert allowed, f"Request {i + 1} should be allowed (burst)"
 
         # 16th should fail due to burst limit
         allowed, retry = limiter.check_rate_limit(identifier)
@@ -357,9 +350,7 @@ console.log("Adjacent block");
 
     def test_overlap_functionality(self):
         """Test that overlap works correctly."""
-        text = (
-            "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five."
-        )
+        text = "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five."
 
         from smart_chunking import SmartChunker
 
@@ -382,9 +373,7 @@ class TestCORSConfiguration:
 
     def test_production_cors_restrictions(self):
         """Test CORS is restricted in production."""
-        with patch.dict(
-            "os.environ", {"ENVIRONMENT": "production", "ALLOWED_ORIGINS": ""}
-        ):
+        with patch.dict("os.environ", {"ENVIRONMENT": "production", "ALLOWED_ORIGINS": ""}):
             origins = get_allowed_origins()
 
             # Should have restrictive default
@@ -431,9 +420,7 @@ class TestMemoryAndPerformance:
         # Create large response
         large_text = "x" * (10 * 1024 * 1024)  # 10MB
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock:
+        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             mock.return_value = {
                 "model": "openai",
                 "response": large_text,
@@ -442,9 +429,7 @@ class TestMemoryAndPerformance:
 
             # Process it
             client = TestClient(app)
-            response = client.post(
-                "/api/analyze", json={"text": "test", "openai_key": "test-key"}
-            )
+            response = client.post("/api/analyze", json={"text": "test", "openai_key": "test-key"})
 
             assert response.status_code == 200
 
@@ -477,9 +462,7 @@ class TestMemoryAndPerformance:
         for pattern in evil_patterns:
             start = time.time()
 
-            response = client.post(
-                "/api/analyze", json={"text": pattern, "openai_key": "test-key"}
-            )
+            response = client.post("/api/analyze", json={"text": pattern, "openai_key": "test-key"})
 
             elapsed = time.time() - start
 
@@ -527,9 +510,7 @@ class TestDataValidation:
         ]
 
         for key in invalid_keys:
-            response = client.post(
-                "/api/analyze", json={"text": "test", "openai_key": key}
-            )
+            response = client.post("/api/analyze", json={"text": "test", "openai_key": key})
 
             # Should not cause errors
             assert response.status_code in [200, 422]

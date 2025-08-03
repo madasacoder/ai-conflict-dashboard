@@ -1,7 +1,7 @@
 """Tests designed to find actual bugs, not just verify happy paths."""
 
-from token_utils_wrapper import chunk_text
 from token_utils import estimate_tokens
+from token_utils_wrapper import chunk_text
 
 
 class TestActualBugs:
@@ -10,11 +10,7 @@ class TestActualBugs:
     def test_chunk_text_with_code_block_boundary(self):
         """This might actually break - chunk boundary in code block."""
         # Build text that forces chunk boundary inside code block
-        text = (
-            "a" * 3990
-            + "\n```python\ndef broken_function():\n    return 42\n```\n"
-            + "b" * 100
-        )
+        text = "a" * 3990 + "\n```python\ndef broken_function():\n    return 42\n```\n" + "b" * 100
 
         chunks = chunk_text(text, chunk_size=4000)
 
@@ -29,9 +25,7 @@ class TestActualBugs:
         # The entire code block should be in chunk2 since it can't fit in chunk1
         assert "```python" not in chunk1_text  # Code block NOT in first chunk
         assert "```python" in chunk2_text  # Entire code block in second chunk
-        assert (
-            chunk2_text.count("```") == 2
-        )  # Both opening and closing ``` in same chunk
+        assert chunk2_text.count("```") == 2  # Both opening and closing ``` in same chunk
 
     def test_token_counting_with_emojis(self):
         """Token counting is probably wrong for emojis."""

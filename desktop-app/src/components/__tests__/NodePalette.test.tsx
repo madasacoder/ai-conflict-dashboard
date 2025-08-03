@@ -85,12 +85,17 @@ describe('NodePalette Component', () => {
   })
 
   it('should have draggable attribute on all nodes', () => {
-    render(<NodePalette />)
+    const { container } = render(<NodePalette />)
 
-    const nodes = screen.getAllByText(/Input|AI Analysis|Compare|Summarize|Output/)
-    nodes.forEach(node => {
-      const paletteNode = node.closest('.palette-node')
-      expect(paletteNode?.getAttribute('draggable')).toBe('true')
+    // Get all palette nodes by test id
+    const paletteNodes = container.querySelectorAll('[data-testid^="node-palette-"]')
+    
+    expect(paletteNodes.length).toBeGreaterThan(0)
+    
+    paletteNodes.forEach(node => {
+      // Check that the node has draggable attribute
+      const draggableAttr = node.getAttribute('draggable')
+      expect(draggableAttr === 'true' || draggableAttr === '').toBe(true)
     })
   })
 

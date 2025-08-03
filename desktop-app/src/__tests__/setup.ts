@@ -119,9 +119,48 @@ vi.mock('reactflow', () => {
       getNodes: vi.fn(() => []),
       getEdges: vi.fn(() => [])
     }),
-    applyNodeChanges: vi.fn((changes, nodes) => nodes),
-    applyEdgeChanges: vi.fn((changes, edges) => edges),
-    addEdge: vi.fn((connection, edges) => [...edges, connection]),
+    applyNodeChanges: vi.fn((changes, nodes) => {
+      return changes.reduce((updatedNodes, change) => {
+        switch (change.type) {
+          case 'position':
+            return updatedNodes.map(node =>
+              node.id === change.id 
+                ? { ...node, position: change.position }
+                : node
+            )
+          case 'remove':
+            return updatedNodes.filter(node => node.id !== change.id)
+          case 'select':
+            return updatedNodes.map(node =>
+              node.id === change.id
+                ? { ...node, selected: change.selected }
+                : node
+            )
+          default:
+            return updatedNodes
+        }
+      }, nodes)
+    }),
+    applyEdgeChanges: vi.fn((changes, edges) => {
+      return changes.reduce((updatedEdges, change) => {
+        switch (change.type) {
+          case 'remove':
+            return updatedEdges.filter(edge => edge.id !== change.id)
+          case 'select':
+            return updatedEdges.map(edge =>
+              edge.id === change.id
+                ? { ...edge, selected: change.selected }
+                : edge
+            )
+          default:
+            return updatedEdges
+        }
+      }, edges)
+    }),
+    addEdge: vi.fn((connection, edges) => [...edges, { 
+      id: `edge-${connection.source}-${connection.target}`, 
+      ...connection 
+    }]),
     Position: {
       Top: 'top',
       Right: 'right',

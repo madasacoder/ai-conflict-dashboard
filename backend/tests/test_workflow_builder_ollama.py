@@ -3,8 +3,9 @@ Test suite for Ollama integration in workflow builder.
 Ensures the API returns the correct format that the frontend expects.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock
 
 
 class TestWorkflowBuilderOllamaIntegration:
@@ -48,9 +49,7 @@ class TestWorkflowBuilderOllamaIntegration:
             ]
         }
 
-    def test_ollama_models_endpoint_returns_correct_format(
-        self, client, mock_ollama_response
-    ):
+    def test_ollama_models_endpoint_returns_correct_format(self, client, mock_ollama_response):
         """Test that /api/ollama/models returns the format expected by frontend."""
         # Mock the OllamaProvider instance
         mock_provider = AsyncMock()
@@ -73,9 +72,7 @@ class TestWorkflowBuilderOllamaIntegration:
             for model in mock_ollama_response["models"]
         ]
 
-        with patch(
-            "plugins.ollama_provider.OllamaProvider", return_value=mock_provider
-        ):
+        with patch("plugins.ollama_provider.OllamaProvider", return_value=mock_provider):
             response = client.get("/api/ollama/models")
 
             assert response.status_code == 200
@@ -119,9 +116,7 @@ class TestWorkflowBuilderOllamaIntegration:
         # Mock list_models to return empty list
         mock_provider.list_models.return_value = []
 
-        with patch(
-            "plugins.ollama_provider.OllamaProvider", return_value=mock_provider
-        ):
+        with patch("plugins.ollama_provider.OllamaProvider", return_value=mock_provider):
             response = client.get("/api/ollama/models")
 
             assert response.status_code == 200
@@ -144,9 +139,7 @@ class TestWorkflowBuilderOllamaIntegration:
             "help": "Please start Ollama with: ollama serve",
         }
 
-        with patch(
-            "plugins.ollama_provider.OllamaProvider", return_value=mock_provider
-        ):
+        with patch("plugins.ollama_provider.OllamaProvider", return_value=mock_provider):
             response = client.get("/api/ollama/models")
 
             assert response.status_code == 200
@@ -218,9 +211,7 @@ class TestWorkflowBuilderOllamaFrontendIntegration:
         # This documents what the frontend expects
         assert "models" in expected_api_response
         assert all("name" in model for model in expected_api_response["models"])
-        assert all(
-            isinstance(model["name"], str) for model in expected_api_response["models"]
-        )
+        assert all(isinstance(model["name"], str) for model in expected_api_response["models"])
 
     def test_regression_object_object_bug(self):
         """Regression test for the [object Object] bug."""

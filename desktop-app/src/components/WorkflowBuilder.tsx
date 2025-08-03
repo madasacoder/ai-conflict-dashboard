@@ -18,11 +18,12 @@ import ReactFlow, {
 } from 'reactflow'
 import { useWorkflowStore } from '@/state/workflowStore'
 import { NodePalette } from './ui/NodePalette'
-import { ConfigPanel } from './ui/ConfigPanel'
+import { NodeConfigPanel } from './ui/NodeConfigPanel'
 import { WorkflowToolbar } from './ui/WorkflowToolbar'
 import { ConnectionLine } from './ui/ConnectionLine'
 import { NodeConfigModal } from './ui/NodeConfigModal'
 import { CustomControls } from './ui/CustomControls'
+import { ExecutionPanel } from './ui/ExecutionPanel'
 
 // Custom node components
 import { LLMNode } from './nodes/LLMNode'
@@ -65,8 +66,9 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
     edges,
     currentTheme,
     isPaletteOpen,
-    isConfigPanelOpen,
     selectedNode,
+    isExecutionPanelOpen,
+    setExecutionPanelOpen,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -255,13 +257,14 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
         <NodePalette className="workflow-palette" />
       )}
 
-      {/* Configuration Panel */}
-      {isConfigPanelOpen && selectedNode && (
-        <ConfigPanel 
-          className="workflow-config"
-          nodeId={selectedNode}
-        />
-      )}
+      {/* Node Configuration Panel */}
+      <NodeConfigPanel />
+      
+      {/* Execution Panel */}
+      <ExecutionPanel 
+        isOpen={isExecutionPanelOpen}
+        onClose={() => setExecutionPanelOpen(false)}
+      />
       
       {/* Node Configuration Modal */}
       {configModalNodeId && (

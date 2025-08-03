@@ -111,9 +111,15 @@ export function sanitizeWorkflowImport(workflowData: any): any {
   
   // Sanitize workflow metadata
   if (workflowData.workflow) {
+    // Validate workflow ID
+    const workflowId = workflowData.workflow.id || ''
+    if (workflowId.includes('..') || workflowId.includes('/') || workflowId.includes('\\')) {
+      throw new Error('Invalid workflow ID')
+    }
+    
     sanitized.workflow = {
       ...workflowData.workflow,
-      id: sanitizePlainText(workflowData.workflow.id || ''),
+      id: sanitizePlainText(workflowId),
       name: sanitizePlainText(workflowData.workflow.name || 'Untitled'),
       description: sanitizePlainText(workflowData.workflow.description || ''),
       tags: Array.isArray(workflowData.workflow.tags) 

@@ -7,18 +7,23 @@
 
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { LLMNodeData } from '@/state/workflowStore'
+import { LLMNodeData, useWorkflowStore } from '@/state/workflowStore'
 import { Brain, Settings, AlertCircle, CheckCircle } from 'lucide-react'
+import NodeStatusIndicator from '@/components/ui/NodeStatusIndicator'
 
 interface LLMNodeProps extends NodeProps {
   data: LLMNodeData
 }
 
-export const LLMNode = memo<LLMNodeProps>(({ data, selected }) => {
+export const LLMNode = memo<LLMNodeProps>(({ data, selected, id }) => {
+  const getNodeExecutionStatus = useWorkflowStore(state => state.getNodeExecutionStatus)
   const isConfigured = data.isConfigured && data.models.length > 0 && data.prompt.trim() !== ''
+  const executionStatus = getNodeExecutionStatus(id)
   
   return (
     <div className={`workflow-node llm-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+      {/* Execution Status Indicator */}
+      <NodeStatusIndicator status={executionStatus} size="small" />
       {/* Input Handle */}
       <Handle
         type="target"

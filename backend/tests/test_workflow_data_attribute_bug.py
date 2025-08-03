@@ -1,8 +1,9 @@
 """Test for workflow builder data attribute bug regression."""
 
-import pytest
 import re
 from pathlib import Path
+
+import pytest
 
 
 class TestWorkflowDataAttributeBug:
@@ -21,7 +22,7 @@ class TestWorkflowDataAttributeBug:
         """Ensure workflow builder HTML uses data-node-type attributes."""
         html_file = Path("../frontend/workflow-builder.html")
 
-        with open(html_file, "r") as f:
+        with open(html_file) as f:
             content = f.read()
 
         # Find all node items
@@ -32,9 +33,7 @@ class TestWorkflowDataAttributeBug:
 
         # Each node item should have data-node-type attribute
         for item in node_items:
-            assert (
-                "data-node-type=" in item
-            ), f"Node item missing data-node-type: {item}"
+            assert "data-node-type=" in item, f"Node item missing data-node-type: {item}"
 
         # Verify specific node types exist
         expected_types = ["input", "llm", "compare", "summarize", "output"]
@@ -46,7 +45,7 @@ class TestWorkflowDataAttributeBug:
         """Ensure JavaScript accesses data-node-type correctly."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # JavaScript should use dataset.nodeType (not dataset.node)
@@ -77,12 +76,12 @@ class TestWorkflowDataAttributeBug:
         """Test that HTML and JavaScript data attributes are consistent."""
         # Read HTML
         html_file = Path("../frontend/workflow-builder.html")
-        with open(html_file, "r") as f:
+        with open(html_file) as f:
             html_content = f.read()
 
         # Read JavaScript
         js_file = Path("../frontend/js/workflow-builder.js")
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             js_content = f.read()
 
         # Extract data attributes from HTML
@@ -97,8 +96,7 @@ class TestWorkflowDataAttributeBug:
         expected_js_access = []
         for attr in html_node_attrs:
             camel_case = "".join(
-                word.capitalize() if i > 0 else word
-                for i, word in enumerate(attr.split("-"))
+                word.capitalize() if i > 0 else word for i, word in enumerate(attr.split("-"))
             )
             expected_js_access.append(camel_case)
 
@@ -111,7 +109,7 @@ class TestWorkflowDataAttributeBug:
     def test_click_handler_implementation(self):
         """Ensure click handler uses correct data attribute."""
         js_file = Path("../frontend/js/workflow-builder.js")
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Look for click handler
@@ -127,14 +125,12 @@ class TestWorkflowDataAttributeBug:
                 node_click_handler = handler
                 break
 
-        assert (
-            node_click_handler is not None
-        ), "Click handler doesn't use correct dataset.nodeType"
+        assert node_click_handler is not None, "Click handler doesn't use correct dataset.nodeType"
 
     def test_drag_handler_implementation(self):
         """Ensure drag handlers use correct data attribute."""
         js_file = Path("../frontend/js/workflow-builder.js")
-        with open(js_file, "r") as f:
+        with open(js_file) as f:
             content = f.read()
 
         # Look for dragstart handler
@@ -150,14 +146,12 @@ class TestWorkflowDataAttributeBug:
                 node_drag_handler = handler
                 break
 
-        assert (
-            node_drag_handler is not None
-        ), "Drag handler doesn't use correct dataset.nodeType"
+        assert node_drag_handler is not None, "Drag handler doesn't use correct dataset.nodeType"
 
     def test_specific_node_types_work(self):
         """Test that specific node types have correct attributes."""
         html_file = Path("../frontend/workflow-builder.html")
-        with open(html_file, "r") as f:
+        with open(html_file) as f:
             content = f.read()
 
         # Test specific node configurations
@@ -171,7 +165,9 @@ class TestWorkflowDataAttributeBug:
 
         for node_type, display_text in test_cases:
             # Find the node item
-            pattern = rf'<div[^>]*data-node-type="{node_type}"[^>]*>.*?{re.escape(display_text)}.*?</div>'
+            pattern = (
+                rf'<div[^>]*data-node-type="{node_type}"[^>]*>.*?{re.escape(display_text)}.*?</div>'
+            )
             match = re.search(pattern, content, re.DOTALL)
 
             assert (
@@ -180,9 +176,7 @@ class TestWorkflowDataAttributeBug:
 
             # Ensure it has draggable attribute
             node_html = match.group(0)
-            assert (
-                'draggable="true"' in node_html
-            ), f"Node {node_type} missing draggable attribute"
+            assert 'draggable="true"' in node_html, f"Node {node_type} missing draggable attribute"
 
     def test_bug_documentation(self):
         """Ensure this bug is documented for future reference."""

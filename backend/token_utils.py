@@ -7,6 +7,10 @@ Unicode characters, emojis, and non-ASCII text correctly.
 
 import unicodedata
 
+from structured_logging import get_logger
+
+logger = get_logger(__name__)
+
 # API token limits
 MODEL_LIMITS = {
     "gpt-3.5-turbo": {
@@ -241,7 +245,7 @@ def check_token_limits(text: str) -> dict:
     warnings = []
     recommendations = []
 
-    for model_id, limits in MODEL_LIMITS.items():
+    for _model_id, limits in MODEL_LIMITS.items():
         # Account for response tokens
         total_needed = estimated_tokens + limits["max_response_tokens"]
 
@@ -256,9 +260,7 @@ def check_token_limits(text: str) -> dict:
             )
 
             # Calculate reduction needed
-            percent_reduction = (
-                (total_needed - limits["max_tokens"]) / total_needed * 100
-            )
+            percent_reduction = (total_needed - limits["max_tokens"]) / total_needed * 100
             recommendations.append(
                 f"Reduce text by approximately {percent_reduction:.0f}% for {limits['name']}"
             )
@@ -288,9 +290,7 @@ if __name__ == "__main__":
         ("café", "Accented characters"),
     ]
 
-    print("Token counting tests:")
-    print("-" * 50)
-
+    logger.info("Running token counting tests")
     for text, description in test_cases:
         tokens = estimate_tokens(text)
-        print(f"{description:25} | Text: {text:20} | Tokens: {tokens}")
+        logger.info("Token test", description=description, text=text[:20], tokens=tokens)

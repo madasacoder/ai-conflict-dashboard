@@ -50,16 +50,19 @@ describe('StructuredLogger', () => {
     });
 
     // ✅ REQUIRED - Verify structured logging format per JAVASCRIPT-STANDARDS.md
-    expect(fetchMock).toHaveBeenCalledWith('/api/log', expect.objectContaining({
-      method: 'POST',
-      headers: expect.objectContaining({
-        'Content-Type': 'application/json',
-        'X-Request-ID': expect.stringMatching(/^req_\d+_[a-z0-9]+$/),
-      }),
-      body: expect.stringContaining('user_action'),
-      timeout: 3000,
-    }));
-    
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/log',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'X-Request-ID': expect.stringMatching(/^req_\d+_[a-z0-9]+$/),
+        }),
+        body: expect.stringContaining('user_action'),
+        timeout: 3000,
+      })
+    );
+
     // Verify the body content more flexibly
     const callArgs = fetchMock.mock.calls[0];
     const body = JSON.parse(callArgs[1].body);
@@ -103,16 +106,19 @@ describe('StructuredLogger', () => {
       node_type: 'input',
     });
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/log', expect.objectContaining({
-      method: 'POST',
-      headers: expect.objectContaining({
-        'Content-Type': 'application/json',
-        'X-Request-ID': expect.stringMatching(/^req_\d+_[a-z0-9]+$/),
-      }),
-      body: expect.stringContaining('workflow_event'),
-      timeout: 3000,
-    }));
-    
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/log',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'X-Request-ID': expect.stringMatching(/^req_\d+_[a-z0-9]+$/),
+        }),
+        body: expect.stringContaining('workflow_event'),
+        timeout: 3000,
+      })
+    );
+
     // Verify the body content
     const callArgs = fetchMock.mock.calls[0];
     const body = JSON.parse(callArgs[1].body);

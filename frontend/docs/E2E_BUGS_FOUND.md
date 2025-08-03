@@ -598,6 +598,7 @@ The `escapeHtml` function in `js/utils.js` uses `textContent` which doesn't prod
 ### Root Cause
 
 The implementation uses:
+
 ```javascript
 export function escapeHtml(text) {
   const div = document.createElement('div');
@@ -617,6 +618,7 @@ This returns the original text, not HTML-escaped text.
 ### Fix Required
 
 Replace with proper HTML escaping:
+
 ```javascript
 export function escapeHtml(text) {
   const map = {
@@ -624,9 +626,9 @@ export function escapeHtml(text) {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#x27;'
+    "'": '&#x27;',
   };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 ```
 

@@ -6,15 +6,18 @@
 
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { SummarizeNodeData } from '@/state/workflowStore'
+import { SummarizeNodeData, useWorkflowStore } from '@/state/workflowStore'
 import { FileText, CheckCircle, AlertCircle } from 'lucide-react'
+import NodeStatusIndicator from '@/components/ui/NodeStatusIndicator'
 
 interface SummarizeNodeProps extends NodeProps {
   data: SummarizeNodeData
 }
 
-export const SummarizeNode = memo<SummarizeNodeProps>(({ data, selected }) => {
+export const SummarizeNode = memo<SummarizeNodeProps>(({ data, selected, id }) => {
+  const getNodeExecutionStatus = useWorkflowStore(state => state.getNodeExecutionStatus)
   const isConfigured = data.isConfigured
+  const executionStatus = getNodeExecutionStatus(id)
   
   const getLengthIcon = () => {
     switch (data.length) {
@@ -36,6 +39,9 @@ export const SummarizeNode = memo<SummarizeNodeProps>(({ data, selected }) => {
   
   return (
     <div className={`workflow-node summarize-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+      {/* Execution Status Indicator */}
+      <NodeStatusIndicator status={executionStatus} size="small" />
+      
       {/* Input Handle */}
       <Handle
         type="target"

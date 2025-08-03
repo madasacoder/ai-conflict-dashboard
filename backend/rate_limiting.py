@@ -4,13 +4,14 @@ Provides configurable rate limiting to prevent abuse and protect
 against DoS attacks.
 """
 
-from typing import Dict, Optional, Callable
-from collections import defaultdict
-from datetime import datetime, timedelta
 import hashlib
+from collections import defaultdict
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
+
 from structured_logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,12 +41,12 @@ class RateLimiter:
         self.burst_size = burst_size
 
         # Storage for request counts per identifier
-        self.minute_counts: Dict[str, list] = defaultdict(list)
-        self.hour_counts: Dict[str, list] = defaultdict(list)
-        self.day_counts: Dict[str, list] = defaultdict(list)
+        self.minute_counts: dict[str, list] = defaultdict(list)
+        self.hour_counts: dict[str, list] = defaultdict(list)
+        self.day_counts: dict[str, list] = defaultdict(list)
 
         # Token buckets for burst handling
-        self.token_buckets: Dict[str, dict] = {}
+        self.token_buckets: dict[str, dict] = {}
 
     def _clean_old_entries(self, identifier: str, now: datetime) -> None:
         """Remove expired entries from tracking."""
@@ -63,9 +64,7 @@ class RateLimiter:
 
         # Clean day window
         day_cutoff = now - timedelta(days=1)
-        self.day_counts[identifier] = [
-            ts for ts in self.day_counts[identifier] if ts > day_cutoff
-        ]
+        self.day_counts[identifier] = [ts for ts in self.day_counts[identifier] if ts > day_cutoff]
 
     def _update_token_bucket(self, identifier: str, now: datetime) -> int:
         """Update and return available tokens."""
@@ -86,7 +85,7 @@ class RateLimiter:
 
         return int(bucket["tokens"])
 
-    def check_rate_limit(self, identifier: str) -> tuple[bool, Optional[int]]:
+    def check_rate_limit(self, identifier: str) -> tuple[bool, int | None]:
         """Check if request is within rate limits.
 
         Args:
@@ -95,7 +94,7 @@ class RateLimiter:
         Returns:
             Tuple of (allowed, retry_after_seconds)
         """
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         self._clean_old_entries(identifier, now)
 
         # Check burst limit using token bucket
@@ -230,7 +229,7 @@ def rate_limit_middleware(
             limiter.requests_per_minute - len(limiter.minute_counts[identifier])
         )
         response.headers["X-RateLimit-Reset"] = str(
-            int((datetime.now() + timedelta(minutes=1)).timestamp())
+            int((datetime.now(timezone.utc) + timedelta(minutes=1)).timestamp())
         )
 
         return response

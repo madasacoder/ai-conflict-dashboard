@@ -19,6 +19,9 @@ import {
 } from 'reactflow'
 import { LocalStorage, STORAGE_KEYS, WorkflowStorage, UIStorage } from '@/utils/localStorage'
 import { sanitizeNodeData, sanitizeWorkflowImport } from '@/utils/sanitize'
+import { WorkflowExecution, ExecutionResult } from '@/types/workflow'
+import { ExecutionProgress } from '@/services/workflowExecutor'
+import toast from 'react-hot-toast'
 
 // Custom node types
 export type NodeType = 'llm' | 'compare' | 'output' | 'input' | 'summarize'
@@ -92,12 +95,15 @@ interface WorkflowState {
   workflow: WorkflowMetadata | null
   
   // UI state
-  selectedNode: string | null
+  selectedNode: CustomNode | null
   isConfigPanelOpen: boolean
   isPaletteOpen: boolean
   currentTheme: 'light' | 'dark'
   isExecuting: boolean
-  executionProgress: number
+  executionProgress: ExecutionProgress | null
+  execution: WorkflowExecution | null
+  isExecutionPanelOpen: boolean
+  nodeExecutionStatus: Record<string, 'pending' | 'running' | 'completed' | 'error'>
   
   // Templates and history
   templates: WorkflowMetadata[]
@@ -110,7 +116,7 @@ interface WorkflowState {
   
   // Node management
   addNode: (type: NodeType, position: { x: number; y: number }) => void
-  updateNodeData: (nodeId: string, data: Partial<CustomNodeData>) => void
+  updateNodeData: (nodeId: string, key: string, value: any) => void
   updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void
   removeNode: (nodeId: string) => void
   duplicateNode: (nodeId: string) => void
@@ -135,9 +141,17 @@ interface WorkflowState {
   
   // UI state management
   selectNode: (nodeId: string | null) => void
+  setSelectedNode: (node: CustomNode | null) => void
   toggleConfigPanel: () => void
   togglePalette: () => void
   setTheme: (theme: 'light' | 'dark') => void
+  setExecutionProgress: (progress: ExecutionProgress | null) => void
+  setExecution: (execution: WorkflowExecution | null) => void
+  toggleExecutionPanel: () => void
+  setExecutionPanelOpen: (isOpen: boolean) => void
+  setNodeExecutionStatus: (nodeId: string, status: 'pending' | 'running' | 'completed' | 'error') => void
+  resetNodeExecutionStatuses: () => void
+  getNodeExecutionStatus: (nodeId: string) => 'pending' | 'running' | 'completed' | 'error'
   
   // Utility functions
   validateWorkflow: () => { isValid: boolean; errors: string[] }
@@ -219,6 +233,34 @@ const loadInitialState = () => {
   }
 }
 
+// Default templates
+const getDefaultTemplates = (): WorkflowMetadata[] => {
+  const savedTemplates = LocalStorage.get(STORAGE_KEYS.WORKFLOW_TEMPLATES, { defaultValue: [] })
+  
+  // Check if we already have the Multi-Model Comparison template
+  const hasMultiModelTemplate = savedTemplates.some((t: WorkflowMetadata) => 
+    t.name === 'Multi-Model Comparison'
+  )
+  
+  if (!hasMultiModelTemplate) {
+    const multiModelTemplate: WorkflowMetadata = {
+      id: 'template_multi_model',
+      name: 'Multi-Model Comparison',
+      description: 'Compare responses from multiple AI models for the same prompt',
+      icon: '🔍',
+      color: '#3498db',
+      tags: ['comparison', 'analysis', 'multi-model'],
+      created: new Date(),
+      modified: new Date(),
+      isTemplate: true
+    }
+    savedTemplates.push(multiModelTemplate)
+    LocalStorage.set(STORAGE_KEYS.WORKFLOW_TEMPLATES, savedTemplates)
+  }
+  
+  return savedTemplates
+}
+
 // Create the store
 export const useWorkflowStore = create<WorkflowState>()(
   subscribeWithSelector((set, get) => ({
@@ -227,8 +269,11 @@ export const useWorkflowStore = create<WorkflowState>()(
     selectedNode: null,
     isConfigPanelOpen: false,
     isExecuting: false,
-    executionProgress: 0,
-    templates: LocalStorage.get(STORAGE_KEYS.WORKFLOW_TEMPLATES, { defaultValue: [] }),
+    executionProgress: null,
+    execution: null,
+    isExecutionPanelOpen: false,
+    nodeExecutionStatus: {},
+    templates: getDefaultTemplates(),
     recentWorkflows: LocalStorage.get(STORAGE_KEYS.RECENT_WORKFLOWS, { defaultValue: [] }),
     
     // React Flow handlers
@@ -266,28 +311,57 @@ export const useWorkflowStore = create<WorkflowState>()(
       }
       
       set(state => {
+        // Auto-create default workflow if none exists
+        let currentWorkflow = state.workflow
+        if (!currentWorkflow) {
+          currentWorkflow = {
+            id: generateId(),
+            name: 'Untitled Workflow',
+            description: 'Auto-created workflow',
+            icon: '🔄',
+            color: '#3498db',
+            tags: [],
+            created: new Date(),
+            modified: new Date(),
+            isTemplate: false
+          }
+        }
+        
         const newNodes = [...state.nodes, newNode]
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
+        
+        // Save workflow with nodes
+        if (currentWorkflow) {
+          WorkflowStorage.saveWorkflow(currentWorkflow, newNodes, state.edges)
+        }
+        
         return {
+          workflow: currentWorkflow,
           nodes: newNodes,
-          selectedNode: newNode.id,
+          selectedNode: newNode,
           isConfigPanelOpen: true
         }
       })
     },
     
-    updateNodeData: (nodeId: string, data: Partial<CustomNodeData>) => {
-      // Sanitize input data
-      const sanitizedData = sanitizeNodeData(data)
-      
+    updateNodeData: (nodeId: string, key: string, value: any) => {
       set(state => {
         const newNodes = state.nodes.map(node =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, ...sanitizedData, isConfigured: true } }
+            ? { ...node, data: { ...node.data, [key]: value, isConfigured: true } }
             : node
         )
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
-        return { nodes: newNodes }
+        
+        // Update selected node if it's the one being updated
+        const updatedSelectedNode = state.selectedNode?.id === nodeId 
+          ? newNodes.find(n => n.id === nodeId) || null
+          : state.selectedNode
+        
+        return { 
+          nodes: newNodes,
+          selectedNode: updatedSelectedNode
+        }
       })
     },
     
@@ -309,7 +383,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         edges: state.edges.filter(edge => 
           edge.source !== nodeId && edge.target !== nodeId
         ),
-        selectedNode: state.selectedNode === nodeId ? null : state.selectedNode
+        selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode
       }))
     },
     
@@ -406,8 +480,12 @@ export const useWorkflowStore = create<WorkflowState>()(
             modified: new Date()
           } : null
         }))
+        
+        // Show success notification
+        toast.success('Workflow saved!')
       } catch (error) {
         console.error('Failed to save workflow:', error)
+        toast.error('Failed to save workflow')
       }
     },
     
@@ -495,7 +573,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         throw new Error('No workflow selected')
       }
       
-      set({ isExecuting: true, executionProgress: 0 })
+      set({ isExecuting: true, executionProgress: null })
       
       try {
         // Get API keys from localStorage
@@ -529,8 +607,8 @@ export const useWorkflowStore = create<WorkflowState>()(
         
         // Store results for display
         set({ 
-          executionProgress: 100,
-          // Could store results in a new state property
+          executionProgress: null,
+          // Results would be handled by ExecutionPanel
         })
         
         return result
@@ -538,19 +616,27 @@ export const useWorkflowStore = create<WorkflowState>()(
         console.error('Workflow execution failed:', error)
         throw error
       } finally {
-        set({ isExecuting: false, executionProgress: 0 })
+        set({ isExecuting: false, executionProgress: null })
       }
     },
     
     stopExecution: () => {
-      set({ isExecuting: false, executionProgress: 0 })
+      set({ isExecuting: false, executionProgress: null })
     },
     
     // UI state management
     selectNode: (nodeId: string | null) => {
+      const node = nodeId ? get().nodes.find(n => n.id === nodeId) || null : null
       set({ 
-        selectedNode: nodeId,
+        selectedNode: node,
         isConfigPanelOpen: nodeId !== null
+      })
+    },
+    
+    setSelectedNode: (node: CustomNode | null) => {
+      set({ 
+        selectedNode: node,
+        isConfigPanelOpen: node !== null
       })
     },
     
@@ -569,6 +655,40 @@ export const useWorkflowStore = create<WorkflowState>()(
     setTheme: (theme: 'light' | 'dark') => {
       UIStorage.saveTheme(theme)
       set({ currentTheme: theme })
+    },
+    
+    setExecutionProgress: (progress: ExecutionProgress | null) => {
+      set({ executionProgress: progress })
+    },
+    
+    setExecution: (execution: WorkflowExecution | null) => {
+      set({ execution })
+    },
+    
+    toggleExecutionPanel: () => {
+      set(state => ({ isExecutionPanelOpen: !state.isExecutionPanelOpen }))
+    },
+    
+    setExecutionPanelOpen: (isOpen: boolean) => {
+      set({ isExecutionPanelOpen: isOpen })
+    },
+    
+    setNodeExecutionStatus: (nodeId: string, status: 'pending' | 'running' | 'completed' | 'error') => {
+      set(state => ({
+        nodeExecutionStatus: {
+          ...state.nodeExecutionStatus,
+          [nodeId]: status
+        }
+      }))
+    },
+    
+    resetNodeExecutionStatuses: () => {
+      set({ nodeExecutionStatus: {} })
+    },
+    
+    getNodeExecutionStatus: (nodeId: string) => {
+      const state = get()
+      return state.nodeExecutionStatus[nodeId] || 'pending'
     },
     
     // Utility functions
@@ -629,7 +749,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         const sanitized = sanitizeWorkflowImport(data)
         
         // Additional validation
-        if (!sanitized.workflow || !sanitized.workflow.id) {
+        if (!sanitized.workflow?.id) {
           throw new Error('Invalid workflow: missing required fields')
         }
         

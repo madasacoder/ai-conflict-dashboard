@@ -1,8 +1,9 @@
 """Investigation tests for BUG-039: Ollama Integration Error."""
 
+from pathlib import Path
+
 import pytest
 import requests
-from pathlib import Path
 
 
 class TestOllamaErrorInvestigation:
@@ -27,9 +28,7 @@ class TestOllamaErrorInvestigation:
             import ollama_provider
 
             # Check for required classes/functions
-            assert hasattr(
-                ollama_provider, "OllamaProvider"
-            ), "Missing OllamaProvider class"
+            assert hasattr(ollama_provider, "OllamaProvider"), "Missing OllamaProvider class"
 
         except ImportError as e:
             pytest.fail(f"Cannot import ollama_provider: {e}")
@@ -40,20 +39,16 @@ class TestOllamaErrorInvestigation:
         """Test that Ollama is properly configured in main application."""
         main_py_path = Path("main.py")
 
-        with open(main_py_path, "r") as f:
+        with open(main_py_path) as f:
             content = f.read()
 
         # Check for Ollama integration
         ollama_indicators = ["ollama", "OllamaProvider", "plugins.ollama_provider"]
 
-        found_ollama = any(
-            indicator in content.lower() for indicator in ollama_indicators
-        )
+        found_ollama = any(indicator in content.lower() for indicator in ollama_indicators)
 
         if not found_ollama:
-            pytest.skip(
-                "Ollama not integrated in main.py - may not be the source of errors"
-            )
+            pytest.skip("Ollama not integrated in main.py - may not be the source of errors")
 
         # If Ollama is integrated, check for proper error handling
         assert (
@@ -111,9 +106,7 @@ class TestOllamaErrorInvestigation:
 
                 return model_names
             else:
-                pytest.fail(
-                    f"Ollama API returned {response.status_code}: {response.text}"
-                )
+                pytest.fail(f"Ollama API returned {response.status_code}: {response.text}")
 
         except requests.RequestException as e:
             pytest.fail(f"Error checking Ollama models: {e}")
@@ -142,9 +135,7 @@ class TestOllamaErrorInvestigation:
                 assert "response" in result, f"Unexpected response format: {result}"
                 print(f"Ollama test successful with model {test_model}")
             else:
-                pytest.fail(
-                    f"Ollama generation failed: {response.status_code} - {response.text}"
-                )
+                pytest.fail(f"Ollama generation failed: {response.status_code} - {response.text}")
 
         except requests.RequestException as e:
             pytest.fail(f"Error testing Ollama generation: {e}")
@@ -161,7 +152,7 @@ class TestOllamaErrorInvestigation:
 
         for log_file in log_files:
             try:
-                with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                with open(log_file, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 # Look for Ollama-related errors
@@ -217,9 +208,7 @@ class TestOllamaErrorInvestigation:
                 pytest.skip("Backend not running")
 
             # Try to get available models (if endpoint exists)
-            models_response = requests.get(
-                "http://127.0.0.1:8000/api/models", timeout=5
-            )
+            models_response = requests.get("http://127.0.0.1:8000/api/models", timeout=5)
             if models_response.status_code == 200:
                 models = models_response.json()
                 ollama_models = [m for m in models if "ollama" in m.lower()]

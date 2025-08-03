@@ -112,7 +112,7 @@ describe('Real-World User Scenarios', () => {
 
     it('should handle API failures gracefully', async () => {
       // Override fetch to fail
-      ;(global.fetch as any).mockReset()
+      (global.fetch as any).mockReset()
       ;(global.fetch as any).mockRejectedValue(new Error('Network error'))
 
       render(<App />)

@@ -2,8 +2,9 @@
 
 import os
 import re
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Get the project root directory
 TESTS_DIR = Path(__file__).parent
@@ -17,7 +18,7 @@ class TestHTTPSRedirectFix:
 
     def test_workflow_builder_link_is_fixed(self):
         """Verify the workflow builder link uses IP address to avoid HSTS issues."""
-        with open(FRONTEND_DIR / "index.html", "r") as f:
+        with open(FRONTEND_DIR / "index.html") as f:
             content = f.read()
 
         # Find the workflow builder link
@@ -37,7 +38,7 @@ class TestHTTPSRedirectFix:
 
     def test_no_relative_workflow_links(self):
         """Ensure no relative links that might trigger HTTPS upgrades."""
-        with open(FRONTEND_DIR / "index.html", "r") as f:
+        with open(FRONTEND_DIR / "index.html") as f:
             content = f.read()
 
         # Check for any relative workflow links
@@ -62,7 +63,7 @@ class TestHTTPSRedirectFix:
 
         for filepath in files_to_check:
             if os.path.exists(filepath):
-                with open(filepath, "r") as f:
+                with open(filepath) as f:
                     content = f.read()
 
                 # Check for //localhost pattern (but not http://localhost)
@@ -72,11 +73,11 @@ class TestHTTPSRedirectFix:
                         # Make sure it's http://localhost, not just //localhost
                         assert (
                             "http://localhost" in line or "https://localhost" in line
-                        ), f"{filepath}:{i+1} has protocol-relative URL: {line.strip()}"
+                        ), f"{filepath}:{i + 1} has protocol-relative URL: {line.strip()}"
 
     def test_no_https_forcing_meta_tags(self):
         """Ensure no meta tags that force HTTPS upgrades."""
-        with open(FRONTEND_DIR / "index.html", "r") as f:
+        with open(FRONTEND_DIR / "index.html") as f:
             content = f.read()
 
         # Check for problematic meta tags and headers
@@ -101,9 +102,7 @@ class TestHTTPSRedirectFix:
         ]
 
         for doc_file in doc_files:
-            assert os.path.exists(
-                doc_file
-            ), f"Documentation file {doc_file} should exist"
+            assert os.path.exists(doc_file), f"Documentation file {doc_file} should exist"
 
     def test_error_log_ssl_pattern(self):
         """Test that we can identify SSL handshake errors in logs."""
@@ -112,9 +111,7 @@ class TestHTTPSRedirectFix:
         # This is what appears in error logs when HTTPS tries to connect to HTTP
         error_line = b'"\x16\x03\x01\x02\x00\x01\x00\x01'
 
-        assert error_line.startswith(
-            b'"\x16\x03'
-        ), "Should recognize SSL handshake pattern in logs"
+        assert error_line.startswith(b'"\x16\x03'), "Should recognize SSL handshake pattern in logs"
 
     def test_diagnostic_script_exists(self):
         """Ensure diagnostic script is available for future issues."""
@@ -123,7 +120,7 @@ class TestHTTPSRedirectFix:
             PROJECT_ROOT / "diagnose-https-issue.py",
             PROJECT_ROOT / "temporary_files" / "diagnose-https-issue.py",
         ]
-        
+
         exists = any(path.exists() for path in possible_locations)
         assert exists, "Diagnostic script should exist for troubleshooting"
 

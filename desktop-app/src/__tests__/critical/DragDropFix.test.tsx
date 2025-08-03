@@ -8,7 +8,7 @@ import { useWorkflowStore } from '@/state/workflowStore'
 vi.mock('reactflow', () => {
   const MockReactFlow = ({ onDrop, onDragOver, children, ...props }: any) => {
     return (
-      <div 
+      <div
         className="react-flow"
         onDrop={onDrop}
         onDragOver={onDragOver}
@@ -38,10 +38,10 @@ vi.mock('reactflow', () => {
     useReactFlow: () => ({
       project: (coords: { x: number; y: number }) => coords,
       getViewport: () => ({ x: 0, y: 0, zoom: 1 }),
-      fitView: vi.fn()
+      fitView: vi.fn(),
     }),
     ConnectionMode: { Loose: 'loose' },
-    BackgroundVariant: { Dots: 'dots' }
+    BackgroundVariant: { Dots: 'dots' },
   }
 })
 
@@ -54,7 +54,7 @@ describe('Drag and Drop Fix Tests', () => {
       selectedNode: null,
       isPaletteOpen: true,
       isConfigPanelOpen: false,
-      currentTheme: 'light'
+      currentTheme: 'light',
     })
   })
 
@@ -76,15 +76,15 @@ describe('Drag and Drop Fix Tests', () => {
 
       // Create proper drag event with dataTransfer
       const dataTransfer = new DataTransfer()
-      
+
       const dragStartEvent = new DragEvent('dragstart', {
         bubbles: true,
-        dataTransfer
+        dataTransfer,
       })
 
       // Spy on setData
       const setDataSpy = vi.spyOn(dataTransfer, 'setData')
-      
+
       fireEvent(inputNode!, dragStartEvent)
 
       // Check that data was set
@@ -99,16 +99,16 @@ describe('Drag and Drop Fix Tests', () => {
       )
 
       const reactFlow = screen.getByTestId('react-flow')
-      
+
       // Create dataTransfer with data
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('application/reactflow', 'llm')
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 300,
-        clientY: 200
+        clientY: 200,
       })
 
       // Spy on store
@@ -129,7 +129,7 @@ describe('Drag and Drop Fix Tests', () => {
       )
 
       const reactFlow = screen.getByTestId('react-flow')
-      
+
       // Mock getBoundingClientRect
       reactFlow.getBoundingClientRect = vi.fn(() => ({
         left: 100,
@@ -140,17 +140,17 @@ describe('Drag and Drop Fix Tests', () => {
         height: 600,
         x: 100,
         y: 50,
-        toJSON: () => {}
+        toJSON: () => {},
       }))
 
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('application/reactflow', 'input')
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 400, // 400 - 100 = 300 relative
-        clientY: 250  // 250 - 50 = 200 relative
+        clientY: 250, // 250 - 50 = 200 relative
       })
 
       const store = useWorkflowStore.getState()
@@ -172,28 +172,28 @@ describe('Drag and Drop Fix Tests', () => {
       )
 
       const reactFlow = screen.getByTestId('react-flow')
-      
+
       // Simulate React Flow with zoom and pan
-      const mockProject = vi.fn((coords) => ({
+      const mockProject = vi.fn(coords => ({
         x: coords.x / 1.5, // zoom level 1.5
-        y: coords.y / 1.5
+        y: coords.y / 1.5,
       }))
 
       // Override useReactFlow
       vi.mocked(vi.importActual('reactflow')).useReactFlow = () => ({
         project: mockProject,
         getViewport: () => ({ x: -100, y: -50, zoom: 1.5 }),
-        fitView: vi.fn()
+        fitView: vi.fn(),
       })
 
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('application/reactflow', 'llm')
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 450,
-        clientY: 300
+        clientY: 300,
       })
 
       fireEvent(reactFlow, dropEvent)
@@ -210,14 +210,14 @@ describe('Drag and Drop Fix Tests', () => {
       )
 
       const reactFlow = screen.getByTestId('react-flow')
-      
+
       const dragOverEvent = new DragEvent('dragover', {
         bubbles: true,
-        cancelable: true
+        cancelable: true,
       })
 
       const preventDefaultSpy = vi.spyOn(dragOverEvent, 'preventDefault')
-      
+
       fireEvent(reactFlow, dragOverEvent)
 
       expect(preventDefaultSpy).toHaveBeenCalled()
@@ -234,15 +234,15 @@ describe('Drag and Drop Fix Tests', () => {
 
       const reactFlow = screen.getByTestId('react-flow')
       const store = useWorkflowStore.getState()
-      
+
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('application/reactflow', 'llm')
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 300,
-        clientY: 200
+        clientY: 200,
       })
 
       fireEvent(reactFlow, dropEvent)
@@ -254,8 +254,8 @@ describe('Drag and Drop Fix Tests', () => {
           position: expect.any(Object),
           data: expect.objectContaining({
             label: expect.any(String),
-            isConfigured: false
-          })
+            isConfigured: false,
+          }),
         })
       })
     })
@@ -269,15 +269,15 @@ describe('Drag and Drop Fix Tests', () => {
 
       const reactFlow = screen.getByTestId('react-flow')
       const store = useWorkflowStore.getState()
-      
+
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('application/reactflow', 'compare')
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 300,
-        clientY: 200
+        clientY: 200,
       })
 
       fireEvent(reactFlow, dropEvent)
@@ -299,24 +299,24 @@ describe('Drag and Drop Fix Tests', () => {
 
       const reactFlow = screen.getByTestId('react-flow')
       const store = useWorkflowStore.getState()
-      
+
       const dataTransfer = new DataTransfer()
       // No data set
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 300,
-        clientY: 200
+        clientY: 200,
       })
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      
+
       fireEvent(reactFlow, dropEvent)
 
       // Should log error
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('No node type'))
-      
+
       // Should not add node
       expect(store.nodes.length).toBe(0)
 
@@ -332,15 +332,15 @@ describe('Drag and Drop Fix Tests', () => {
 
       const reactFlow = screen.getByTestId('react-flow')
       const store = useWorkflowStore.getState()
-      
+
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('application/reactflow', 'invalid-node-type')
-      
+
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         dataTransfer,
         clientX: 300,
-        clientY: 200
+        clientY: 200,
       })
 
       fireEvent(reactFlow, dropEvent)
@@ -360,19 +360,19 @@ describe('Drag and Drop Fix Tests', () => {
 
       const reactFlow = screen.getByTestId('react-flow')
       const store = useWorkflowStore.getState()
-      
+
       // Drop three nodes
       const nodeTypes = ['input', 'llm', 'output']
-      
+
       for (let i = 0; i < nodeTypes.length; i++) {
         const dataTransfer = new DataTransfer()
         dataTransfer.setData('application/reactflow', nodeTypes[i])
-        
+
         const dropEvent = new DragEvent('drop', {
           bubbles: true,
           dataTransfer,
-          clientX: 200 + (i * 200),
-          clientY: 200
+          clientX: 200 + i * 200,
+          clientY: 200,
         })
 
         fireEvent(reactFlow, dropEvent)
@@ -392,21 +392,21 @@ describe('Drag and Drop Fix Tests', () => {
       )
 
       const inputNode = screen.getByText('Input').closest('.palette-node')
-      
+
       // Start drag
       const dragStartEvent = new DragEvent('dragstart', {
         bubbles: true,
-        dataTransfer: new DataTransfer()
+        dataTransfer: new DataTransfer(),
       })
-      
+
       fireEvent(inputNode!, dragStartEvent)
 
       // Cancel drag (dragend without drop)
       const dragEndEvent = new DragEvent('dragend', {
         bubbles: true,
-        dataTransfer: dragStartEvent.dataTransfer
+        dataTransfer: dragStartEvent.dataTransfer,
       })
-      
+
       fireEvent(inputNode!, dragEndEvent)
 
       // No nodes should be created

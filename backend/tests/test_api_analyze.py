@@ -3,9 +3,11 @@
 Tests the full flow including token counting, chunking, and response processing.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, AsyncMock
+
 from main import app
 
 
@@ -66,17 +68,12 @@ class TestAnalyzeEndpoint:
             assert "responses" in data
             assert len(data["responses"]) == 1
             assert data["responses"][0]["model"] == "openai"
-            assert (
-                data["responses"][0]["response"]
-                == "This is a test response from OpenAI."
-            )
+            assert data["responses"][0]["response"] == "This is a test response from OpenAI."
             assert data["responses"][0]["error"] is None
             assert data["chunked"] is False
             assert data["chunk_info"] is None
             # Check that the correct parameters were passed (including model)
-            mock_call.assert_called_once_with(
-                "Test short text", "test-openai-key", "gpt-3.5-turbo"
-            )
+            mock_call.assert_called_once_with("Test short text", "test-openai-key", "gpt-3.5-turbo")
 
     def test_analyze_short_text_claude(self, client, mock_claude_response):
         """Test analyzing short text with Claude."""
@@ -93,10 +90,7 @@ class TestAnalyzeEndpoint:
             assert "responses" in data
             assert len(data["responses"]) == 1
             assert data["responses"][0]["model"] == "claude"
-            assert (
-                data["responses"][0]["response"]
-                == "This is a test response from Claude."
-            )
+            assert data["responses"][0]["response"] == "This is a test response from Claude."
             assert data["responses"][0]["error"] is None
             assert data["chunked"] is False
             assert data["chunk_info"] is None
@@ -105,16 +99,12 @@ class TestAnalyzeEndpoint:
                 "Test short text", "test-claude-key", "claude-3-haiku-20240307"
             )
 
-    def test_analyze_both_providers(
-        self, client, mock_openai_response, mock_claude_response
-    ):
+    def test_analyze_both_providers(self, client, mock_openai_response, mock_claude_response):
         """Test analyzing with both providers simultaneously."""
-        with patch(
-            "llm_providers.call_openai", new_callable=AsyncMock
-        ) as mock_openai, patch(
-            "llm_providers.call_claude", new_callable=AsyncMock
-        ) as mock_claude:
-
+        with (
+            patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai,
+            patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude,
+        ):
             mock_openai.return_value = mock_openai_response
             mock_claude.return_value = mock_claude_response
 
@@ -215,9 +205,7 @@ class TestAnalyzeEndpoint:
 
     def test_analyze_empty_text(self, client):
         """Test endpoint returns error for empty text."""
-        response = client.post(
-            "/api/analyze", json={"text": "", "openai_key": "test-openai-key"}
-        )
+        response = client.post("/api/analyze", json={"text": "", "openai_key": "test-openai-key"})
 
         assert response.status_code == 400
         assert "Text cannot be empty" in response.json()["detail"]

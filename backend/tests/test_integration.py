@@ -4,14 +4,15 @@ These tests verify the integration between different components
 without making actual API calls to external services.
 """
 
-import pytest
 import asyncio
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
-from main import app
 from llm_providers import analyze_with_models
+from main import app
 
 
 class TestFullWorkflowIntegration:
@@ -152,16 +153,12 @@ class TestFullWorkflowIntegration:
                 assert len(data["responses"]) == 2
 
                 # Check OpenAI succeeded
-                openai_resp = next(
-                    r for r in data["responses"] if r["model"] == "openai"
-                )
+                openai_resp = next(r for r in data["responses"] if r["model"] == "openai")
                 assert openai_resp["error"] is None
                 assert openai_resp["response"] == "Success response"
 
                 # Check Claude failed
-                claude_resp = next(
-                    r for r in data["responses"] if r["model"] == "claude"
-                )
+                claude_resp = next(r for r in data["responses"] if r["model"] == "claude")
                 assert claude_resp["error"] is not None
                 assert "API Error" in claude_resp["error"]
                 assert claude_resp["response"] == ""
@@ -202,12 +199,8 @@ class TestFullWorkflowIntegration:
         with patch("llm_providers.call_openai", side_effect=mock_provider_call):
             with patch("llm_providers.call_claude", side_effect=mock_provider_call):
                 with patch("llm_providers.call_gemini", side_effect=mock_provider_call):
-                    with patch(
-                        "llm_providers.call_grok", side_effect=mock_provider_call
-                    ):
-                        results = await analyze_with_models(
-                            "test", "key1", "key2", "key3", "key4"
-                        )
+                    with patch("llm_providers.call_grok", side_effect=mock_provider_call):
+                        results = await analyze_with_models("test", "key1", "key2", "key3", "key4")
 
         assert len(results) == 4
         assert len(call_times) == 4
@@ -282,14 +275,10 @@ class TestCircuitBreakerIntegration:
                 assert (
                     error_msg is not None
                 ), f"Error should not be None, got: {data['responses'][0]}"
-                assert (
-                    "API Error" in error_msg or "circuit breaker" in error_msg.lower()
-                )
+                assert "API Error" in error_msg or "circuit breaker" in error_msg.lower()
 
             # The 6th request should definitely show circuit breaker is open
-            response = client.post(
-                "/api/analyze", json={"text": "Test 6", "openai_key": test_key}
-            )
+            response = client.post("/api/analyze", json={"text": "Test 6", "openai_key": test_key})
             assert response.status_code == 200
             data = response.json()
             openai_resp = data["responses"][0]

@@ -736,7 +736,7 @@ class WorkflowBuilder {
   async runWorkflow() {
     const exportData = this.editor.export();
 
-    console.log('🚀 Running workflow with data:', exportData);
+    logger.workflow('starting_execution', { node_count: Object.keys(exportData.drawflow.Home.data).length });
 
     // Validate workflow
     const validation = this.validateWorkflow(exportData);
@@ -767,9 +767,9 @@ class WorkflowBuilder {
       };
 
       // Execute workflow
-      console.log('📤 Sending workflow to backend:', {
-        workflow: workflowData,
-        api_keys: Object.keys(apiKeys),
+      logger.workflow('sending_to_backend', {
+        workflow_nodes: Object.keys(workflowData.nodes).length,
+        api_keys_configured: Object.keys(apiKeys).filter(key => apiKeys[key]).length,
       });
 
       try {
@@ -784,7 +784,7 @@ class WorkflowBuilder {
           }),
         });
 
-        console.log('📥 Response status:', response.status);
+        logger.workflow('backend_response', { status: response.status });
 
         if (!response.ok) {
           throw new Error(`Execution failed: ${response.statusText}`);
@@ -889,7 +889,7 @@ class WorkflowBuilder {
       success: true,
     });
 
-    console.log('📊 Workflow Results:', results);
+    logger.workflow('results_received', { result_count: results.results ? Object.keys(results.results).length : 0 });
 
     // Update node visual states with results
     if (results.results) {
@@ -968,8 +968,12 @@ class WorkflowBuilder {
       existingModal.remove();
     }
 
-    // Add modal to page
-    document.body.insertAdjacentHTML('beforeend', DOMPurify.sanitize(modalHtml));
+    // Add modal to page safely using DOMParser
+    const parser = new DOMParser();
+    const sanitizedHtml = DOMPurify.sanitize(modalHtml);
+    const doc = parser.parseFromString(sanitizedHtml, 'text/html');
+    const modalElement = doc.body.firstElementChild;
+    document.body.appendChild(modalElement);
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('resultsModal'));
@@ -983,8 +987,8 @@ class WorkflowBuilder {
       html += '<h6>Node Execution Results:</h6>';
 
       Object.entries(results.results).forEach(([nodeId, nodeResult]) => {
-        html += `<div class="node-result mb-3 p-3 border rounded">`;
-        html += `<h6>Node ${nodeId} (${nodeResult.type})</h6>`;
+        html += '<div class="node-result mb-3 p-3 border rounded">';
+        html += '<h6>Node ' + nodeId + ' (' + nodeResult.type + ')</h6>';
 
         if (nodeResult.status === 'success') {
           html += '<span class="badge bg-success">Success</span>';
@@ -992,8 +996,8 @@ class WorkflowBuilder {
           if (nodeResult.type === 'llm' && nodeResult.result) {
             // Show LLM responses
             Object.entries(nodeResult.result).forEach(([model, response]) => {
-              html += `<div class="model-response mt-2">`;
-              html += `<strong>${model}:</strong><br>`;
+              html += '<div class="model-response mt-2">';
+              html += '<strong>' + model + ':</strong><br>';
 
               if (response.error) {
                 html += `<span class="text-danger">Error: ${response.error}</span>`;

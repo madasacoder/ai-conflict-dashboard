@@ -1,12 +1,13 @@
 """Stress tests for parallel execution to find race conditions."""
 
-import pytest
 import asyncio
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from unittest.mock import patch
 
-from llm_providers import get_circuit_breaker, circuit_breakers, _circuit_breaker_lock
+import pytest
+
+from llm_providers import _circuit_breaker_lock, circuit_breakers, get_circuit_breaker
 
 
 class TestParallelStress:

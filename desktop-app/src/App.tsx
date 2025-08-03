@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import { WorkflowBuilder } from './components/WorkflowBuilder'
 import { WorkflowBuilderFixed } from './components/WorkflowBuilderFixed'
 import { WorkflowBuilderSimple } from './components/WorkflowBuilderSimple'
 import { ErrorBoundary, WorkflowErrorBoundary } from './components/ErrorBoundary'
@@ -11,17 +12,23 @@ import './components/ui/NodePalette.css'
 import './components/ui/WorkflowToolbar.css'
 import './components/ui/ConfigPanel.css'
 
-function App() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [apiStatus, setApiStatus] = useState(null)
-  const [showWelcome, setShowWelcome] = useState(true)
+interface ApiStatus {
+  status: string
+  message?: string
+  version?: string
+}
+
+function App(): JSX.Element {
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null)
+  const [showWelcome, setShowWelcome] = useState<boolean>(true)
 
   useEffect(() => {
     // Check API health on startup
     checkApiHealth()
   }, [])
 
-  const checkApiHealth = async () => {
+  const checkApiHealth = async (): Promise<void> => {
     try {
       console.log('Checking API health at http://localhost:8000/api/health')
       const response = await fetch('http://localhost:8000/api/health', {
@@ -36,16 +43,17 @@ function App() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
       
-      const data = await response.json()
+      const data = await response.json() as ApiStatus
       console.log('API health response:', data)
       setApiStatus(data)
       setIsLoading(false)
       toast.success('Connected to backend API')
     } catch (error) {
       console.error('API health check failed:', error)
-      setApiStatus({ status: 'error', message: error.message })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setApiStatus({ status: 'error', message: errorMessage })
       setIsLoading(false)
-      toast.error(`Failed to connect to backend API: ${error.message}`)
+      toast.error(`Failed to connect to backend API: ${errorMessage}`)
     }
   }
 
@@ -138,7 +146,7 @@ function App() {
       <div className="app workflow-app">
         <Toaster position="top-right" />
         <WorkflowErrorBoundary>
-          <WorkflowBuilderSimple />
+          <WorkflowBuilder />
         </WorkflowErrorBoundary>
       </div>
     </ErrorBoundary>

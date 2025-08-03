@@ -6,16 +6,17 @@ masking of sensitive information like API keys in log messages.
 """
 
 import logging
-import sys
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, Pattern
+import sys
+from datetime import UTC, datetime
+from re import Pattern
+from typing import Any
+
 import structlog
 from structlog.processors import CallsiteParameter
 
-
 # Patterns for sensitive data that should be masked
-SENSITIVE_PATTERNS: Dict[str, Pattern] = {
+SENSITIVE_PATTERNS: dict[str, Pattern] = {
     "openai_key": re.compile(
         r"(sk-(?!proj-|ant-)[a-zA-Z0-9]{4,})"
     ),  # OpenAI keys, excluding sk-proj and sk-ant
@@ -26,12 +27,8 @@ SENSITIVE_PATTERNS: Dict[str, Pattern] = {
     "bearer_token": re.compile(r"(bearer\s+)([a-zA-Z0-9-._~+/]{20,})", re.IGNORECASE),
     "aws_access_key": re.compile(r"(AKIA[A-Z0-9]{16})"),
     "gemini_key": re.compile(r"(AIza[a-zA-Z0-9-_]{35})"),
-    "password": re.compile(
-        r'(password["\s:=]+)(["\']?)([^"\s]+)(["\']?)', re.IGNORECASE
-    ),
-    "sk_proj_key": re.compile(
-        r"(sk-proj-[a-zA-Z0-9-]{4,})"
-    ),  # sk-proj- pattern with hyphens
+    "password": re.compile(r'(password["\s:=]+)(["\']?)([^"\s]+)(["\']?)', re.IGNORECASE),
+    "sk_proj_key": re.compile(r"(sk-proj-[a-zA-Z0-9-]{4,})"),  # sk-proj- pattern with hyphens
 }
 
 
@@ -93,7 +90,7 @@ def sanitize_sensitive_data(text: str) -> str:
     return sanitize_value(text)
 
 
-def sanitize_event_dict(_, __, event_dict: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_event_dict(_, __, event_dict: dict[str, Any]) -> dict[str, Any]:
     """Processor to sanitize sensitive data in log events.
 
     Args:
@@ -110,7 +107,7 @@ def sanitize_event_dict(_, __, event_dict: Dict[str, Any]) -> Dict[str, Any]:
 
 def add_timestamp(_, __, event_dict):
     """Add ISO format timestamp to log entries."""
-    event_dict["timestamp"] = datetime.now(timezone.utc).isoformat()
+    event_dict["timestamp"] = datetime.now(UTC).isoformat()
     return event_dict
 
 
@@ -260,9 +257,7 @@ def log_api_request(logger, method, path, **kwargs):
 
 def log_api_response(logger, status_code, duration_ms, **kwargs):
     """Log API response with structured data (sanitized)."""
-    logger.info(
-        "api_response", status_code=status_code, duration_ms=duration_ms, **kwargs
-    )
+    logger.info("api_response", status_code=status_code, duration_ms=duration_ms, **kwargs)
 
 
 def log_llm_call(logger, provider, model, tokens, duration_ms, success=True, **kwargs):
@@ -274,7 +269,7 @@ def log_llm_call(logger, provider, model, tokens, duration_ms, success=True, **k
         tokens=tokens,
         duration_ms=duration_ms,
         success=success,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -290,15 +285,9 @@ if __name__ == "__main__":
 
     # Test various sensitive data patterns
     test_cases = [
-        {
-            "message": "User provided API key sk-1234567890abcdef1234567890abcdef1234567890abcdef"
-        },
+        {"message": "User provided API key sk-1234567890abcdef1234567890abcdef1234567890abcdef"},
         {"api_key": "sk-ant-1234567890abcdef1234567890abcdef1234567890abcdef-12"},
-        {
-            "config": {
-                "openai_key": "sk-1234567890abcdef1234567890abcdef1234567890abcdef"
-            }
-        },
+        {"config": {"openai_key": "sk-1234567890abcdef1234567890abcdef1234567890abcdef"}},
         {
             "auth": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
         },

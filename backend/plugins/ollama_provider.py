@@ -9,13 +9,14 @@ Requirements:
 - Default API endpoint: http://localhost:11434
 """
 
-import os
-import asyncio
-import aiohttp
 import json
-from typing import Optional, Dict, Any, List, AsyncGenerator
+import os
+from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
+from typing import Any
+
+import aiohttp
 import structlog
-from datetime import datetime
 
 logger = structlog.get_logger(__name__)
 
@@ -101,7 +102,7 @@ class OllamaProvider:
         if self.session:
             await self.session.close()
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         """Check if Ollama is running and accessible.
 
         Returns:
@@ -149,7 +150,7 @@ class OllamaProvider:
                 "error": str(e),
             }
 
-    async def list_models(self) -> List[Dict[str, Any]]:
+    async def list_models(self) -> list[dict[str, Any]]:
         """List all available models in Ollama.
 
         Returns:
@@ -188,7 +189,7 @@ class OllamaProvider:
             logger.error("Failed to list Ollama models", error=str(e))
             return []
 
-    async def pull_model(self, model_name: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def pull_model(self, model_name: str) -> AsyncGenerator[dict[str, Any], None]:
         """Pull/download a model from Ollama registry.
 
         Args:
@@ -204,9 +205,7 @@ class OllamaProvider:
                 async with session.post(
                     f"{self.base_url}/api/pull",
                     json=data,
-                    timeout=aiohttp.ClientTimeout(
-                        total=None
-                    ),  # No timeout for downloads
+                    timeout=aiohttp.ClientTimeout(total=None),  # No timeout for downloads
                 ) as response:
                     async for line in response.content:
                         if line:
@@ -224,10 +223,10 @@ class OllamaProvider:
         prompt: str,
         model: str = "llama2",
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         stream: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate a response using Ollama.
 
         Args:
@@ -241,7 +240,7 @@ class OllamaProvider:
         Returns:
             Dict with model response or error
         """
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
 
         try:
             if not self.session:
@@ -278,7 +277,7 @@ class OllamaProvider:
                 if response.status == 200:
                     result = await response.json()
 
-                    duration = (datetime.now() - start_time).total_seconds()
+                    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 
                     logger.info(
                         "Ollama response received",
@@ -297,10 +296,7 @@ class OllamaProvider:
                         "metadata": {
                             "total_duration_ms": result.get("total_duration", 0) / 1e6,
                             "load_duration_ms": result.get("load_duration", 0) / 1e6,
-                            "prompt_eval_duration_ms": result.get(
-                                "prompt_eval_duration", 0
-                            )
-                            / 1e6,
+                            "prompt_eval_duration_ms": result.get("prompt_eval_duration", 0) / 1e6,
                             "eval_duration_ms": result.get("eval_duration", 0) / 1e6,
                             "prompt_eval_count": result.get("prompt_eval_count", 0),
                             "eval_count": result.get("eval_count", 0),
@@ -319,7 +315,7 @@ class OllamaProvider:
                         "error": f"Ollama API error: {response.status} - {error_text}",
                     }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration = (datetime.now() - start_time).total_seconds()
             logger.error(
                 "Ollama request timed out",
@@ -344,18 +340,18 @@ class OllamaProvider:
             return {
                 "model": f"ollama/{model}",
                 "response": "",
-                "error": f"Ollama error: {str(e)}",
+                "error": f"Ollama error: {e!s}",
             }
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "llama2",
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         stream: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Chat completion using Ollama (for models that support chat format).
 
         Args:
@@ -399,8 +395,8 @@ class OllamaProvider:
 
 # Integration function for the main AI Conflict Dashboard
 async def call_ollama(
-    text: str, model: str = "llama2", base_url: Optional[str] = None, **kwargs
-) -> Dict[str, Any]:
+    text: str, model: str = "llama2", base_url: str | None = None, **kwargs
+) -> dict[str, Any]:
     """Call Ollama API for the AI Conflict Dashboard.
 
     Args:
@@ -440,4 +436,4 @@ async def call_ollama(
 
 
 # Export the provider class and integration function
-__all__ = ["OllamaProvider", "call_ollama", "OLLAMA_MODELS"]
+__all__ = ["OLLAMA_MODELS", "OllamaProvider", "call_ollama"]

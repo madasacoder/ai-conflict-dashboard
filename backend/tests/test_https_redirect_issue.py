@@ -1,7 +1,8 @@
 """Test to reproduce and diagnose HTTPS redirect issues."""
 
-import pytest
 import logging
+
+import pytest
 
 logger = logging.getLogger(__name__)
 

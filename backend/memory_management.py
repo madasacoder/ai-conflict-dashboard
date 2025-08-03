@@ -8,12 +8,14 @@ This module provides utilities for:
 4. Request context cleanup
 """
 
+import asyncio
+import contextlib
 import gc
 import sys
-import asyncio
 import weakref
-from typing import Any, Dict, Optional, Set
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
+
 import psutil
 import structlog
 
@@ -26,9 +28,9 @@ CLEANUP_INTERVAL = 60  # seconds
 REQUEST_TIMEOUT = 300  # 5 minutes max request lifetime
 
 # Global tracking
-_active_requests: Set[weakref.ref] = set()
+_active_requests: set[weakref.ref] = set()
 _response_cache: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
-_last_cleanup = datetime.now()
+_last_cleanup = datetime.now(timezone.utc)
 
 
 class MemoryManager:
@@ -47,10 +49,8 @@ class MemoryManager:
         """Stop the background cleanup task."""
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
         logger.info("Memory manager stopped")
 
     async def _periodic_cleanup(self):
@@ -80,9 +80,7 @@ class MemoryManager:
         )
 
         # Clean up dead weak references
-        _active_requests.difference_update(
-            ref for ref in _active_requests if ref() is None
-        )
+        _active_requests.difference_update(ref for ref in _active_requests if ref() is None)
 
         # Force garbage collection
         collected = gc.collect()
@@ -99,9 +97,9 @@ class MemoryManager:
             objects_collected=collected,
         )
 
-        _last_cleanup = datetime.now()
+        _last_cleanup = datetime.now(timezone.utc)
 
-    def check_memory_usage(self) -> Dict[str, Any]:
+    def check_memory_usage(self) -> dict[str, Any]:
         """Check current memory usage and limits."""
         memory_info = self.process.memory_info()
         memory_bytes = memory_info.rss
@@ -128,8 +126,8 @@ class RequestContext:
 
     def __init__(self, request_id: str):
         self.request_id = request_id
-        self.start_time = datetime.now()
-        self.resources: Dict[str, Any] = {}
+        self.start_time = datetime.now(timezone.utc)
+        self.resources: dict[str, Any] = {}
         self._ref = None
 
     def __enter__(self):
@@ -152,7 +150,7 @@ class RequestContext:
         if self._ref in _active_requests:
             _active_requests.remove(self._ref)
 
-        duration = (datetime.now() - self.start_time).total_seconds()
+        duration = (datetime.now(timezone.utc) - self.start_time).total_seconds()
         logger.debug(
             "Request completed",
             request_id=self.request_id,
@@ -170,11 +168,11 @@ class RequestContext:
             try:
                 # Clear large strings/objects
                 if (
-                    isinstance(resource, (str, bytes, list, dict))
+                    isinstance(resource, str | bytes | list | dict)
                     and sys.getsizeof(resource) > 1024 * 1024
                 ):
                     logger.debug(f"Clearing large resource: {name}")
-                    if isinstance(resource, (list, dict)):
+                    if isinstance(resource, list | dict):
                         resource.clear()
             except Exception as e:
                 logger.error(f"Error cleaning up resource {name}", error=str(e))
@@ -230,10 +228,10 @@ def cache_response(request_id: str, response: Any, ttl_seconds: int = 300):
         await asyncio.sleep(ttl_seconds)
         _response_cache.pop(request_id, None)
 
-    asyncio.create_task(cleanup_after_ttl())
+    _ = asyncio.create_task(cleanup_after_ttl())
 
 
-def get_cached_response(request_id: str) -> Optional[Any]:
+def get_cached_response(request_id: str) -> Any | None:
     """Get a cached response if available.
 
     Args:
@@ -289,12 +287,15 @@ if __name__ == "__main__":
 
             # Check memory
             stats = memory_manager.check_memory_usage()
-            print(f"Memory usage: {stats}")
+            logger.info("Memory usage", stats=stats)
 
             # Test response limiting
             limited = limit_response_size(large_data)
-            print(f"Original size: {sys.getsizeof(large_data) / 1024 / 1024:.1f}MB")
-            print(f"Limited size: {sys.getsizeof(limited) / 1024 / 1024:.1f}MB")
+            logger.info(
+                "Size comparison",
+                original_mb=sys.getsizeof(large_data) / 1024 / 1024,
+                limited_mb=sys.getsizeof(limited) / 1024 / 1024,
+            )
 
         # Cleanup should happen automatically
         await asyncio.sleep(1)

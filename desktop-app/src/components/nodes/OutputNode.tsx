@@ -6,15 +6,18 @@
 
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { OutputNodeData } from '@/state/workflowStore'
+import { OutputNodeData, useWorkflowStore } from '@/state/workflowStore'
 import { Download, FileText, Code, CheckCircle, AlertCircle } from 'lucide-react'
+import NodeStatusIndicator from '@/components/ui/NodeStatusIndicator'
 
 interface OutputNodeProps extends NodeProps {
   data: OutputNodeData
 }
 
-export const OutputNode = memo<OutputNodeProps>(({ data, selected }) => {
+export const OutputNode = memo<OutputNodeProps>(({ data, selected, id }) => {
+  const getNodeExecutionStatus = useWorkflowStore(state => state.getNodeExecutionStatus)
   const isConfigured = data.isConfigured
+  const executionStatus = getNodeExecutionStatus(id)
   
   const getFormatIcon = () => {
     switch (data.format) {
@@ -27,6 +30,8 @@ export const OutputNode = memo<OutputNodeProps>(({ data, selected }) => {
   
   return (
     <div className={`workflow-node output-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+      {/* Execution Status Indicator */}
+      <NodeStatusIndicator status={executionStatus} size="small" />
       {/* Input Handle */}
       <Handle
         type="target"

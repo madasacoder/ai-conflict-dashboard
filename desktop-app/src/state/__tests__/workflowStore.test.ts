@@ -54,9 +54,12 @@ describe('Workflow Store', () => {
       })
 
       const nodeId = result.current.nodes[0].id
+      
+      // Check initial state
+      expect(result.current.nodes[0].data.prompt).toEqual('Analyze the following text:\n\n{input}')
 
       act(() => {
-        result.current.updateNodeData(nodeId, { prompt: 'New prompt' })
+        result.current.updateNodeData(nodeId, 'prompt', 'New prompt')
       })
 
       expect(result.current.nodes[0].data.prompt).toEqual('New prompt')
@@ -70,12 +73,14 @@ describe('Workflow Store', () => {
       })
 
       const nodeId = result.current.nodes[0].id
+      const node = result.current.nodes[0]
 
       act(() => {
         result.current.selectNode(nodeId)
       })
 
-      expect(result.current.selectedNode).toBe(nodeId)
+      expect(result.current.selectedNode?.id).toBe(nodeId)
+      expect(result.current.selectedNode).toMatchObject(node)
 
       act(() => {
         result.current.selectNode(null)
@@ -278,10 +283,8 @@ describe('Workflow Store', () => {
         })
 
         // Configure nodes
-        result.current.updateNodeData(llmNode.id, {
-          models: ['gpt-4'],
-          temperature: 0.7
-        })
+        result.current.updateNodeData(llmNode.id, 'models', ['gpt-4'])
+        result.current.updateNodeData(llmNode.id, 'temperature', 0.7)
       })
 
       expect(result.current.nodes).toHaveLength(3)

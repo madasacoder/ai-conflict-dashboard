@@ -2,14 +2,14 @@
 Pytest configuration and fixtures for AI Conflict Dashboard tests.
 """
 
-import pytest
-from typing import AsyncGenerator, Generator
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
-
 # Import the FastAPI app
 import sys
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 # Add backend directory to path
 backend_dir = Path(__file__).parent.parent
@@ -43,7 +43,7 @@ def reset_circuit_breakers():
     """
     Reset circuit breakers before each test to prevent test interference.
     """
-    from llm_providers import circuit_breakers, _circuit_breaker_lock
+    from llm_providers import _circuit_breaker_lock, circuit_breakers
 
     # Clear all circuit breakers with thread safety
     with _circuit_breaker_lock:
@@ -116,9 +116,7 @@ def long_text() -> str:
         str: Long text that requires chunking
     """
     return " ".join(
-        [
-            "This is a very long sentence that will be used for testing text chunking functionality."
-        ]
+        ["This is a very long sentence that will be used for testing text chunking functionality."]
         * 100
     )
 

@@ -13,53 +13,42 @@ vi.mock('@/state/workflowStore', () => ({
     isPaletteOpen: true,
     isConfigPanelOpen: false,
     selectedNode: null,
+    isExecutionPanelOpen: false,
+    setExecutionPanelOpen: vi.fn(),
     onNodesChange: vi.fn(),
     onEdgesChange: vi.fn(),
     onConnect: vi.fn(),
     addNode: vi.fn(),
     selectNode: vi.fn(),
-    togglePalette: vi.fn()
-  })
+    togglePalette: vi.fn(),
+  }),
 }))
 
 // Mock React Flow with debugging
-vi.mock('reactflow', async () => {
-  const actual = await vi.importActual('@xyflow/react')
-  return {
-    ...actual,
-    useReactFlow: () => ({
-      project: ({ x, y }: { x: number; y: number }) => {
-        console.log('React Flow project called with:', { x, y })
-        return { x, y }
-      },
-      fitView: vi.fn()
-    }),
-    ReactFlow: ({ onDrop, onDragOver, ...props }: any) => {
-      // Create a mock React Flow that logs events
-      return (
-        <div 
-          className="react-flow-mock"
-          onDrop={(e) => {
-            console.log('ReactFlow onDrop triggered')
-            onDrop?.(e)
-          }}
-          onDragOver={(e) => {
-            console.log('ReactFlow onDragOver triggered')
-            onDragOver?.(e)
-          }}
-          data-testid="react-flow"
-        >
-          React Flow Mock
-        </div>
-      )
-    }
-  }
-})
+vi.mock('reactflow', () => ({
+  default: vi.fn(() => null),
+  ReactFlowProvider: ({ children }: any) => children,
+  useReactFlow: () => ({
+    project: ({ x, y }: { x: number; y: number }) => {
+      console.log('React Flow project called with:', { x, y })
+      return { x, y }
+    },
+    fitView: vi.fn(),
+  }),
+  Controls: vi.fn(() => null),
+  MiniMap: vi.fn(() => null),
+  Background: vi.fn(() => null),
+  Handle: vi.fn(() => null),
+  Position: { Left: 'left', Right: 'right', Top: 'top', Bottom: 'bottom' },
+  ConnectionMode: { Loose: 'loose' },
+  BackgroundVariant: { Dots: 'dots' },
+  ReactFlow: vi.fn(() => null)
+}))
 
 describe('Drag and Drop Debug Tests', () => {
   it('should trace drag and drop events step by step', () => {
     const consoleSpy = vi.spyOn(console, 'log')
-    
+
     const { container } = render(
       <ReactFlowProvider>
         <WorkflowBuilder />
@@ -81,7 +70,7 @@ describe('Drag and Drop Debug Tests', () => {
     // Step 4: Create and dispatch drag over event
     const dragOverEvent = new Event('dragover', { bubbles: true, cancelable: true })
     Object.defineProperty(dragOverEvent, 'dataTransfer', {
-      value: { dropEffect: '' }
+      value: { dropEffect: '' },
     })
 
     console.log('Step 4 - Dispatching dragover event')
@@ -96,7 +85,7 @@ describe('Drag and Drop Debug Tests', () => {
         console.log(`Step 5a - getData called with type: ${type}`)
         return type === 'application/reactflow' ? 'input' : ''
       },
-      types: ['application/reactflow']
+      types: ['application/reactflow'],
     }
 
     console.log('Step 5b - Dispatching drop event')
@@ -113,20 +102,20 @@ describe('Drag and Drop Debug Tests', () => {
   it('should test data transfer between palette and canvas', () => {
     // Render just the palette
     const { container: paletteContainer } = render(<NodePalette />)
-    
+
     // Find a draggable node
     const inputNode = paletteContainer.querySelector('.palette-node')
     console.log('Palette node found:', !!inputNode)
 
     // Create drag start event
-    let transferredData: Record<string, string> = {}
+    const transferredData: Record<string, string> = {}
     const dragStartEvent = new Event('dragstart', { bubbles: true }) as any
     dragStartEvent.dataTransfer = {
       setData: (type: string, data: string) => {
         console.log(`setData called: ${type} = ${data}`)
         transferredData[type] = data
       },
-      effectAllowed: ''
+      effectAllowed: '',
     }
 
     fireEvent(inputNode!, dragStartEvent)
@@ -137,11 +126,11 @@ describe('Drag and Drop Debug Tests', () => {
 
     // Now test if this data can be retrieved
     const mockGetData = (type: string) => transferredData[type] || ''
-    
+
     // Simulate drop with the transferred data
     const dropData = mockGetData('application/reactflow')
     console.log('Retrieved drop data:', dropData)
-    
+
     expect(dropData).toBe('input')
   })
 
@@ -161,7 +150,7 @@ describe('Drag and Drop Debug Tests', () => {
       const dragOverEvent = new Event('dragover', { bubbles: true })
       fireEvent(reactFlowMock, dragOverEvent)
 
-      // Test drop on React Flow directly  
+      // Test drop on React Flow directly
       const dropEvent = new Event('drop', { bubbles: true })
       fireEvent(reactFlowMock, dropEvent)
     }
@@ -169,27 +158,27 @@ describe('Drag and Drop Debug Tests', () => {
 
   it('should check event bubbling and capture', () => {
     const eventLog: string[] = []
-    
+
     const TestComponent = () => {
       return (
-        <div 
+        <div
           className="outer"
-          onDrop={(e) => {
+          onDrop={e => {
             eventLog.push('outer-drop')
             e.preventDefault()
           }}
-          onDragOver={(e) => {
+          onDragOver={e => {
             eventLog.push('outer-dragover')
             e.preventDefault()
           }}
         >
-          <div 
+          <div
             className="inner"
-            onDrop={(e) => {
+            onDrop={e => {
               eventLog.push('inner-drop')
               e.preventDefault()
             }}
-            onDragOver={(e) => {
+            onDragOver={e => {
               eventLog.push('inner-dragover')
               e.preventDefault()
             }}

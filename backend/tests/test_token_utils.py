@@ -2,7 +2,7 @@
 Unit tests for token_utils module.
 """
 
-from token_utils import estimate_tokens, check_token_limits
+from token_utils import check_token_limits, estimate_tokens
 from token_utils_wrapper import chunk_text
 
 
@@ -56,9 +56,7 @@ class TestCheckTokenLimits:
         assert len(result["warnings"]) > 0
 
         # Should have warning for GPT-3.5
-        gpt_warning = next(
-            (w for w in result["warnings"] if "GPT-3.5" in w["model"]), None
-        )
+        gpt_warning = next((w for w in result["warnings"] if "GPT-3.5" in w["model"]), None)
         assert gpt_warning is not None
         assert gpt_warning["exceeds_by"] > 0
 
@@ -92,9 +90,7 @@ class TestChunkText:
         chunks = chunk_text(text, max_tokens=200)
 
         assert len(chunks) > 1
-        assert all(
-            estimate_tokens(c["text"]) <= 250 for c in chunks
-        )  # Allow some overflow
+        assert all(estimate_tokens(c["text"]) <= 250 for c in chunks)  # Allow some overflow
         assert chunks[0]["chunk_index"] == 1
         assert chunks[-1]["chunk_index"] == len(chunks)
 

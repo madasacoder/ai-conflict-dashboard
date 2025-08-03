@@ -11,7 +11,68 @@ This document tracks all discovered bugs, their severity, impact, and resolution
 
 ## Active Bugs
 
-None! All bugs have been fixed.
+### BUG-059: Desktop App NodePalette Drag Events Not Setting DataTransfer
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Desktop App (NodePalette.tsx)
+- **Discovered**: 2025-08-03
+- **Description**: NodePalette's onDragStart sets data but tests can't access it due to jsdom limitations
+- **Impact**: Drag and drop tests fail, can't verify drag functionality
+- **Solution**: Need to mock or use Playwright for browser testing
+
+### BUG-060: Desktop App Multiple Validation Error Elements
+- **Severity**: MEDIUM
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (WorkflowToolbar.tsx)
+- **Discovered**: 2025-08-03
+- **Description**: Multiple elements with same validation error text causing test failures
+- **Impact**: Tests can't select specific error messages
+- **Solution**: Add unique test IDs to error elements
+
+### BUG-061: Desktop App Missing Node Test IDs
+- **Severity**: LOW
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (React Flow nodes)
+- **Discovered**: 2025-08-03
+- **Description**: React Flow nodes don't have data-testid attributes
+- **Impact**: Can't select specific nodes in tests
+- **Solution**: Add test IDs to node components
+
+### BUG-062: Desktop App Drop Event Target Issues
+- **Severity**: HIGH
+- **Status**: PARTIALLY FIXED (2025-08-03)
+- **Component**: Desktop App (WorkflowBuilder.tsx)
+- **Discovered**: 2025-08-03
+- **Description**: Drop events fail with "Unable to fire a drop event - please provide a DOM element"
+- **Impact**: Can't test drag and drop functionality
+- **Solution**: Ensure drop target is a proper DOM element
+
+### BUG-063: Desktop App Console.log Debug Statements
+- **Severity**: LOW
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (WorkflowBuilder.tsx)
+- **Discovered**: 2025-08-03
+- **Description**: Debug console.log statements causing test failures
+- **Impact**: Tests crash with "undefined is not iterable"
+- **Fix**: Removed all debug console.log statements
+
+### BUG-064: Desktop App Test Memory Exhaustion
+- **Severity**: HIGH
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (test suite)
+- **Discovered**: 2025-08-03
+- **Description**: Tests running out of memory with ERR_WORKER_OUT_OF_MEMORY
+- **Impact**: Test suite crashes before completion
+- **Fix**: Increased Node.js heap to 8GB, disabled test isolation
+
+### BUG-065: Desktop App Fetch Mock Not Configured
+- **Severity**: MEDIUM
+- **Status**: FIXED (2025-08-03)
+- **Component**: Desktop App (App.test.jsx)
+- **Discovered**: 2025-08-03
+- **Description**: global.fetch mock not properly initialized
+- **Impact**: App tests fail with "mockResolvedValueOnce is not a function"
+- **Fix**: Added beforeEach to properly initialize fetch mock
 
 ## Fixed Bugs
 

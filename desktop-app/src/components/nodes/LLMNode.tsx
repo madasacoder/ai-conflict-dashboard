@@ -21,7 +21,10 @@ export const LLMNode = memo<LLMNodeProps>(({ data, selected, id }) => {
   const executionStatus = getNodeExecutionStatus(id)
   
   return (
-    <div className={`workflow-node llm-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+    <div 
+      className={`workflow-node llm-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}
+      data-testid={`rf__node-${id}`}
+    >
       {/* Execution Status Indicator */}
       <NodeStatusIndicator status={executionStatus} size="small" />
       {/* Input Handle */}

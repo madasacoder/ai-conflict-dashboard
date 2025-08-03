@@ -38,7 +38,10 @@ export const SummarizeNode = memo<SummarizeNodeProps>(({ data, selected, id }) =
   }
   
   return (
-    <div className={`workflow-node summarize-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+    <div 
+      className={`workflow-node summarize-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}
+      data-testid={`rf__node-${id}`}
+    >
       {/* Execution Status Indicator */}
       <NodeStatusIndicator status={executionStatus} size="small" />
       

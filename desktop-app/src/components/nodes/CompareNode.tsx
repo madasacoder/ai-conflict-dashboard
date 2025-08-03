@@ -29,7 +29,10 @@ export const CompareNode = memo<CompareNodeProps>(({ data, selected, id }) => {
   }
   
   return (
-    <div className={`workflow-node compare-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+    <div 
+      className={`workflow-node compare-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}
+      data-testid={`rf__node-${id}`}
+    >
       {/* Execution Status Indicator */}
       <NodeStatusIndicator status={executionStatus} size="small" />
       {/* Input Handle */}

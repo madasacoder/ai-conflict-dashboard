@@ -191,9 +191,9 @@ export const WorkflowToolbar: React.FC = () => {
 
       {/* Validation Errors (hidden but in DOM for tests) */}
       {validationErrors.length > 0 && (
-        <div className="validation-errors" style={{ position: 'absolute', left: '-9999px' }}>
+        <div className="validation-errors" data-testid="validation-errors" style={{ position: 'absolute', left: '-9999px' }}>
           {validationErrors.map((error, index) => (
-            <div key={index} className="validation-error">
+            <div key={index} className="validation-error" data-testid={`validation-error-${index}`}>
               {error}
             </div>
           ))}

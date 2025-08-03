@@ -29,7 +29,10 @@ export const OutputNode = memo<OutputNodeProps>(({ data, selected, id }) => {
   }
   
   return (
-    <div className={`workflow-node output-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}>
+    <div 
+      className={`workflow-node output-node ${selected ? 'selected' : ''} ${isConfigured ? 'configured' : 'unconfigured'}`}
+      data-testid={`rf__node-${id}`}
+    >
       {/* Execution Status Indicator */}
       <NodeStatusIndicator status={executionStatus} size="small" />
       {/* Input Handle */}

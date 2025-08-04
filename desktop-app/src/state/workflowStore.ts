@@ -307,7 +307,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         id: generateId(),
         type,
         position,
-        data: createDefaultNodeData(type, `${type.charAt(0).toUpperCase() + type.slice(1)} Node`)
+        data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
       }
       
       set(state => {

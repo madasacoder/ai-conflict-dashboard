@@ -331,4 +331,198 @@ describe('Desktop App - Translation Pipeline E2E', () => {
       expect(screen.getByTestId('workflow-builder')).toBeInTheDocument()
     })
   })
+
+  describe('Workflow Creation and Node Management', () => {
+    it('should fire drag and drop events when nodes are dragged from palette', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+      
+      // Launch workflow builder
+      await waitFor(() => {
+        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
+      
+      // Find canvas and input node
+      const canvas = screen.getByTestId('react-flow-wrapper')
+      const inputNode = screen.getByTestId('node-palette-input')
+      
+      // Mock console.log to capture debug output
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      
+      // Simulate drag and drop using proper React Flow events
+      const dragStartEvent = new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      Object.defineProperty(dragStartEvent, 'dataTransfer', {
+        value: {
+          setData: vi.fn(),
+          effectAllowed: 'move'
+        }
+      })
+      inputNode.dispatchEvent(dragStartEvent)
+      
+      const dropEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      Object.defineProperty(dropEvent, 'dataTransfer', {
+        value: {
+          getData: vi.fn().mockReturnValue('input'),
+          effectAllowed: 'move'
+        }
+      })
+      canvas.dispatchEvent(dropEvent)
+      
+      // Check if events were fired
+      expect(consoleSpy).toHaveBeenCalled()
+      
+      // Clean up
+      consoleSpy.mockRestore()
+    })
+
+    it('should create nodes on canvas when dragged from palette', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+      
+      // Launch workflow builder
+      await waitFor(() => {
+        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
+      
+      // Find canvas and input node
+      const canvas = screen.getByTestId('react-flow-wrapper')
+      const inputNode = screen.getByTestId('node-palette-input')
+      
+      // Simulate drag and drop using proper React Flow events
+      const dragStartEvent = new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      Object.defineProperty(dragStartEvent, 'dataTransfer', {
+        value: {
+          setData: vi.fn(),
+          effectAllowed: 'move'
+        }
+      })
+      inputNode.dispatchEvent(dragStartEvent)
+      
+      const dropEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      Object.defineProperty(dropEvent, 'dataTransfer', {
+        value: {
+          getData: vi.fn().mockReturnValue('input'),
+          effectAllowed: 'move'
+        }
+      })
+      canvas.dispatchEvent(dropEvent)
+      
+      // Strong assertions - verify node was created
+      await waitFor(() => {
+        const createdNodes = screen.getAllByTestId(/rf__node-/)
+        expect(createdNodes.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+      
+      // Business value - user can create workflow nodes
+      const createdNode = screen.getAllByTestId(/rf__node-/)[0]
+      expect(createdNode).toBeInTheDocument()
+      expect(createdNode).toHaveAttribute('data-id')
+    })
+  })
+
+  describe('Translation Pipeline Execution', () => {
+    it('should execute translation workflow and display results', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+      
+      // Mock workflow execution response
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'completed',
+          results: {
+            input: 'Hello world',
+            translation: 'Hola mundo',
+            model: 'gpt-4',
+            confidence: 0.95
+          }
+        }),
+        clone: function() { return this; }
+      })
+      
+      // Launch workflow builder
+      await waitFor(() => {
+        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
+      
+      // Create translation workflow
+      const canvas = screen.getByTestId('react-flow-wrapper')
+      const inputNode = screen.getByTestId('node-palette-input')
+      const aiNode = screen.getByTestId('node-palette-llm')
+      const outputNode = screen.getByTestId('node-palette-output')
+      
+      // Create nodes
+      const nodes = [inputNode, aiNode, outputNode]
+      for (const node of nodes) {
+        const dragStartEvent = new DragEvent('dragstart', {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: new DataTransfer()
+        })
+        Object.defineProperty(dragStartEvent, 'dataTransfer', {
+          value: {
+            setData: vi.fn(),
+            effectAllowed: 'move'
+          }
+        })
+        node.dispatchEvent(dragStartEvent)
+        
+        const dropEvent = new DragEvent('drop', {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: new DataTransfer()
+        })
+        Object.defineProperty(dropEvent, 'dataTransfer', {
+          value: {
+            getData: vi.fn().mockReturnValue('input'),
+            effectAllowed: 'move'
+          }
+        })
+        canvas.dispatchEvent(dropEvent)
+      }
+      
+      // Wait for nodes to be created
+      await waitFor(() => {
+        const createdNodes = screen.getAllByTestId(/rf__node-/)
+        expect(createdNodes.length).toBe(3)
+      }, { timeout: 3000 })
+      
+      // Click execute button
+      const executeButton = screen.getByTestId('execute-workflow')
+      await user.click(executeButton)
+      
+      // Strong assertions - verify execution results
+      await waitFor(() => {
+        expect(screen.getByText('Translation Results')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      // Business value - user can see translation results
+      expect(screen.getByText('Hola mundo')).toBeInTheDocument()
+      expect(screen.getByText('gpt-4')).toBeInTheDocument()
+      expect(screen.getByText('95%')).toBeInTheDocument()
+    })
+  })
 }) 

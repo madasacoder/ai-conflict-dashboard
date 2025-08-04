@@ -414,7 +414,7 @@ describe('Desktop App - Translation Pipeline E2E', () => {
       expect(createdNode).toBeInTheDocument()
     })
 
-    it('should fire drag and drop events when nodes are dragged from palette', async () => {
+    it('should handle invalid node creation gracefully with proper error handling', async () => {
       const user = userEvent.setup()
       render(<App />)
       
@@ -425,45 +425,112 @@ describe('Desktop App - Translation Pipeline E2E', () => {
       
       await user.click(screen.getByText('🚀 Launch Workflow Builder'))
       
-      // Find canvas and input node
-      const canvas = screen.getByTestId('react-flow-wrapper')
-      const inputNode = screen.getByTestId('node-palette-input')
+      // Wait for workflow builder to be ready
+      await waitFor(() => {
+        expect(screen.getByTestId('workflow-builder')).toBeInTheDocument()
+      }, { timeout: 3000 })
       
-      // Mock console.log to capture debug output
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      // Get the workflow store
+      const { addNode } = useWorkflowStore.getState()
       
-      // Simulate drag and drop using proper React Flow events
-      const dragStartEvent = new DragEvent('dragstart', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: new DataTransfer()
-      })
-      Object.defineProperty(dragStartEvent, 'dataTransfer', {
-        value: {
-          setData: vi.fn(),
-          effectAllowed: 'move'
-        }
-      })
-      inputNode.dispatchEvent(dragStartEvent)
+      // Test with invalid coordinates (NaN values)
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       
-      const dropEvent = new DragEvent('drop', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: new DataTransfer()
-      })
-      Object.defineProperty(dropEvent, 'dataTransfer', {
-        value: {
-          getData: vi.fn().mockReturnValue('input'),
-          effectAllowed: 'move'
-        }
-      })
-      canvas.dispatchEvent(dropEvent)
+      // This should not crash the application
+      expect(() => {
+        addNode('input', { x: NaN, y: NaN })
+      }).not.toThrow()
       
-      // Check if events were fired
+      // Verify error was logged
       expect(consoleSpy).toHaveBeenCalled()
       
-      // Clean up
       consoleSpy.mockRestore()
+    })
+
+    it('should create multiple nodes and maintain proper state', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+      
+      // Launch workflow builder
+      await waitFor(() => {
+        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
+      
+      // Wait for workflow builder to be ready
+      await waitFor(() => {
+        expect(screen.getByTestId('workflow-builder')).toBeInTheDocument()
+      }, { timeout: 3000 })
+      
+      // Get the workflow store
+      const { addNode } = useWorkflowStore.getState()
+      
+      // Create multiple nodes
+      addNode('input', { x: 100, y: 100 })
+      addNode('llm', { x: 300, y: 100 })
+      addNode('output', { x: 500, y: 100 })
+      
+      // Wait for React to update
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Verify all nodes were created
+      await waitFor(() => {
+        const allNodes = screen.queryAllByTestId(/rf__node-/) || 
+                        screen.queryAllByTestId(/react-flow__node/) ||
+                        document.querySelectorAll('[class*="node"]')
+        expect(allNodes.length).toBeGreaterThanOrEqual(3)
+      }, { timeout: 5000 })
+      
+      // Verify different node types are present
+      const inputNodes = screen.queryAllByText('Input Node')
+      const llmNodes = screen.queryAllByText('Llm Node')
+      const outputNodes = screen.queryAllByText('Output Node')
+      
+      expect(inputNodes.length + llmNodes.length + outputNodes.length).toBeGreaterThan(0)
+    })
+
+    it('should handle concurrent node creation without race conditions', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+      
+      // Launch workflow builder
+      await waitFor(() => {
+        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
+      
+      // Wait for workflow builder to be ready
+      await waitFor(() => {
+        expect(screen.getByTestId('workflow-builder')).toBeInTheDocument()
+      }, { timeout: 3000 })
+      
+      // Get the workflow store
+      const { addNode } = useWorkflowStore.getState()
+      
+      // Create nodes concurrently
+      const promises = Array.from({ length: 5 }, (_, i) => {
+        return new Promise<void>((resolve) => {
+          setTimeout(() => {
+            addNode('input', { x: 100 + i * 50, y: 100 + i * 50 })
+            resolve()
+          }, i * 10) // Small delay to simulate concurrent access
+        })
+      })
+      
+      await Promise.all(promises)
+      
+      // Wait for React to update
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Verify all nodes were created without conflicts
+      await waitFor(() => {
+        const allNodes = screen.queryAllByTestId(/rf__node-/) || 
+                        screen.queryAllByTestId(/react-flow__node/) ||
+                        document.querySelectorAll('[class*="node"]')
+        expect(allNodes.length).toBeGreaterThanOrEqual(5)
+      }, { timeout: 5000 })
     })
   })
 

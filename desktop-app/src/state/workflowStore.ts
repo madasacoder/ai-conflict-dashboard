@@ -303,55 +303,102 @@ export const useWorkflowStore = create<WorkflowState>()(
     
     // Node management
     addNode: (type: NodeType, position: { x: number; y: number }) => {
-      console.log('addNode called with:', { type, position })
-      
-      const newNode: CustomNode = {
-        id: generateId(),
-        type,
-        position,
-        data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
-      }
-      
-      console.log('Created newNode:', newNode)
-      
-      // Use React Flow's change mechanism instead of direct state update
-      const addNodeChange: NodeChange = {
-        type: 'add',
-        item: newNode as Node
-      }
-      
-      // Call onNodesChange to properly add the node through React Flow
-      get().onNodesChange([addNodeChange])
-      
-      // Update other state that doesn't go through React Flow
-      set(state => {
-        // Auto-create default workflow if none exists
-        let currentWorkflow = state.workflow
-        if (!currentWorkflow) {
-          currentWorkflow = {
-            id: generateId(),
-            name: 'Untitled Workflow',
-            description: 'Auto-created workflow',
-            icon: '🔄',
-            color: '#3498db',
-            tags: [],
-            created: new Date(),
-            modified: new Date(),
-            isTemplate: false
+      try {
+        console.log('addNode called with:', { type, position })
+        
+        // Validate inputs
+        if (!type || typeof type !== 'string') {
+          console.error('addNode: Invalid node type provided:', type)
+          return
+        }
+        
+        if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
+          console.error('addNode: Invalid position provided:', position)
+          return
+        }
+        
+        // Validate position coordinates
+        if (isNaN(position.x) || isNaN(position.y)) {
+          console.error('addNode: Position contains NaN values:', position)
+          return
+        }
+        
+        const newNode: CustomNode = {
+          id: generateId(),
+          type,
+          position,
+          data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
+        }
+        
+        console.log('Created newNode:', newNode)
+        
+        // Use React Flow's change mechanism instead of direct state update
+        const addNodeChange: NodeChange = {
+          type: 'add',
+          item: newNode as Node
+        }
+        
+        // Call onNodesChange to properly add the node through React Flow
+        try {
+          get().onNodesChange([addNodeChange])
+        } catch (error) {
+          console.error('addNode: Failed to add node through React Flow:', error)
+          // Fallback to direct state update if React Flow fails
+          set(state => ({
+            nodes: [...state.nodes, newNode],
+            selectedNode: newNode,
+            isConfigPanelOpen: true
+          }))
+          return
+        }
+        
+        // Update other state that doesn't go through React Flow
+        set(state => {
+          try {
+            // Auto-create default workflow if none exists
+            let currentWorkflow = state.workflow
+            if (!currentWorkflow) {
+              currentWorkflow = {
+                id: generateId(),
+                name: 'Untitled Workflow',
+                description: 'Auto-created workflow',
+                icon: '🔄',
+                color: '#3498db',
+                tags: [],
+                created: new Date(),
+                modified: new Date(),
+                isTemplate: false
+              }
+            }
+            
+            // Save workflow with nodes
+            if (currentWorkflow) {
+              try {
+                WorkflowStorage.saveWorkflow(currentWorkflow, [...state.nodes, newNode], state.edges)
+              } catch (error) {
+                console.error('addNode: Failed to save workflow:', error)
+              }
+            }
+            
+            return {
+              workflow: currentWorkflow,
+              selectedNode: newNode,
+              isConfigPanelOpen: true
+            }
+          } catch (error) {
+            console.error('addNode: Failed to update workflow state:', error)
+            return {
+              selectedNode: newNode,
+              isConfigPanelOpen: true
+            }
           }
-        }
+        })
         
-        // Save workflow with nodes
-        if (currentWorkflow) {
-          WorkflowStorage.saveWorkflow(currentWorkflow, [...state.nodes, newNode], state.edges)
-        }
-        
-        return {
-          workflow: currentWorkflow,
-          selectedNode: newNode,
-          isConfigPanelOpen: true
-        }
-      })
+        console.log('addNode: Successfully created node:', newNode.id)
+      } catch (error) {
+        console.error('addNode: Unexpected error:', error)
+        // Don't throw - we want to handle errors gracefully
+      }
     },
     
     updateNodeData: (nodeId: string, key: string, value: any) => {

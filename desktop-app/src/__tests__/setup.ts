@@ -154,6 +154,8 @@ vi.mock('reactflow', () => {
     applyNodeChanges: vi.fn((changes, nodes) => {
       return changes.reduce((updatedNodes, change) => {
         switch (change.type) {
+          case 'add':
+            return [...updatedNodes, change.item]
           case 'position':
             return updatedNodes.map(node =>
               node.id === change.id 

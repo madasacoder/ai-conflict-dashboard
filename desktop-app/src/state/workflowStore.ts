@@ -314,9 +314,17 @@ export const useWorkflowStore = create<WorkflowState>()(
       
       console.log('Created newNode:', newNode)
       
+      // Use React Flow's change mechanism instead of direct state update
+      const addNodeChange: NodeChange = {
+        type: 'add',
+        item: newNode as Node
+      }
+      
+      // Call onNodesChange to properly add the node through React Flow
+      get().onNodesChange([addNodeChange])
+      
+      // Update other state that doesn't go through React Flow
       set(state => {
-        console.log('Current state nodes:', state.nodes)
-        
         // Auto-create default workflow if none exists
         let currentWorkflow = state.workflow
         if (!currentWorkflow) {
@@ -333,24 +341,16 @@ export const useWorkflowStore = create<WorkflowState>()(
           }
         }
         
-        const newNodes = [...state.nodes, newNode]
-        console.log('New nodes array:', newNodes)
-        LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
-        
         // Save workflow with nodes
         if (currentWorkflow) {
-          WorkflowStorage.saveWorkflow(currentWorkflow, newNodes, state.edges)
+          WorkflowStorage.saveWorkflow(currentWorkflow, [...state.nodes, newNode], state.edges)
         }
         
-        const newState = {
+        return {
           workflow: currentWorkflow,
-          nodes: newNodes,
           selectedNode: newNode,
           isConfigPanelOpen: true
         }
-        
-        console.log('New state:', newState)
-        return newState
       })
     },
     

@@ -76,6 +76,12 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
     selectNode
   } = useWorkflowStore()
 
+  // Debug: Log nodes whenever they change
+  useEffect(() => {
+    console.log('WorkflowBuilder - nodes changed:', nodes)
+    console.log('WorkflowBuilder - nodes length:', nodes.length)
+  }, [nodes])
+  
   // Handle drop from node palette
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault()
@@ -131,15 +137,26 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
       console.log('React Flow bounds:', reactFlowBounds)
 
       // Calculate position - use project if available, otherwise raw coords
-      const position = reactFlowInstance 
-        ? reactFlowInstance.project({
-            x: event.clientX - reactFlowBounds.left,
-            y: event.clientY - reactFlowBounds.top,
-          })
-        : {
-            x: event.clientX - reactFlowBounds.left,
-            y: event.clientY - reactFlowBounds.top,
-          }
+      let position
+      if (reactFlowInstance) {
+        position = reactFlowInstance.project({
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        })
+      } else {
+        // Fallback to raw coordinates if React Flow instance isn't ready
+        position = {
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        }
+      }
+
+      // Validate position to prevent NaN values
+      if (isNaN(position.x) || isNaN(position.y)) {
+        console.error('Invalid position calculated:', position)
+        setDragError('Invalid position calculated')
+        return
+      }
 
       console.log('Calculated position:', position)
 
@@ -202,7 +219,6 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
           nodes={nodes}
           edges={edges}
           onInit={onInit}
-          onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
@@ -218,6 +234,13 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
           attributionPosition="bottom-left"
           proOptions={{ hideAttribution: true }}
           className="workflow-flow"
+          onNodesDelete={(nodes) => console.log('ReactFlow - nodes deleted:', nodes)}
+          onConnectStart={(params) => console.log('ReactFlow - connect start:', params)}
+          onConnectEnd={(params) => console.log('ReactFlow - connect end:', params)}
+          onNodesChange={(changes) => {
+            console.log('ReactFlow - nodes change:', changes)
+            onNodesChange(changes)
+          }}
         >
           {/* Background with dots/grid pattern */}
           <Background 

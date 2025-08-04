@@ -303,6 +303,8 @@ export const useWorkflowStore = create<WorkflowState>()(
     
     // Node management
     addNode: (type: NodeType, position: { x: number; y: number }) => {
+      console.log('addNode called with:', { type, position })
+      
       const newNode: CustomNode = {
         id: generateId(),
         type,
@@ -310,7 +312,11 @@ export const useWorkflowStore = create<WorkflowState>()(
         data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
       }
       
+      console.log('Created newNode:', newNode)
+      
       set(state => {
+        console.log('Current state nodes:', state.nodes)
+        
         // Auto-create default workflow if none exists
         let currentWorkflow = state.workflow
         if (!currentWorkflow) {
@@ -328,6 +334,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         }
         
         const newNodes = [...state.nodes, newNode]
+        console.log('New nodes array:', newNodes)
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
         
         // Save workflow with nodes
@@ -335,12 +342,15 @@ export const useWorkflowStore = create<WorkflowState>()(
           WorkflowStorage.saveWorkflow(currentWorkflow, newNodes, state.edges)
         }
         
-        return {
+        const newState = {
           workflow: currentWorkflow,
           nodes: newNodes,
           selectedNode: newNode,
           isConfigPanelOpen: true
         }
+        
+        console.log('New state:', newState)
+        return newState
       })
     },
     

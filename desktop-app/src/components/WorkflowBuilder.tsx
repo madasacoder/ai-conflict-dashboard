@@ -90,6 +90,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
+      console.log('onDrop called!')
       // Drop event fired
       event.preventDefault()
       event.stopPropagation()
@@ -100,18 +101,18 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
       
       // Method 1: Standard way
       type = event.dataTransfer.getData('application/reactflow')
-      // Method 1 (application/reactflow)
+      console.log('Method 1 (application/reactflow):', type)
       
       // Method 2: Text fallback
       if (!type) {
         type = event.dataTransfer.getData('text/plain')
-        // Method 2 (text/plain)
+        console.log('Method 2 (text/plain):', type)
       }
       
       // Method 3: Try text
       if (!type) {
         type = event.dataTransfer.getData('text')
-        // Method 3 (text)
+        console.log('Method 3 (text):', type)
       }
 
       if (!type) {
@@ -127,7 +128,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
       }
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
-      // React Flow bounds
+      console.log('React Flow bounds:', reactFlowBounds)
 
       // Calculate position - use project if available, otherwise raw coords
       const position = reactFlowInstance 
@@ -140,6 +141,8 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
             y: event.clientY - reactFlowBounds.top,
           }
 
+      console.log('Calculated position:', position)
+
       // Dropping node at position
       setDragError('') // Clear any errors
       
@@ -151,6 +154,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
         return
       }
       
+      console.log('Calling addNode with:', { type, position })
       addNode(type as any, position)
     },
     [reactFlowInstance, addNode]

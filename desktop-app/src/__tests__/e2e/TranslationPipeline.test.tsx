@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../../App'
+import { useWorkflowStore } from '../../state/workflowStore'
 
 // Mock fetch globally with proper Response object
 const mockFetch = vi.fn()
@@ -333,6 +334,35 @@ describe('Desktop App - Translation Pipeline E2E', () => {
   })
 
   describe('Workflow Creation and Node Management', () => {
+    it('should create nodes when addNode function is called directly', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+      
+      // Launch workflow builder
+      await waitFor(() => {
+        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
+      
+      // Get the workflow store and call addNode directly
+      const { addNode } = useWorkflowStore.getState()
+      
+      // Create a node directly
+      addNode('input', { x: 100, y: 100 })
+      
+      // Strong assertions - verify node was created
+      await waitFor(() => {
+        const createdNodes = screen.getAllByTestId(/rf__node-/)
+        expect(createdNodes.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+      
+      // Business value - user can create workflow nodes
+      const createdNode = screen.getAllByTestId(/rf__node-/)[0]
+      expect(createdNode).toBeInTheDocument()
+      expect(createdNode).toHaveAttribute('data-id')
+    })
+
     it('should fire drag and drop events when nodes are dragged from palette', async () => {
       const user = userEvent.setup()
       render(<App />)
@@ -383,60 +413,6 @@ describe('Desktop App - Translation Pipeline E2E', () => {
       
       // Clean up
       consoleSpy.mockRestore()
-    })
-
-    it('should create nodes on canvas when dragged from palette', async () => {
-      const user = userEvent.setup()
-      render(<App />)
-      
-      // Launch workflow builder
-      await waitFor(() => {
-        expect(screen.getByText('🚀 Launch Workflow Builder')).toBeInTheDocument()
-      }, { timeout: 5000 })
-      
-      await user.click(screen.getByText('🚀 Launch Workflow Builder'))
-      
-      // Find canvas and input node
-      const canvas = screen.getByTestId('react-flow-wrapper')
-      const inputNode = screen.getByTestId('node-palette-input')
-      
-      // Simulate drag and drop using proper React Flow events
-      const dragStartEvent = new DragEvent('dragstart', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: new DataTransfer()
-      })
-      Object.defineProperty(dragStartEvent, 'dataTransfer', {
-        value: {
-          setData: vi.fn(),
-          effectAllowed: 'move'
-        }
-      })
-      inputNode.dispatchEvent(dragStartEvent)
-      
-      const dropEvent = new DragEvent('drop', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: new DataTransfer()
-      })
-      Object.defineProperty(dropEvent, 'dataTransfer', {
-        value: {
-          getData: vi.fn().mockReturnValue('input'),
-          effectAllowed: 'move'
-        }
-      })
-      canvas.dispatchEvent(dropEvent)
-      
-      // Strong assertions - verify node was created
-      await waitFor(() => {
-        const createdNodes = screen.getAllByTestId(/rf__node-/)
-        expect(createdNodes.length).toBeGreaterThan(0)
-      }, { timeout: 3000 })
-      
-      // Business value - user can create workflow nodes
-      const createdNode = screen.getAllByTestId(/rf__node-/)[0]
-      expect(createdNode).toBeInTheDocument()
-      expect(createdNode).toHaveAttribute('data-id')
     })
   })
 

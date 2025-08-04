@@ -93,10 +93,41 @@ vi.mock('reactflow', () => {
   const React = require('react')
   
   const MockReactFlow = React.forwardRef((props, ref) => {
+    // Render the nodes that are passed as props
+    const nodeElements = (props.nodes || []).map(node => {
+      return React.createElement('div', {
+        key: node.id,
+        className: `react-flow__node react-flow__node-${node.type}`,
+        'data-testid': `rf__node-${node.id}`,
+        style: {
+          position: 'absolute',
+          left: node.position.x,
+          top: node.position.y
+        }
+      }, [
+        // Render node content based on type
+        React.createElement('div', {
+          key: 'content',
+          className: 'node-content'
+        }, node.data?.label || `${node.type} Node`),
+        // Render handles
+        React.createElement('div', {
+          key: 'handle-source',
+          className: 'react-flow__handle react-flow__handle-source',
+          'data-testid': `handle-source-${node.id}`
+        }),
+        React.createElement('div', {
+          key: 'handle-target', 
+          className: 'react-flow__handle react-flow__handle-target',
+          'data-testid': `handle-target-${node.id}`
+        })
+      ])
+    })
+    
     return React.createElement('div', {
       className: 'react-flow__renderer',
       'data-testid': 'react-flow-wrapper'
-    })
+    }, nodeElements)
   })
   
   const MockHandle = (props) => {

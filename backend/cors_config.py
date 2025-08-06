@@ -26,8 +26,22 @@ def get_allowed_origins() -> list[str]:
         "http://127.0.0.1:8080",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:3000",
+        # HTTPS origins for local development with mkcert
+        "https://localhost:8080",
+        "https://localhost:8000",
+        "https://localhost:3000",
+        "https://127.0.0.1:8080",
+        "https://127.0.0.1:8000",
+        "https://127.0.0.1:3000",
     ]
 
+    # In development, also allow the backend's own HTTPS URL
+    if env == "development":
+        allowed_origins.extend([
+            "https://localhost:8000",
+            "https://127.0.0.1:8000",
+        ])
+    
     if env == "production":
         # In production, only allow specific domains
         production_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")

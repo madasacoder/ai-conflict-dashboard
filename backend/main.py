@@ -43,11 +43,36 @@ setup_structured_logging(level=log_level, log_file="backend.log")
 logger = get_logger(__name__)
 
 
+async def check_ollama_status():
+    """Check if Ollama is available and get its status."""
+    try:
+        from plugins.ollama_provider import OllamaProvider
+        async with OllamaProvider() as provider:
+            health = await provider.check_health()
+            if health.get("available"):
+                return {
+                    "available": True,
+                    "models": health.get("models", []),
+                    "model_count": len(health.get("models", []))
+                }
+    except Exception as e:
+        logger.debug(f"Ollama check failed: {e}")
+    
+    return {"available": False}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle manager."""
     # Startup
     logger.info("Starting AI Conflict Dashboard API")
+    
+    # Check Ollama on startup
+    ollama_status = await check_ollama_status()
+    if ollama_status["available"]:
+        logger.info(f"✅ Ollama detected at http://localhost:11434 with {ollama_status['model_count']} models")
+    else:
+        logger.warning("⚠️ Ollama not detected - local LLM features will be unavailable")
     await memory_manager.start()
     yield
     # Shutdown
@@ -214,9 +239,15 @@ async def health_check():
     """Health check endpoint for monitoring.
 
     Returns:
-        dict: Health status of the API.
+        dict: Health status of the API with Ollama availability.
     """
-    return {"status": "healthy"}
+    # Check Ollama availability
+    ollama_status = await check_ollama_status()
+    
+    return {
+        "status": "healthy",
+        "ollama": ollama_status
+    }
 
 
 @app.get("/api/memory")
@@ -239,8 +270,153 @@ async def timeout_statistics():
     return get_timeout_stats()
 
 
+@app.post("/api/workflows/validate")
+async def validate_workflow(request: Request):
+    """Validate a workflow before execution.
+
+    Args:
+        request: FastAPI request containing workflow definition
+
+    Returns:
+        dict: Validation results with errors if any
+    """
+    logger.info("Workflow validation endpoint called")
+
+    try:
+        # Parse request body
+        body = await request.json()
+        workflow_data = body.get("workflow", {})
+
+        # Extract nodes and edges
+        nodes = workflow_data.get("nodes", [])
+        edges = workflow_data.get("edges", [])
+
+        logger.info("Validating workflow", node_count=len(nodes), edge_count=len(edges))
+
+        # Validation logic
+        errors = []
+
+        # Check if workflow has nodes
+        if not nodes:
+            errors.append("Workflow must contain at least one node")
+
+        # Check if workflow has output nodes
+        output_nodes = [node for node in nodes if node.get("type") == "output"]
+        if not output_nodes:
+            errors.append("Workflow must have at least one output node")
+
+        # Check if nodes are connected (basic check)
+        if len(nodes) > 1 and not edges:
+            errors.append("Multiple nodes must be connected with edges")
+
+        # Check for disconnected nodes (nodes with no connections)
+        if len(nodes) > 1 and edges:
+            connected_nodes = set()
+            for edge in edges:
+                connected_nodes.add(edge.get("source"))
+                connected_nodes.add(edge.get("target"))
+
+            all_node_ids = {node.get("id") for node in nodes}
+            disconnected_nodes = all_node_ids - connected_nodes
+
+            if disconnected_nodes:
+                errors.append(f"Nodes {list(disconnected_nodes)} are not connected")
+
+        is_valid = len(errors) == 0
+
+        logger.info("Workflow validation completed", is_valid=is_valid, error_count=len(errors))
+
+        return {
+            "valid": is_valid,
+            "errors": errors,
+            "node_count": len(nodes),
+            "edge_count": len(edges),
+            "output_node_count": len(output_nodes),
+        }
+
+    except Exception as e:
+        logger.error("Workflow validation failed", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Validation failed: {e!s}") from e
+
+
+# In-memory storage for workflow execution status (in production, use Redis/database)
+workflow_executions = {}
+
+
+@app.get("/api/workflows/{workflow_id}/status")
+async def get_workflow_status(workflow_id: str):
+    """Get workflow execution status.
+
+    Args:
+        workflow_id: The workflow ID to check status for
+
+    Returns:
+        dict: Current execution status and progress
+    """
+    logger.info("Workflow status endpoint called", workflow_id=workflow_id)
+
+    try:
+        execution_status = workflow_executions.get(
+            workflow_id,
+            {
+                "status": "not_found",
+                "progress": 0,
+                "message": "Workflow execution not found",
+                "started_at": None,
+                "completed_at": None,
+                "node_status": {},
+            },
+        )
+
+        logger.info(
+            "Workflow status retrieved", workflow_id=workflow_id, status=execution_status["status"]
+        )
+
+        return {"workflow_id": workflow_id, **execution_status}
+
+    except Exception as e:
+        logger.error("Failed to get workflow status", workflow_id=workflow_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {e!s}") from e
+
+
+@app.post("/api/workflows/{workflow_id}/stop")
+async def stop_workflow(workflow_id: str):
+    """Stop workflow execution.
+
+    Args:
+        workflow_id: The workflow ID to stop
+
+    Returns:
+        dict: Stop operation result
+    """
+    logger.info("Workflow stop endpoint called", workflow_id=workflow_id)
+
+    try:
+        if workflow_id in workflow_executions:
+            workflow_executions[workflow_id]["status"] = "stopped"
+            workflow_executions[workflow_id]["message"] = "Workflow execution stopped by user"
+            logger.info("Workflow execution stopped", workflow_id=workflow_id)
+
+            return {
+                "workflow_id": workflow_id,
+                "status": "stopped",
+                "message": "Workflow execution stopped successfully",
+            }
+        else:
+            logger.warning("Workflow execution not found for stop", workflow_id=workflow_id)
+            return {
+                "workflow_id": workflow_id,
+                "status": "not_found",
+                "message": "Workflow execution not found",
+            }
+
+    except Exception as e:
+        logger.error("Failed to stop workflow", workflow_id=workflow_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to stop workflow: {e!s}") from e
+
+
 @app.post("/api/workflows/execute")
-@timeout_handler(operation="execute_workflow", timeout=300, retry=False)
+# @timeout_handler(operation="execute_workflow", timeout=300, retry=False)  # Temporarily disabled for debugging
 async def execute_workflow(request: Request):
     """Execute a visual workflow from the workflow builder.
 
@@ -250,17 +426,22 @@ async def execute_workflow(request: Request):
     Returns:
         dict: Execution results for each node
     """
-    from workflow_executor import WorkflowExecutor
+    logger.info("Workflow execution endpoint called")
 
     try:
         # Parse request body
+        logger.info("Parsing request body")
         body = await request.json()
+        logger.info("Request body parsed", body_keys=list(body.keys()))
+
         workflow_data = body.get("workflow", {})
         api_keys = body.get("api_keys", {})
 
         # Extract nodes and edges
         nodes = workflow_data.get("nodes", [])
         edges = workflow_data.get("edges", [])
+
+        logger.info("Extracted workflow data", node_count=len(nodes), edge_count=len(edges))
 
         if not nodes:
             raise HTTPException(status_code=400, detail="Workflow must contain at least one node")
@@ -276,13 +457,27 @@ async def execute_workflow(request: Request):
         )
 
         # Execute workflow
+        logger.info("Creating WorkflowExecutor")
+        from workflow_executor import WorkflowExecutor
+
         executor = WorkflowExecutor(api_keys)
+
+        logger.info("Starting workflow execution")
         results = await executor.execute(nodes, edges)
+        logger.info("Workflow execution completed", result_count=len(results))
+
+        # Extract just the result values from the detailed results
+        simple_results = {}
+        for node_id, result_data in results.items():
+            if isinstance(result_data, dict) and "result" in result_data:
+                simple_results[node_id] = result_data["result"]
+            else:
+                simple_results[node_id] = result_data
 
         return JSONResponse(
             content={
                 "status": "success",
-                "results": results,
+                "results": simple_results,
                 "node_count": len(nodes),
                 "execution_time": time.time(),
             }
@@ -453,7 +648,9 @@ async def analyze_text(request: AnalyzeRequest):
                     "elapsed": e.elapsed,
                 },
             )
-            raise HTTPException(status_code=504, detail=f"Request timed out after {e.elapsed:.1f}s") from e
+            raise HTTPException(
+                status_code=504, detail=f"Request timed out after {e.elapsed:.1f}s"
+            ) from e
         except Exception as e:
             logger.error(
                 f"Analysis failed for request {request_id}",
@@ -546,7 +743,7 @@ async def restart_backend():
     # Run restart in background
     import asyncio
 
-    _ = asyncio.create_task(delayed_restart())
+    _ = asyncio.create_task(delayed_restart())  # noqa: RUF006
 
     return {
         "status": "success",

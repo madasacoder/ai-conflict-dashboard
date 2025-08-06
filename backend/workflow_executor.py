@@ -9,8 +9,9 @@ from typing import Any
 
 import structlog
 
-from llm_providers import get_llm_response
-from token_utils import TokenCounter
+from llm_providers import call_claude, call_gemini, call_grok, call_ollama_fixed, call_openai
+
+# TokenCounter not needed for basic workflow execution
 
 logger = structlog.get_logger(__name__)
 
@@ -20,7 +21,6 @@ class WorkflowExecutor:
 
     def __init__(self, api_keys: dict[str, str]):
         self.api_keys = api_keys
-        self.token_counter = TokenCounter()
         self.results = {}
 
     async def execute(self, nodes: list[dict], edges: list[dict]) -> dict[str, Any]:
@@ -34,6 +34,8 @@ class WorkflowExecutor:
         Returns:
             Dictionary with execution results for each node
         """
+        logger.info("Starting workflow execution", node_count=len(nodes), edge_count=len(edges))
+
         # Build adjacency list for topological sort
         graph = defaultdict(list)
         in_degree = defaultdict(int)
@@ -68,8 +70,12 @@ class WorkflowExecutor:
         # Execute nodes in order
         for node_id in execution_order:
             node = node_map[node_id]
+            logger.info("Executing node", node_id=node_id, node_type=node.get("type"))
+            logger.debug("Node details", node=node)
             await self._execute_node(node, graph, edges)
+            logger.info("Node execution completed", node_id=node_id)
 
+        logger.info("Workflow execution completed", result_count=len(self.results))
         return self.results
 
     async def _execute_node(self, node: dict, graph: dict, edges: list[dict]) -> Any:
@@ -81,8 +87,14 @@ class WorkflowExecutor:
         logger.info("Executing node", node_id=node_id, node_type=node_type)
 
         try:
+            logger.debug(
+                "Node execution details", node_id=node_id, node_type=node_type, node_data=node_data
+            )
+
             if node_type == "input":
+                logger.debug("Calling _execute_input_node")
                 result = await self._execute_input_node(node_data)
+                logger.debug("_execute_input_node result", result=result)
 
             elif node_type == "llm":
                 # Get input from connected nodes
@@ -111,6 +123,8 @@ class WorkflowExecutor:
                 "result": result,
             }
 
+            return result
+
         except Exception as e:
             logger.error("Node execution failed", node_id=node_id, error=str(e))
             self.results[node_id] = {
@@ -119,10 +133,16 @@ class WorkflowExecutor:
                 "error": str(e),
             }
 
+            return None
+
     async def _execute_input_node(self, data: dict) -> str:
         """Execute input node - return the content."""
         input_type = data.get("type", "text")
-        content = data.get("content", "")
+
+        # Handle different input field names
+        content = data.get("content", "") or data.get("text", "")
+
+        logger.info("Input node data", data=data, input_type=input_type, content=content)
 
         if input_type == "text":
             return content
@@ -162,19 +182,42 @@ class WorkflowExecutor:
 
                 # Special handling for Ollama (no API key needed)
                 if backend_model == "ollama":
-                    response = await get_llm_response(
-                        backend_model,
+                    response = await call_ollama_fixed(
                         full_prompt,
-                        "",  # No API key needed for Ollama
+                        model="llama3.3:70b",  # Use available model
                         temperature=temperature,
                         max_tokens=max_tokens,
                     )
                     responses[model] = response
-                elif self.api_keys.get(backend_model):
-                    response = await get_llm_response(
-                        backend_model,
+                elif backend_model == "openai" and self.api_keys.get("openai"):
+                    response = await call_openai(
                         full_prompt,
-                        self.api_keys[backend_model],
+                        api_key=self.api_keys["openai"],
+                        model="gpt-4",
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                    responses[model] = response
+                elif backend_model == "claude" and self.api_keys.get("claude"):
+                    response = await call_claude(
+                        full_prompt,
+                        api_key=self.api_keys["claude"],
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                    responses[model] = response
+                elif backend_model == "gemini" and self.api_keys.get("gemini"):
+                    response = await call_gemini(
+                        full_prompt,
+                        api_key=self.api_keys["gemini"],
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                    responses[model] = response
+                elif backend_model == "grok" and self.api_keys.get("grok"):
+                    response = await call_grok(
+                        full_prompt,
+                        api_key=self.api_keys["grok"],
                         temperature=temperature,
                         max_tokens=max_tokens,
                     )

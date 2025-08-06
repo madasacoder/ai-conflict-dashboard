@@ -13,7 +13,7 @@ import contextlib
 import gc
 import sys
 import weakref
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import psutil
@@ -30,7 +30,7 @@ REQUEST_TIMEOUT = 300  # 5 minutes max request lifetime
 # Global tracking
 _active_requests: set[weakref.ref] = set()
 _response_cache: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
-_last_cleanup = datetime.now(timezone.utc)
+_last_cleanup = datetime.now(UTC)
 
 
 class MemoryManager:
@@ -97,7 +97,7 @@ class MemoryManager:
             objects_collected=collected,
         )
 
-        _last_cleanup = datetime.now(timezone.utc)
+        _last_cleanup = datetime.now(UTC)
 
     def check_memory_usage(self) -> dict[str, Any]:
         """Check current memory usage and limits."""
@@ -126,7 +126,7 @@ class RequestContext:
 
     def __init__(self, request_id: str):
         self.request_id = request_id
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
         self.resources: dict[str, Any] = {}
         self._ref = None
 
@@ -150,7 +150,7 @@ class RequestContext:
         if self._ref in _active_requests:
             _active_requests.remove(self._ref)
 
-        duration = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+        duration = (datetime.now(UTC) - self.start_time).total_seconds()
         logger.debug(
             "Request completed",
             request_id=self.request_id,
@@ -228,7 +228,7 @@ def cache_response(request_id: str, response: Any, ttl_seconds: int = 300):
         await asyncio.sleep(ttl_seconds)
         _response_cache.pop(request_id, None)
 
-    _ = asyncio.create_task(cleanup_after_ttl())
+    _ = asyncio.create_task(cleanup_after_ttl())  # noqa: RUF006
 
 
 def get_cached_response(request_id: str) -> Any | None:

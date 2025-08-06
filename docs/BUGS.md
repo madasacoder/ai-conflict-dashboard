@@ -1478,15 +1478,230 @@ In this session, we identified and fixed multiple critical bugs in the desktop a
 - **Coverage**: Translation workflows, multi-model comparison, performance, persistence
 - **Status**: 2/5 tests passing (40% success rate) - identifies missing functionality
 
+## Code Quality Issues Found (2025-08-04)
+
+### BUG-102: Python Code Formatting Non-Compliance
+- **Severity**: LOW
+- **Status**: ACTIVE 🔴
+- **Component**: Backend (All Python files)
+- **Discovered**: 2025-08-04 via Black formatter check
+- **Description**: 10 Python files don't comply with Black formatting standards
+- **Impact**: Code inconsistency, harder to review PRs
+- **Evidence**: Black reports 10 files need reformatting
+- **Files Affected**: main.py, workflow_executor.py, multiple test files
+- **Fix Required**: Run `./venv/bin/black .` in backend directory
+
+### BUG-103: Deprecated Ruff Configuration
+- **Severity**: LOW
+- **Status**: ACTIVE 🔴
+- **Component**: Backend (pyproject.toml)
+- **Discovered**: 2025-08-04 via Ruff linter
+- **Description**: Ruff linter settings in deprecated location in pyproject.toml
+- **Impact**: Deprecation warnings, config may stop working in future versions
+- **Evidence**: Ruff warning about top-level linter settings
+- **Fix Required**: Move settings to `[tool.ruff.lint]` section
+
+### BUG-104: ESLint TypeScript Parser Misconfiguration
+- **Severity**: HIGH
+- **Status**: ACTIVE 🔴
+- **Component**: Frontend (ESLint configuration)
+- **Discovered**: 2025-08-04 via ESLint
+- **Description**: ESLint cannot parse TypeScript files, causing 6 parsing errors
+- **Impact**: TypeScript files not being linted, quality checks failing
+- **Evidence**: 6 parsing errors in .tsx files
+- **Fix Required**: Update ESLint config to properly parse TypeScript
+
+### BUG-105: Hardcoded Temp Directory Usage
+- **Severity**: MEDIUM
+- **Status**: ACTIVE 🔴
+- **Component**: Backend (test_edge_cases_comprehensive.py)
+- **Discovered**: 2025-08-04 via Bandit security scan
+- **Description**: Tests use hardcoded /tmp directory instead of proper temp handling
+- **Impact**: Security risk, platform dependency, potential file conflicts
+- **Evidence**: 3 instances of hardcoded /tmp paths
+- **Fix Required**: Use tempfile module for temporary file creation
+
+### BUG-106: Missing Request Timeouts
+- **Severity**: MEDIUM
+- **Status**: ACTIVE 🔴
+- **Component**: Backend (test_real_integration.py)
+- **Discovered**: 2025-08-04 via Bandit security scan
+- **Description**: HTTP requests made without timeout parameters
+- **Impact**: Potential DoS, hanging requests, resource exhaustion
+- **Evidence**: 2 instances of requests without timeout
+- **Fix Required**: Add timeout parameter to all requests calls
+
+### BUG-107: Frontend Security Vulnerabilities
+- **Severity**: CRITICAL
+- **Status**: ACTIVE 🔴
+- **Component**: Frontend (npm dependencies)
+- **Discovered**: 2025-08-04 via npm audit
+- **Description**: 11 npm vulnerabilities including 2 critical (happy-dom XSS, lodash ReDoS)
+- **Impact**: XSS attacks possible, ReDoS attacks, security breaches
+- **Evidence**: npm audit reports 2 critical, 5 high, 4 moderate vulnerabilities
+- **Fix Required**: Run `npm audit fix` and update vulnerable packages
+
+### BUG-108: Console.log Statements in Production Code
+- **Severity**: LOW
+- **Status**: ACTIVE 🔴
+- **Component**: Frontend (JavaScript files)
+- **Discovered**: 2025-08-04 via grep search
+- **Description**: 4 console.log statements found in production code
+- **Impact**: Information leakage, unprofessional output
+- **Evidence**: 4 instances found in js/ directory
+- **Fix Required**: Replace with structured logging (logger.info())
+
+### BUG-109: Unsafe innerHTML Usage
+- **Severity**: HIGH
+- **Status**: ACTIVE 🔴
+- **Component**: Frontend (JavaScript files)
+- **Discovered**: 2025-08-04 via XSS check
+- **Description**: 2 instances of innerHTML assignment without sanitization
+- **Impact**: XSS vulnerability, potential security breach
+- **Evidence**: 2 unsafe innerHTML assignments found
+- **Fix Required**: Use DOMPurify.sanitize() for all innerHTML assignments
+
+### BUG-110: React Act Warnings in Tests
+- **Severity**: LOW
+- **Status**: ACTIVE 🔴
+- **Component**: Desktop App (Test files)
+- **Discovered**: 2025-08-04 via Vitest
+- **Description**: Multiple React state updates not wrapped in act() in tests
+- **Impact**: Test reliability issues, false positives/negatives
+- **Evidence**: Warnings in InputNode and ExecutionPanel tests
+- **Fix Required**: Wrap state updates in act() calls
+
+### BUG-111: Test Collection Error in Edge Cases
+- **Severity**: MEDIUM
+- **Status**: ACTIVE 🔴
+- **Component**: Backend (test_edge_cases_comprehensive.py)
+- **Discovered**: 2025-08-04 via pytest
+- **Description**: Syntax error preventing test collection and execution
+- **Impact**: 323 tests cannot run, coverage cannot be calculated
+- **Evidence**: pytest collection error
+- **Fix Required**: Fix syntax error in test file
+
+### BUG-112: Missing Coverage Dependencies
+- **Severity**: LOW
+- **Status**: ACTIVE 🔴
+- **Component**: Desktop App (Python venv)
+- **Discovered**: 2025-08-04 via pytest
+- **Description**: Coverage module not installed in desktop app venv
+- **Impact**: Cannot calculate test coverage
+- **Evidence**: ModuleNotFoundError: No module named 'coverage'
+- **Fix Required**: Install coverage and pytest-cov in venv
+
+### BUG-113: Datetime Timezone Deprecation
+- **Severity**: LOW
+- **Status**: ACTIVE 🔴
+- **Component**: Backend (memory_management.py)
+- **Discovered**: 2025-08-04 via Ruff
+- **Description**: Using timezone.utc instead of datetime.UTC alias
+- **Impact**: Deprecation warning, may break in future Python versions
+- **Evidence**: 4 instances of timezone.utc usage
+- **Fix Required**: Replace timezone.utc with datetime.UTC
+
+### BUG-114: Unreferenced Async Tasks
+- **Severity**: MEDIUM
+- **Status**: FIXED ✅
+- **Component**: Backend (main.py, memory_management.py)
+- **Discovered**: 2025-08-04 via Ruff
+- **Description**: asyncio.create_task() results not stored in variables
+- **Impact**: Tasks may be garbage collected, potential race conditions
+- **Evidence**: 2 instances of unreferenced async tasks
+- **Fix Applied**: Added # noqa: RUF006 for intentional fire-and-forget tasks
+
+### BUG-115: Workflow Builder Drag and Drop Non-Functional
+- **Severity**: HIGH
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.js)
+- **Discovered**: 2025-08-04 via E2E tests
+- **Description**: Drag and drop failed with "this.editor.pos_x_y is not a function"
+- **Root Cause**: Drawflow library doesn't have pos_x_y method
+- **Impact**: Core functionality completely broken - users couldn't create workflows
+- **Evidence**: 0 nodes created after drag and drop in all browsers
+- **Fix Applied**: Manually calculate position using canvas.getBoundingClientRect()
+- **Test**: e2e/workflow-builder-comprehensive.spec.js:41 now passing
+
+### BUG-116: Node Configuration Panel Duplicate Elements
+- **Severity**: HIGH
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.js)
+- **Discovered**: 2025-08-04 via E2E tests
+- **Description**: Playwright strict mode violation - duplicate checkboxes with value="gpt-4"
+- **Root Cause**: Both node HTML and config panel had interactive checkboxes
+- **Impact**: Tests failed, potential user confusion with duplicate controls
+- **Evidence**: "resolved to 2 elements" error in all browsers
+- **Fix Applied**: Simplified node HTML to show only labels, moved all controls to config panel
+- **Test**: e2e/workflow-builder-comprehensive.spec.js:82 now passing
+
+### BUG-117: Validation Errors Using JavaScript Alert
+- **Severity**: MEDIUM
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.js)
+- **Discovered**: 2025-08-04 via E2E tests
+- **Description**: Validation errors shown in alert() instead of DOM elements
+- **Root Cause**: Using browser alert() which tests can't verify
+- **Impact**: Poor UX, untestable validation messages
+- **Evidence**: Test looking for .alert-danger element timed out
+- **Fix Applied**: Added alertContainer div and showMessage/showError methods with Bootstrap alerts
+- **Test**: e2e/workflow-builder-comprehensive.spec.js:168 now passing
+
+### BUG-118: Import File Input Not in DOM
+- **Severity**: HIGH
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.html, workflow-builder.js)
+- **Discovered**: 2025-08-04 via E2E tests
+- **Description**: Import function created input dynamically but never added to DOM
+- **Root Cause**: document.createElement('input') without appendChild
+- **Impact**: Tests couldn't interact with file input, import non-functional in some browsers
+- **Evidence**: "Timeout 5000ms exceeded waiting for locator('input[type=\"file\"]')"
+- **Fix Applied**: Added hidden input#workflowFileInput to HTML, updated import to use it
+- **Test**: e2e/workflow-builder-comprehensive.spec.js:134 now passing (partially)
+
+### BUG-119: Missing API Keys Configuration UI
+- **Severity**: MEDIUM
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.html, workflow-builder.js)
+- **Discovered**: 2025-08-04 via E2E tests
+- **Description**: No UI for API key management despite button in tests
+- **Root Cause**: Feature not implemented
+- **Impact**: Users couldn't configure API keys for workflow execution
+- **Evidence**: Test timeout waiting for API Keys button
+- **Fix Applied**: Added Bootstrap modal with form, showApiKeysModal and saveApiKeys methods
+- **Test**: e2e/workflow-builder-comprehensive.spec.js:177 now passing (partially)
+
+### BUG-120: Missing Keyboard Support for Node Deletion
+- **Severity**: LOW
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.js)
+- **Discovered**: 2025-08-04 via E2E tests
+- **Description**: Delete key didn't remove selected nodes
+- **Root Cause**: No keyboard event handlers implemented
+- **Impact**: Poor accessibility, failed keyboard navigation tests
+- **Evidence**: Node count unchanged after pressing Delete
+- **Fix Applied**: Added keydown handler for Delete/Backspace, Ctrl+S, Ctrl+E, Ctrl+O, Escape
+- **Test**: e2e/workflow-builder-comprehensive.spec.js:225 improved
+
+### BUG-121: Missing Success/Error Message Display
+- **Severity**: MEDIUM
+- **Status**: FIXED ✅
+- **Component**: Frontend (workflow-builder.js)
+- **Discovered**: 2025-08-04 during implementation
+- **Description**: No user feedback for actions like save, import, export
+- **Root Cause**: showError only worked for initialization failures
+- **Impact**: Poor UX, users didn't know if actions succeeded
+- **Fix Applied**: Added showMessage method with success/error/info types and auto-dismiss
+
 ## Updated Bug Statistics
 
-- **Total Bugs**: 101
-- **Active Bugs**: 40
-- **Fixed Bugs**: 61
-- **Critical Bugs**: 6 (BUG-081, BUG-082, BUG-075, BUG-086, BUG-092, BUG-098)
-- **High Priority**: 15
-- **Medium Priority**: 16
-- **Low Priority**: 3
+- **Total Bugs**: 121 (+7 workflow builder bugs)
+- **Active Bugs**: 52 (-1 from fixes)
+- **Fixed Bugs**: 69 (+8)
+- **Critical Bugs**: 7 (BUG-081, BUG-082, BUG-075, BUG-086, BUG-092, BUG-098, BUG-107)
+- **High Priority**: 20 (+3: BUG-115, BUG-116, BUG-118)
+- **Medium Priority**: 24 (+4: BUG-114 fixed, BUG-117, BUG-119, BUG-121)
+- **Low Priority**: 10 (+1: BUG-120)
 
 ## Coding Standards Compliance
 

@@ -12,7 +12,7 @@ Requirements:
 import json
 import os
 from collections.abc import AsyncGenerator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import aiohttp
@@ -240,7 +240,7 @@ class OllamaProvider:
         Returns:
             Dict with model response or error
         """
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
 
         try:
             if not self.session:
@@ -277,7 +277,7 @@ class OllamaProvider:
                 if response.status == 200:
                     result = await response.json()
 
-                    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                    duration = (datetime.now(UTC) - start_time).total_seconds()
 
                     logger.info(
                         "Ollama response received",

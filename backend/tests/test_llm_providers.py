@@ -16,8 +16,6 @@ from llm_providers import (
 )
 from tests.assertion_helpers import (
     assert_valid_llm_response,
-    assert_circuit_breaker_state,
-    assert_api_error_format
 )
 
 
@@ -64,21 +62,17 @@ class TestOpenAIIntegration:
                 "model": "gpt-4",
                 "response": "Test response from OpenAI with detailed analysis",
                 "error": None,
-                "tokens": {
-                    "prompt": 15,
-                    "completion": 25,
-                    "total": 40
-                },
-                "cost": 0.002
+                "tokens": {"prompt": 15, "completion": 25, "total": 40},
+                "cost": 0.002,
             }
 
             result = await call_openai("Test text", "test-key")
-            
+
             # Use strong assertions
             assert_valid_llm_response(result, provider="openai")
             assert len(result["response"]) > 10
             assert result["cost"] == 0.002
-            
+
             # Correct assertion method
             mock_call.assert_called_once()
             call_args = mock_call.call_args
@@ -94,7 +88,7 @@ class TestOpenAIIntegration:
             mock_call.side_effect = Exception("API error: 500")
 
             result = await call_openai("Test text", "test-key")
-            
+
             # Strong error validation
             assert result["model"] in ["openai", "gpt-3.5-turbo", "gpt-4"]
             assert result["response"] == ""
@@ -146,16 +140,12 @@ class TestClaudeIntegration:
                 "model": "claude-3-opus",
                 "response": "Claude's detailed and thoughtful response with analysis",
                 "error": None,
-                "tokens": {
-                    "prompt": 20,
-                    "completion": 30,
-                    "total": 50
-                },
-                "cost": 0.003
+                "tokens": {"prompt": 20, "completion": 30, "total": 50},
+                "cost": 0.003,
             }
 
             result = await call_claude("Test text", "test-key")
-            
+
             # Strong assertions with business logic
             assert_valid_llm_response(result, provider="claude")
             assert "analysis" in result["response"].lower()
@@ -215,20 +205,18 @@ class TestGeminiIntegration:
                 "model": "gemini-pro",
                 "response": "Gemini provides comprehensive analysis with structured output",
                 "error": None,
-                "tokens": {
-                    "prompt": 18,
-                    "completion": 35,
-                    "total": 53
-                },
-                "cost": 0.001
+                "tokens": {"prompt": 18, "completion": 35, "total": 53},
+                "cost": 0.001,
             }
 
             result = await call_gemini("Test text", "test-key")
-            
+
             # Validate complete response structure
             assert_valid_llm_response(result, provider="gemini")
             assert len(result["response"].split()) > 5  # Multi-word response
-            assert result["tokens"]["completion"] > result["tokens"]["prompt"]  # Generated more than input
+            assert (
+                result["tokens"]["completion"] > result["tokens"]["prompt"]
+            )  # Generated more than input
             assert result["cost"] < result["tokens"]["total"] * 0.001  # Cost efficiency check
 
     @pytest.mark.asyncio
@@ -284,20 +272,18 @@ class TestGrokIntegration:
                 "model": "grok-1",
                 "response": "Grok's unique perspective on the query with humor and insight",
                 "error": None,
-                "tokens": {
-                    "prompt": 12,
-                    "completion": 28,
-                    "total": 40
-                },
-                "cost": 0.0015
+                "tokens": {"prompt": 12, "completion": 28, "total": 40},
+                "cost": 0.0015,
             }
 
             result = await call_grok("Test text", "test-key")
-            
+
             # Business value assertions
             assert_valid_llm_response(result, provider="grok")
             assert "perspective" in result["response"] or "insight" in result["response"]
-            assert result["tokens"]["total"] >= len("Test text".split())  # At least as many tokens as words
+            assert result["tokens"]["total"] >= len(
+                "Test text".split()
+            )  # At least as many tokens as words
             assert 0.0001 <= result["cost"] <= 0.1  # Reasonable cost bounds
 
     @pytest.mark.asyncio

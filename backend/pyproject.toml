@@ -4,6 +4,33 @@ target-version = "py311"
 line-length = 100
 indent-width = 4
 
+# Exclude directories
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default
 select = [
     "E",     # pycodestyle errors
@@ -36,32 +63,6 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 fixable = ["ALL"]
 unfixable = []
 
-# Exclude directories
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-    "*.egg-info",
-]
-
 [tool.ruff.format]
 # Use double quotes for strings
 quote-style = "double"
@@ -70,16 +71,21 @@ indent-style = "space"
 # Unix-style line endings
 line-ending = "lf"
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 # Group imports
 combine-as-imports = true
 force-wrap-aliases = true
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Ignore security warnings in tests
 "tests/*" = ["S101", "S105", "S106"]
 # Allow print statements in CLI tools
 "cli.py" = ["T20"]
+# Allow print statements in test files  
+"test_*.py" = ["T20", "T201"]
+"*_test.py" = ["T20", "T201"]
+# Allow print in workflow test script
+"test_workflow.py" = ["T20", "T201"]
 
 [tool.black]
 # Black configuration - The uncompromising Python code formatter

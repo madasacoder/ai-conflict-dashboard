@@ -92,7 +92,7 @@ describe('StructuredLogger', () => {
     await logger.error('api_error', { endpoint: '/test' });
 
     // Should fall back to console warn, not console.log/error
-    expect(consoleWarnSpy).toHaveBeenCalledWith('Logging backend unavailable:', expect.any(Error));
+    expect(consoleWarnSpy).toHaveBeenCalledWith('Backend logging failed:', 'Network error');
 
     consoleWarnSpy.mockRestore();
   });

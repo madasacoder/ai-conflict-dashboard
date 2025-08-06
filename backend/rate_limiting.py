@@ -7,7 +7,7 @@ against DoS attacks.
 import hashlib
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
@@ -94,7 +94,7 @@ class RateLimiter:
         Returns:
             Tuple of (allowed, retry_after_seconds)
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         self._clean_old_entries(identifier, now)
 
         # Check burst limit using token bucket
@@ -229,7 +229,7 @@ def rate_limit_middleware(
             limiter.requests_per_minute - len(limiter.minute_counts[identifier])
         )
         response.headers["X-RateLimit-Reset"] = str(
-            int((datetime.now(timezone.utc) + timedelta(minutes=1)).timestamp())
+            int((datetime.now(UTC) + timedelta(minutes=1)).timestamp())
         )
 
         return response

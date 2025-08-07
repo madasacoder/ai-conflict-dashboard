@@ -37,11 +37,13 @@ def get_allowed_origins() -> list[str]:
 
     # In development, also allow the backend's own HTTPS URL
     if env == "development":
-        allowed_origins.extend([
-            "https://localhost:8000",
-            "https://127.0.0.1:8000",
-        ])
-    
+        allowed_origins.extend(
+            [
+                "https://localhost:8000",
+                "https://127.0.0.1:8000",
+            ]
+        )
+
     if env == "production":
         # In production, only allow specific domains
         production_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")

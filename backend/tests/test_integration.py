@@ -26,37 +26,39 @@ class TestFullWorkflowIntegration:
     @pytest.fixture
     def mock_all_providers(self):
         """Mock all LLM providers."""
-        with patch("llm_providers._call_openai_with_breaker") as mock_openai:
-            with patch("llm_providers._call_claude_with_breaker") as mock_claude:
-                with patch("llm_providers._call_gemini_with_breaker") as mock_gemini:
-                    with patch("llm_providers._call_grok_with_breaker") as mock_grok:
-                        # Configure return values
-                        mock_openai.return_value = {
-                            "model": "openai",
-                            "response": "OpenAI response",
-                            "error": None,
-                        }
-                        mock_claude.return_value = {
-                            "model": "claude",
-                            "response": "Claude response",
-                            "error": None,
-                        }
-                        mock_gemini.return_value = {
-                            "model": "gemini",
-                            "response": "Gemini response",
-                            "error": None,
-                        }
-                        mock_grok.return_value = {
-                            "model": "grok",
-                            "response": "Grok response",
-                            "error": None,
-                        }
-                        yield {
-                            "openai": mock_openai,
-                            "claude": mock_claude,
-                            "gemini": mock_gemini,
-                            "grok": mock_grok,
-                        }
+        with (
+            patch("llm_providers._call_openai_with_breaker") as mock_openai,
+            patch("llm_providers._call_claude_with_breaker") as mock_claude,
+            patch("llm_providers._call_gemini_with_breaker") as mock_gemini,
+            patch("llm_providers._call_grok_with_breaker") as mock_grok,
+        ):
+            # Configure return values
+            mock_openai.return_value = {
+                "model": "openai",
+                "response": "OpenAI response",
+                "error": None,
+            }
+            mock_claude.return_value = {
+                "model": "claude",
+                "response": "Claude response",
+                "error": None,
+            }
+            mock_gemini.return_value = {
+                "model": "gemini",
+                "response": "Gemini response",
+                "error": None,
+            }
+            mock_grok.return_value = {
+                "model": "grok",
+                "response": "Grok response",
+                "error": None,
+            }
+            yield {
+                "openai": mock_openai,
+                "claude": mock_claude,
+                "gemini": mock_gemini,
+                "grok": mock_grok,
+            }
 
     def test_full_analysis_workflow_all_providers(self, client, mock_all_providers):
         """Test complete analysis workflow with all providers."""
@@ -128,40 +130,42 @@ class TestFullWorkflowIntegration:
 
     def test_error_handling_workflow(self, client):
         """Test workflow when providers return errors."""
-        with patch("llm_providers._call_openai_with_breaker") as mock_openai:
-            with patch("llm_providers._call_claude_with_breaker") as mock_claude:
-                # OpenAI succeeds, Claude fails
-                mock_openai.return_value = {
-                    "model": "openai",
-                    "response": "Success response",
-                    "error": None,
-                }
-                mock_claude.side_effect = Exception("API Error")
+        with (
+            patch("llm_providers._call_openai_with_breaker") as mock_openai,
+            patch("llm_providers._call_claude_with_breaker") as mock_claude,
+        ):
+            # OpenAI succeeds, Claude fails
+            mock_openai.return_value = {
+                "model": "openai",
+                "response": "Success response",
+                "error": None,
+            }
+            mock_claude.side_effect = Exception("API Error")
 
-                request_data = {
-                    "text": "Test error handling",
-                    "openai_key": "test-key",
-                    "claude_key": "test-key",
-                }
+            request_data = {
+                "text": "Test error handling",
+                "openai_key": "test-key",
+                "claude_key": "test-key",
+            }
 
-                response = client.post("/api/analyze", json=request_data)
+            response = client.post("/api/analyze", json=request_data)
 
-                assert response.status_code == 200
-                data = response.json()
+            assert response.status_code == 200
+            data = response.json()
 
-                # Both providers should be in response
-                assert len(data["responses"]) == 2
+            # Both providers should be in response
+            assert len(data["responses"]) == 2
 
-                # Check OpenAI succeeded
-                openai_resp = next(r for r in data["responses"] if r["model"] == "openai")
-                assert openai_resp["error"] is None
-                assert openai_resp["response"] == "Success response"
+            # Check OpenAI succeeded
+            openai_resp = next(r for r in data["responses"] if r["model"] == "openai")
+            assert openai_resp["error"] is None
+            assert openai_resp["response"] == "Success response"
 
-                # Check Claude failed
-                claude_resp = next(r for r in data["responses"] if r["model"] == "claude")
-                assert claude_resp["error"] is not None
-                assert "API Error" in claude_resp["error"]
-                assert claude_resp["response"] == ""
+            # Check Claude failed
+            claude_resp = next(r for r in data["responses"] if r["model"] == "claude")
+            assert claude_resp["error"] is not None
+            assert "API Error" in claude_resp["error"]
+            assert claude_resp["response"] == ""
 
     def test_large_text_chunking_workflow(self, client, mock_all_providers):
         """Test workflow with text that requires chunking."""
@@ -196,11 +200,13 @@ class TestFullWorkflowIntegration:
             call_times.append((start, end))
             return {"model": "test", "response": "test", "error": None}
 
-        with patch("llm_providers.call_openai", side_effect=mock_provider_call):
-            with patch("llm_providers.call_claude", side_effect=mock_provider_call):
-                with patch("llm_providers.call_gemini", side_effect=mock_provider_call):
-                    with patch("llm_providers.call_grok", side_effect=mock_provider_call):
-                        results = await analyze_with_models("test", "key1", "key2", "key3", "key4")
+        with (
+            patch("llm_providers.call_openai", side_effect=mock_provider_call),
+            patch("llm_providers.call_claude", side_effect=mock_provider_call),
+            patch("llm_providers.call_gemini", side_effect=mock_provider_call),
+            patch("llm_providers.call_grok", side_effect=mock_provider_call),
+        ):
+            results = await analyze_with_models("test", "key1", "key2", "key3", "key4")
 
         assert len(results) == 4
         assert len(call_times) == 4

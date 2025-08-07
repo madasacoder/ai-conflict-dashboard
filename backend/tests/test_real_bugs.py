@@ -170,7 +170,7 @@ ACTUAL BUGS/VULNERABILITIES FOUND:
    - One user's bad API key affects ALL users
    - Should be per-key or per-user
 
-2. SECURITY BUG: CORS allows all origins  
+2. SECURITY BUG: CORS allows all origins
    - Any website can use the API
    - Should whitelist origins
 

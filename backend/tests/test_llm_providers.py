@@ -337,16 +337,18 @@ class TestAnalyzeWithModels:
             "error": None,
         }
 
-        with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
-            with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
-                mock_openai.return_value = openai_response
-                mock_claude.return_value = claude_response
+        with (
+            patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai,
+            patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude,
+        ):
+            mock_openai.return_value = openai_response
+            mock_claude.return_value = claude_response
 
-                results = await analyze_with_models("Test text", "openai-key", "claude-key")
+            results = await analyze_with_models("Test text", "openai-key", "claude-key")
 
-                assert len(results) == 2
-                assert results[0] == openai_response
-                assert results[1] == claude_response
+            assert len(results) == 2
+            assert results[0] == openai_response
+            assert results[1] == claude_response
 
     @pytest.mark.asyncio
     async def test_analyze_with_openai_only(self):
@@ -385,34 +387,34 @@ class TestAnalyzeWithModels:
     @pytest.mark.asyncio
     async def test_analyze_with_custom_models(self):
         """Test analyzing with custom model selections."""
-        with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
-            with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
-                mock_openai.return_value = {
-                    "model": "openai",
-                    "response": "GPT-4",
-                    "error": None,
-                }
-                mock_claude.return_value = {
-                    "model": "claude",
-                    "response": "Opus",
-                    "error": None,
-                }
+        with (
+            patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai,
+            patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude,
+        ):
+            mock_openai.return_value = {
+                "model": "openai",
+                "response": "GPT-4",
+                "error": None,
+            }
+            mock_claude.return_value = {
+                "model": "claude",
+                "response": "Opus",
+                "error": None,
+            }
 
-                await analyze_with_models(
-                    "Test text",
-                    openai_key="openai-key",
-                    claude_key="claude-key",
-                    gemini_key=None,
-                    grok_key=None,
-                    ollama_model=None,
-                    openai_model="gpt-4",
-                    claude_model="claude-3-opus-20240229",
-                )
+            await analyze_with_models(
+                "Test text",
+                openai_key="openai-key",
+                claude_key="claude-key",
+                gemini_key=None,
+                grok_key=None,
+                ollama_model=None,
+                openai_model="gpt-4",
+                claude_model="claude-3-opus-20240229",
+            )
 
-                mock_openai.assert_called_once_with("Test text", "openai-key", "gpt-4")
-                mock_claude.assert_called_once_with(
-                    "Test text", "claude-key", "claude-3-opus-20240229"
-                )
+            mock_openai.assert_called_once_with("Test text", "openai-key", "gpt-4")
+            mock_claude.assert_called_once_with("Test text", "claude-key", "claude-3-opus-20240229")
 
     @pytest.mark.asyncio
     async def test_analyze_with_all_four_models(self):
@@ -434,28 +436,30 @@ class TestAnalyzeWithModels:
         }
         grok_response = {"model": "grok", "response": "Grok response", "error": None}
 
-        with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
-            with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
-                with patch("llm_providers.call_gemini", new_callable=AsyncMock) as mock_gemini:
-                    with patch("llm_providers.call_grok", new_callable=AsyncMock) as mock_grok:
-                        mock_openai.return_value = openai_response
-                        mock_claude.return_value = claude_response
-                        mock_gemini.return_value = gemini_response
-                        mock_grok.return_value = grok_response
+        with (
+            patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai,
+            patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude,
+            patch("llm_providers.call_gemini", new_callable=AsyncMock) as mock_gemini,
+            patch("llm_providers.call_grok", new_callable=AsyncMock) as mock_grok,
+        ):
+            mock_openai.return_value = openai_response
+            mock_claude.return_value = claude_response
+            mock_gemini.return_value = gemini_response
+            mock_grok.return_value = grok_response
 
-                        results = await analyze_with_models(
-                            "Test text",
-                            "openai-key",
-                            "claude-key",
-                            "gemini-key",
-                            "grok-key",
-                        )
+            results = await analyze_with_models(
+                "Test text",
+                "openai-key",
+                "claude-key",
+                "gemini-key",
+                "grok-key",
+            )
 
-                        assert len(results) == 4
-                        assert results[0] == openai_response
-                        assert results[1] == claude_response
-                        assert results[2] == gemini_response
-                        assert results[3] == grok_response
+            assert len(results) == 4
+            assert results[0] == openai_response
+            assert results[1] == claude_response
+            assert results[2] == gemini_response
+            assert results[3] == grok_response
 
     @pytest.mark.asyncio
     async def test_analyze_with_gemini_only(self):

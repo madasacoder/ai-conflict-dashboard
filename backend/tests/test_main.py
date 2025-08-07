@@ -29,26 +29,30 @@ class TestMainApp:
 
     def test_analyze_with_debug_mode(self):
         """Test analyze endpoint in debug mode with detailed error."""
-        with patch("main.log_level", "DEBUG"):
-            with patch("llm_providers.analyze_with_models") as mock_analyze:
-                mock_analyze.side_effect = ValueError("Test error")
+        with (
+            patch("main.log_level", "DEBUG"),
+            patch("llm_providers.analyze_with_models") as mock_analyze,
+        ):
+            mock_analyze.side_effect = ValueError("Test error")
 
-                response = client.post(
-                    "/api/analyze", json={"text": "Test text", "openai_key": "test-key"}
-                )
+            response = client.post(
+                "/api/analyze", json={"text": "Test text", "openai_key": "test-key"}
+            )
 
-                assert response.status_code == 500
-                assert "ValueError: Test error" in response.json()["detail"]
+            assert response.status_code == 500
+            assert "ValueError: Test error" in response.json()["detail"]
 
     def test_analyze_with_production_mode(self):
         """Test analyze endpoint in production mode with generic error."""
-        with patch("main.log_level", "INFO"):
-            with patch("llm_providers.analyze_with_models") as mock_analyze:
-                mock_analyze.side_effect = ValueError("Test error")
+        with (
+            patch("main.log_level", "INFO"),
+            patch("llm_providers.analyze_with_models") as mock_analyze,
+        ):
+            mock_analyze.side_effect = ValueError("Test error")
 
-                response = client.post(
-                    "/api/analyze", json={"text": "Test text", "openai_key": "test-key"}
-                )
+            response = client.post(
+                "/api/analyze", json={"text": "Test text", "openai_key": "test-key"}
+            )
 
-                assert response.status_code == 500
-                assert response.json()["detail"] == "Analysis failed"
+            assert response.status_code == 500
+            assert response.json()["detail"] == "Analysis failed"

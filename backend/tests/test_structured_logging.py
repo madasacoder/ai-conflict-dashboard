@@ -41,12 +41,14 @@ class TestStructuredLogging:
 
     def test_request_context(self):
         """Test RequestContext context manager."""
-        with patch("structlog.contextvars.bind_contextvars") as mock_bind:
-            with patch("structlog.contextvars.unbind_contextvars") as mock_unbind:
-                with RequestContext("test-request-id"):
-                    mock_bind.assert_called_once_with(request_id="test-request-id")
+        with (
+            patch("structlog.contextvars.bind_contextvars") as mock_bind,
+            patch("structlog.contextvars.unbind_contextvars") as mock_unbind,
+        ):
+            with RequestContext("test-request-id"):
+                mock_bind.assert_called_once_with(request_id="test-request-id")
 
-                mock_unbind.assert_called_once_with("request_id")
+            mock_unbind.assert_called_once_with("request_id")
 
     def test_log_api_request(self):
         """Test API request logging."""

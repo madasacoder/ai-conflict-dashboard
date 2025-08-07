@@ -10,7 +10,7 @@ import pytest
 TESTS_DIR = Path(__file__).parent
 BACKEND_DIR = TESTS_DIR.parent
 PROJECT_ROOT = BACKEND_DIR.parent
-FRONTEND_DIR = PROJECT_ROOT / "frontend"
+UI_DIR = PROJECT_ROOT / "ui"
 
 
 class TestHTTPSRedirectFix:
@@ -18,7 +18,7 @@ class TestHTTPSRedirectFix:
 
     def test_workflow_builder_link_is_fixed(self):
         """Verify the workflow builder link uses IP address to avoid HSTS issues."""
-        with open(FRONTEND_DIR / "index.html") as f:
+        with UI_DIR.joinpath("index.html").open() as f:
             content = f.read()
 
         # Find the workflow builder link
@@ -38,7 +38,7 @@ class TestHTTPSRedirectFix:
 
     def test_no_relative_workflow_links(self):
         """Ensure no relative links that might trigger HTTPS upgrades."""
-        with open(FRONTEND_DIR / "index.html") as f:
+        with UI_DIR.joinpath("index.html").open() as f:
             content = f.read()
 
         # Check for any relative workflow links
@@ -56,14 +56,13 @@ class TestHTTPSRedirectFix:
     def test_no_protocol_relative_urls(self):
         """Ensure no protocol-relative URLs that inherit parent protocol."""
         files_to_check = [
-            "../frontend/index.html",
-            FRONTEND_DIR / "workflow-builder.html",
-            FRONTEND_DIR / "workflow-builder.html",
+            UI_DIR / "index.html",
+            UI_DIR / "workflow-builder.html",
         ]
 
         for filepath in files_to_check:
-            if os.path.exists(filepath):
-                with open(filepath) as f:
+            if filepath.exists():
+                with filepath.open() as f:
                     content = f.read()
 
                 # Check for //localhost pattern (but not http://localhost)
@@ -77,7 +76,7 @@ class TestHTTPSRedirectFix:
 
     def test_no_https_forcing_meta_tags(self):
         """Ensure no meta tags that force HTTPS upgrades."""
-        with open(FRONTEND_DIR / "index.html") as f:
+        with UI_DIR.joinpath("index.html").open() as f:
             content = f.read()
 
         # Check for problematic meta tags and headers
@@ -102,7 +101,7 @@ class TestHTTPSRedirectFix:
         ]
 
         for doc_file in doc_files:
-            assert os.path.exists(doc_file), f"Documentation file {doc_file} should exist"
+            assert doc_file.exists(), f"Documentation file {doc_file} should exist"
 
     def test_error_log_ssl_pattern(self):
         """Test that we can identify SSL handshake errors in logs."""

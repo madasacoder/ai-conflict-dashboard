@@ -77,7 +77,7 @@ class TestWorkflowBuilderIntegration:
         """Test that all workflow dependencies are available."""
         html_file = Path("../frontend/workflow-builder.html")
 
-        with open(html_file) as f:
+        with html_file.open() as f:
             content = f.read()
 
         # Check for required CDN resources
@@ -98,7 +98,7 @@ class TestWorkflowBuilderIntegration:
         """Test that all required node types are properly configured."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Required node types that must be handled
@@ -117,7 +117,7 @@ class TestWorkflowBuilderIntegration:
         """Test that event listeners are properly set up."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Critical event listeners that must exist
@@ -137,7 +137,7 @@ class TestWorkflowBuilderIntegration:
         """Test that workflow initialization code exists."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Check for proper initialization
@@ -154,10 +154,10 @@ class TestWorkflowBuilderIntegration:
         html_file = Path("../frontend/workflow-builder.html")
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(html_file) as f:
+        with html_file.open() as f:
             html_content = f.read()
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             js_content = f.read()
 
         # Critical DOM elements that JavaScript depends on
@@ -181,7 +181,7 @@ class TestWorkflowBuilderIntegration:
         """Test that adequate console logging exists for debugging."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Should have console logging for debugging workflow issues
@@ -209,7 +209,7 @@ class TestWorkflowRegressionPrevention:
         """Ensure workflow builder fails loudly, not silently."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Should have error handling and logging

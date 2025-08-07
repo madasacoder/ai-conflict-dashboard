@@ -100,7 +100,7 @@ class TestCoverageAudit:
         integration_tests = []
 
         for test_file in test_files:
-            with open(test_file) as f:
+            with test_file.open() as f:
                 content = f.read()
 
             # Classify based on content
@@ -249,7 +249,7 @@ class TestCoverageAudit:
         bugs_md_path = Path("../docs/BUGS.md")
 
         if bugs_md_path.exists():
-            with open(bugs_md_path) as f:
+            with bugs_md_path.open() as f:
                 bugs_content = f.read()
 
             # Bugs that should be documented

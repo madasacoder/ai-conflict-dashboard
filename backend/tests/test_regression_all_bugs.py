@@ -5,6 +5,7 @@ This ensures that none of the 35 bugs we've found and fixed reappear.
 Each test is mapped to a specific bug in docs/BUGS.md
 """
 
+import contextlib
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -39,10 +40,8 @@ class TestRegressionBugs1to10:
         # Test that opening one doesn't affect the other
         # Force breaker1 to open by simulating failures
         for _ in range(5):  # Default fail_max is 5
-            try:
+            with contextlib.suppress(Exception):
                 breaker1(lambda: 1 / 0)()  # This will fail
-            except Exception:
-                pass
 
         # breaker1 should be open, breaker2 should still be closed
         assert breaker1.current_state == "open"
@@ -72,7 +71,7 @@ class TestRegressionBugs1to10:
         """BUG-003: Rate limiting should be implemented."""
         # Make rapid requests to trigger rate limit
         responses = []
-        for i in range(100):  # Well over any reasonable rate limit
+        for _ in range(100):  # Well over any reasonable rate limit
             response = client.get("/")
             responses.append(response.status_code)
 

@@ -47,17 +47,18 @@ async def check_ollama_status():
     """Check if Ollama is available and get its status."""
     try:
         from plugins.ollama_provider import OllamaProvider
+
         async with OllamaProvider() as provider:
             health = await provider.check_health()
             if health.get("available"):
                 return {
                     "available": True,
                     "models": health.get("models", []),
-                    "model_count": len(health.get("models", []))
+                    "model_count": len(health.get("models", [])),
                 }
     except Exception as e:
         logger.debug(f"Ollama check failed: {e}")
-    
+
     return {"available": False}
 
 
@@ -66,11 +67,13 @@ async def lifespan(app: FastAPI):
     """Application lifecycle manager."""
     # Startup
     logger.info("Starting AI Conflict Dashboard API")
-    
+
     # Check Ollama on startup
     ollama_status = await check_ollama_status()
     if ollama_status["available"]:
-        logger.info(f"✅ Ollama detected at http://localhost:11434 with {ollama_status['model_count']} models")
+        logger.info(
+            f"✅ Ollama detected at http://localhost:11434 with {ollama_status['model_count']} models"
+        )
     else:
         logger.warning("⚠️ Ollama not detected - local LLM features will be unavailable")
     await memory_manager.start()
@@ -243,11 +246,8 @@ async def health_check():
     """
     # Check Ollama availability
     ollama_status = await check_ollama_status()
-    
-    return {
-        "status": "healthy",
-        "ollama": ollama_status
-    }
+
+    return {"status": "healthy", "ollama": ollama_status}
 
 
 @app.get("/api/memory")

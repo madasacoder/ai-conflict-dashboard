@@ -102,7 +102,10 @@ class TestEnhancedOpenAIIntegration:
         """Test retry logic with proper backoff."""
         attempt_times = []
 
-        with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_call:
+        with (
+            patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_call,
+            patch("llm_providers.RETRY_DELAYS", [0.1, 0.2, 0.4]),
+        ):
 
             async def record_attempt(*args, **kwargs):
                 attempt_times.append(time.time())
@@ -120,28 +123,25 @@ class TestEnhancedOpenAIIntegration:
             mock_call.side_effect = record_attempt
 
             # Patch the retry logic to use our mock
-            with patch("llm_providers.RETRY_DELAYS", [0.1, 0.2, 0.4]):
-                result = await call_openai("Test", "key")
+            result = await call_openai("Test", "key")
 
-                # Validate retry behavior
-                assert len(attempt_times) == 3, "Should have made 3 attempts"
+            # Validate retry behavior
+            assert len(attempt_times) == 3, "Should have made 3 attempts"
 
-                # Check exponential backoff (with tolerance for timing)
-                if len(attempt_times) > 1:
-                    first_gap = attempt_times[1] - attempt_times[0]
-                    assert (
-                        0.05 < first_gap < 0.15
-                    ), f"First retry gap {first_gap} not in expected range"
+            # Check exponential backoff (with tolerance for timing)
+            if len(attempt_times) > 1:
+                first_gap = attempt_times[1] - attempt_times[0]
+                assert 0.05 < first_gap < 0.15, f"First retry gap {first_gap} not in expected range"
 
-                if len(attempt_times) > 2:
-                    second_gap = attempt_times[2] - attempt_times[1]
-                    assert (
-                        0.15 < second_gap < 0.25
-                    ), f"Second retry gap {second_gap} not in expected range"
+            if len(attempt_times) > 2:
+                second_gap = attempt_times[2] - attempt_times[1]
+                assert (
+                    0.15 < second_gap < 0.25
+                ), f"Second retry gap {second_gap} not in expected range"
 
-                # Validate final success
-                assert result["response"] == "Success after retries"
-                assert result["retry_count"] == 2, "Should indicate 2 retries"
+            # Validate final success
+            assert result["response"] == "Success after retries"
+            assert result["retry_count"] == 2, "Should indicate 2 retries"
 
 
 class TestEnhancedCircuitBreaker:
@@ -314,41 +314,37 @@ class TestEnhancedErrorHandling:
     async def test_graceful_degradation_cascade(self):
         """Test system degradation when services fail."""
         # Simulate cascading failures
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_openai:
-            with patch(
-                "llm_providers._call_claude_with_breaker", new_callable=AsyncMock
-            ) as mock_claude:
-                with patch(
-                    "llm_providers._call_gemini_with_breaker", new_callable=AsyncMock
-                ) as mock_gemini:
+        with (
+            patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_openai,
+            patch("llm_providers._call_claude_with_breaker", new_callable=AsyncMock) as mock_claude,
+            patch("llm_providers._call_gemini_with_breaker", new_callable=AsyncMock) as mock_gemini,
+        ):
 
-                    # All providers fail
-                    mock_openai.side_effect = Exception("OpenAI down")
-                    mock_claude.side_effect = Exception("Claude down")
-                    mock_gemini.side_effect = Exception("Gemini down")
+            # All providers fail
+            mock_openai.side_effect = Exception("OpenAI down")
+            mock_claude.side_effect = Exception("Claude down")
+            mock_gemini.side_effect = Exception("Gemini down")
 
-                    results = await analyze_with_models(
-                        "Test text",
-                        {"openai_key": "key1", "claude_key": "key2", "gemini_key": "key3"},
-                        {
-                            "openai_model": "gpt-4",
-                            "claude_model": "claude-3",
-                            "gemini_model": "gemini-pro",
-                        },
-                    )
+            results = await analyze_with_models(
+                "Test text",
+                {"openai_key": "key1", "claude_key": "key2", "gemini_key": "key3"},
+                {
+                    "openai_model": "gpt-4",
+                    "claude_model": "claude-3",
+                    "gemini_model": "gemini-pro",
+                },
+            )
 
-                    # System should degrade gracefully
-                    assert len(results) == 3, "Should return results for all providers"
-                    assert all(r["error"] is not None for r in results), "All should have errors"
-                    assert all(r["response"] == "" for r in results), "No responses when failed"
+            # System should degrade gracefully
+            assert len(results) == 3, "Should return results for all providers"
+            assert all(r["error"] is not None for r in results), "All should have errors"
+            assert all(r["response"] == "" for r in results), "No responses when failed"
 
-                    # Error messages should be informative
-                    for result in results:
-                        assert result["model"] in ["openai", "claude", "gemini"], "Model identified"
-                        assert "down" in result["error"], "Error message preserved"
-                        assert "api_key" not in result["error"].lower(), "No key exposure"
+            # Error messages should be informative
+            for result in results:
+                assert result["model"] in ["openai", "claude", "gemini"], "Model identified"
+                assert "down" in result["error"], "Error message preserved"
+                assert "api_key" not in result["error"].lower(), "No key exposure"
 
     @pytest.mark.asyncio
     async def test_timeout_handling_with_partial_results(self):
@@ -362,35 +358,33 @@ class TestEnhancedErrorHandling:
             await asyncio.sleep(0.1)
             return {"response": "Quick response", "model": "fast"}
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_openai:
-            with patch(
-                "llm_providers._call_claude_with_breaker", new_callable=AsyncMock
-            ) as mock_claude:
-                mock_openai.side_effect = slow_provider
-                mock_claude.side_effect = fast_provider
+        with (
+            patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock_openai,
+            patch("llm_providers._call_claude_with_breaker", new_callable=AsyncMock) as mock_claude,
+        ):
+            mock_openai.side_effect = slow_provider
+            mock_claude.side_effect = fast_provider
 
-                start_time = time.time()
-                results = await analyze_with_models(
-                    "Test",
-                    {"openai_key": "key1", "claude_key": "key2"},
-                    {"openai_model": "gpt-4", "claude_model": "claude-3"},
-                    timeout=1,  # 1 second timeout
-                )
-                elapsed = time.time() - start_time
+            start_time = time.time()
+            results = await analyze_with_models(
+                "Test",
+                {"openai_key": "key1", "claude_key": "key2"},
+                {"openai_model": "gpt-4", "claude_model": "claude-3"},
+                timeout=1,  # 1 second timeout
+            )
+            elapsed = time.time() - start_time
 
-                # Validate timeout behavior
-                assert elapsed < 2, "Should timeout quickly"
-                assert len(results) == 2, "Should have results for both"
+            # Validate timeout behavior
+            assert elapsed < 2, "Should timeout quickly"
+            assert len(results) == 2, "Should have results for both"
 
-                # Check partial results
-                claude_result = next(r for r in results if r["model"] == "claude")
-                assert claude_result["response"] == "Quick response", "Fast provider should succeed"
+            # Check partial results
+            claude_result = next(r for r in results if r["model"] == "claude")
+            assert claude_result["response"] == "Quick response", "Fast provider should succeed"
 
-                openai_result = next(r for r in results if r["model"] == "openai")
-                assert openai_result["error"] is not None, "Slow provider should timeout"
-                assert "timeout" in openai_result["error"].lower(), "Should indicate timeout"
+            openai_result = next(r for r in results if r["model"] == "openai")
+            assert openai_result["error"] is not None, "Slow provider should timeout"
+            assert "timeout" in openai_result["error"].lower(), "Should indicate timeout"
 
 
 class TestEnhancedSecurity:

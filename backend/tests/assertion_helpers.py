@@ -4,7 +4,7 @@ This module provides comprehensive assertion functions that validate
 actual business value rather than just checking for non-null values.
 """
 
-from typing import Any
+from typing import Any, Optional
 
 VALID_MODELS = {
     "openai": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"],
@@ -15,7 +15,7 @@ VALID_MODELS = {
 }
 
 
-def assert_valid_llm_response(response: dict[str, Any], provider: str = None) -> None:
+def assert_valid_llm_response(response: dict[str, Any], provider: Optional[str] = None) -> None:
     """Strong assertions for LLM responses.
 
     Args:
@@ -70,7 +70,9 @@ def assert_valid_llm_response(response: dict[str, Any], provider: str = None) ->
         assert response["cost"] < 100, "Cost seems unreasonably high (>$100)"
 
 
-def assert_conflict_detection(responses: list[dict], expected_conflicts: int = None) -> dict:
+def assert_conflict_detection(
+    responses: list[dict], expected_conflicts: Optional[int] = None
+) -> dict:
     """Validate conflict detection in multiple AI responses.
 
     Args:

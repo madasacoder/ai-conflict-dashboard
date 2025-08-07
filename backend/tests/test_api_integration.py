@@ -5,6 +5,7 @@ These tests verify API behavior with various real-world scenarios.
 
 import json
 import time
+from typing import Any, Dict, List
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -17,11 +18,12 @@ class TestAPIIntegrationScenarios:
     """Test various API integration scenarios."""
 
     @pytest.fixture
-    def client(self):
+    def client(self) -> TestClient:
         """Create test client."""
         return TestClient(app)
 
-    def test_multiple_file_content_analysis(self, client):
+    @patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock)
+    def test_multiple_file_content_analysis(self, mock_openai: AsyncMock, client: TestClient):
         """Test API with content that simulates multiple file uploads."""
         # Simulate multiple file content
         multi_file_content = """--- File: main.py ---
@@ -39,28 +41,26 @@ def add_numbers(a, b):
 # Test Project
 This is a test project with multiple files."""
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_openai:
-            mock_openai.return_value = {
-                "model": "openai",
-                "response": "I see you have 3 files: main.py with a hello_world function, utils.py with an add_numbers function, and a README.md file.",
-                "error": None,
-            }
+        mock_openai.return_value = {
+            "model": "openai",
+            "response": "I see you have 3 files: main.py with a hello_world function, utils.py with an add_numbers function, and a README.md file.",
+            "error": None,
+        }
 
-            response = client.post(
-                "/api/analyze",
-                json={"text": multi_file_content, "openai_key": "test-key"},
-            )
+        response = client.post(
+            "/api/analyze",
+            json={"text": multi_file_content, "openai_key": "test-key"},
+        )
 
-            assert response.status_code == 200
-            data = response.json()
+        assert response.status_code == 200
+        data = response.json()
 
-            # Verify the full content was passed
-            assert data["original_text"] == multi_file_content
-            assert "3 files" in data["responses"][0]["response"]
+        # Verify the full content was passed
+        assert data["original_text"] == multi_file_content
+        assert "3 files" in data["responses"][0]["response"]
 
-    def test_unicode_and_special_characters(self, client):
+    @patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock)
+    def test_unicode_and_special_characters(self, mock_openai: AsyncMock, client: TestClient):
         """Test API with various unicode and special characters."""
         test_cases = [
             "Hello 世界 🌍",  # Mixed languages with emoji
@@ -70,32 +70,27 @@ This is a test project with multiple files."""
             "Quotes: \"smart\" 'quotes'",  # Smart quotes
         ]
 
-        with patch(
-            "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
-        ) as mock_openai:
-            for text in test_cases:
-                mock_openai.return_value = {
-                    "model": "openai",
-                    "response": f"Processed: {text}",
-                    "error": None,
-                }
+        for text in test_cases:
+            mock_openai.return_value = {
+                "model": "openai",
+                "response": f"Processed: {text}",
+                "error": None,
+            }
 
-                response = client.post(
-                    "/api/analyze", json={"text": text, "openai_key": "test-key"}
-                )
+            response = client.post("/api/analyze", json={"text": text, "openai_key": "test-key"})
 
-                assert response.status_code == 200
-                data = response.json()
-                assert data["original_text"] == text
+            assert response.status_code == 200
+            data = response.json()
+            assert data["original_text"] == text
 
-    def test_concurrent_requests(self, client):
+    def test_concurrent_requests(self, client: TestClient):
         """Test handling multiple concurrent requests."""
         import threading
 
-        results = []
-        errors = []
+        results: List[Dict[str, Any]] = []
+        errors: List[Dict[str, Any]] = []
 
-        def make_request(index):
+        def make_request(index: int) -> None:
             try:
                 with patch(
                     "llm_providers._call_openai_with_breaker", new_callable=AsyncMock
@@ -137,9 +132,9 @@ This is a test project with multiple files."""
         assert len(results) == 10
         assert all(r["status"] == 200 for r in results)
 
-    def test_request_id_uniqueness(self, client):
+    def test_request_id_uniqueness(self, client: TestClient):
         """Test that each request gets a unique request ID."""
-        request_ids = set()
+        request_ids: set[str] = set()
 
         with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             mock.return_value = {
@@ -163,7 +158,7 @@ This is a test project with multiple files."""
 
         assert len(request_ids) == 20
 
-    def test_model_fallback_behavior(self, client):
+    def test_model_fallback_behavior(self, client: TestClient):
         """Test behavior when specific models are not available."""
         # Test with invalid model selection
         with patch(
@@ -187,43 +182,43 @@ This is a test project with multiple files."""
             assert response.status_code == 200
             # The system should handle invalid models gracefully
 
-    def test_mixed_provider_response_times(self, client):
+    def test_mixed_provider_response_times(self, client: TestClient):
         """Test handling providers with different response times."""
 
-        def fast_provider(*args, **kwargs):
+        def fast_provider(*args: Any, **kwargs: Any) -> Dict[str, Any]:
             return {"model": "fast", "response": "Fast response", "error": None}
 
-        def slow_provider(*args, **kwargs):
-            import time
-
+        def slow_provider(*args: Any, **kwargs: Any) -> Dict[str, Any]:
             time.sleep(0.5)
             return {"model": "slow", "response": "Slow response", "error": None}
 
-        with patch("llm_providers._call_openai_with_breaker", side_effect=fast_provider):
-            with patch("llm_providers._call_claude_with_breaker", side_effect=slow_provider):
-                start_time = time.time()
+        with (
+            patch("llm_providers._call_openai_with_breaker", side_effect=fast_provider),
+            patch("llm_providers._call_claude_with_breaker", side_effect=slow_provider),
+        ):
+            start_time = time.time()
 
-                response = client.post(
-                    "/api/analyze",
-                    json={
-                        "text": "Test timing",
-                        "openai_key": "test-key",
-                        "claude_key": "test-key",
-                    },
-                )
+            response = client.post(
+                "/api/analyze",
+                json={
+                    "text": "Test timing",
+                    "openai_key": "test-key",
+                    "claude_key": "test-key",
+                },
+            )
 
-                elapsed = time.time() - start_time
+            elapsed = time.time() - start_time
 
-                assert response.status_code == 200
-                data = response.json()
+            assert response.status_code == 200
+            data = response.json()
 
-                # Both responses should be present
-                assert len(data["responses"]) == 2
+            # Both responses should be present
+            assert len(data["responses"]) == 2
 
-                # Total time should be close to slow provider time (concurrent)
-                assert elapsed < 1.0  # Should be ~0.5s, not 0.5s + fast time
+            # Total time should be close to slow provider time (concurrent)
+            assert elapsed < 1.0  # Should be ~0.5s, not 0.5s + fast time
 
-    def test_empty_provider_response_handling(self, client):
+    def test_empty_provider_response_handling(self, client: TestClient):
         """Test handling of empty responses from providers."""
         with patch("llm_providers._call_openai_with_breaker", new_callable=AsyncMock) as mock:
             mock.return_value = {
@@ -244,7 +239,7 @@ This is a test project with multiple files."""
             assert data["responses"][0]["response"] == ""
             assert data["responses"][0]["error"] is None
 
-    def test_cors_headers(self, client):
+    def test_cors_headers(self, client: TestClient):
         """Test CORS headers are properly set."""
         # Preflight request
         response = client.options(
@@ -273,11 +268,11 @@ class TestAPIErrorScenarios:
     """Test various error scenarios at API level."""
 
     @pytest.fixture
-    def client(self):
+    def client(self) -> TestClient:
         """Create test client."""
         return TestClient(app)
 
-    def test_malformed_json(self, client):
+    def test_malformed_json(self, client: TestClient):
         """Test API with malformed JSON."""
         response = client.post(
             "/api/analyze",
@@ -287,7 +282,7 @@ class TestAPIErrorScenarios:
 
         assert response.status_code == 422  # Unprocessable Entity
 
-    def test_missing_content_type(self, client):
+    def test_missing_content_type(self, client: TestClient):
         """Test API without Content-Type header."""
         response = client.post(
             "/api/analyze",
@@ -298,7 +293,7 @@ class TestAPIErrorScenarios:
         # FastAPI is lenient about Content-Type
         assert response.status_code in [200, 422]
 
-    def test_very_large_payload(self, client):
+    def test_very_large_payload(self, client: TestClient):
         """Test API with very large payload."""
         # Create a large text (10MB)
         large_text = "x" * (10 * 1024 * 1024)
@@ -309,7 +304,7 @@ class TestAPIErrorScenarios:
         # Actual limits depend on server configuration
         assert response.status_code in [200, 413]  # 413 = Payload Too Large
 
-    def test_rate_limiting_simulation(self, client):
+    def test_rate_limiting_simulation(self, client: TestClient):
         """Simulate rate limiting behavior."""
         # Make many rapid requests to test rate limiting
         success_count = 0
@@ -336,7 +331,7 @@ class TestAPIErrorScenarios:
         assert rate_limited_count > 0, "Should have some rate limited requests"
         assert success_count + rate_limited_count == 100, "All requests should be accounted for"
 
-    def test_timeout_handling(self, client):
+    def test_timeout_handling(self, client: TestClient):
         """Test request timeout handling."""
 
         # Mock the call_openai to simulate timeout

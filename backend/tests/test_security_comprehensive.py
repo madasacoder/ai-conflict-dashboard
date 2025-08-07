@@ -4,6 +4,7 @@ These tests are designed to find real vulnerabilities and edge cases
 that could cause problems in production.
 """
 
+import contextlib
 import json
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -197,7 +198,7 @@ class TestRateLimitingComprehensive:
         limiter = RateLimiter(requests_per_minute=5)
 
         # User A exhausts limit
-        for i in range(5):
+        for _ in range(5):
             allowed, _ = limiter.check_rate_limit("user_a")
             assert allowed
 
@@ -265,10 +266,8 @@ class TestCircuitBreakerPerKey:
 
         # Fail breaker1
         for _ in range(5):  # Opens on 5th failure with fail_max=5
-            try:
+            with contextlib.suppress(Exception):
                 breaker1.call(lambda: 1 / 0)  # Force failure
-            except Exception:
-                pass
 
         # Breaker1 should be open
         assert breaker1.current_state == "open"

@@ -22,7 +22,7 @@ class TestWorkflowDataAttributeBug:
         """Ensure workflow builder HTML uses data-node-type attributes."""
         html_file = Path("../frontend/workflow-builder.html")
 
-        with open(html_file) as f:
+        with html_file.open() as f:
             content = f.read()
 
         # Find all node items
@@ -45,7 +45,7 @@ class TestWorkflowDataAttributeBug:
         """Ensure JavaScript accesses data-node-type correctly."""
         js_file = Path("../frontend/js/workflow-builder.js")
 
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # JavaScript should use dataset.nodeType (not dataset.node)
@@ -68,20 +68,20 @@ class TestWorkflowDataAttributeBug:
             lines = content.split("\n")
             for line_num, line in enumerate(lines, 1):
                 if pattern in line and "nodeType" not in line:
-                    assert (
-                        False
-                    ), f"Line {line_num}: Found incorrect data access '{pattern}': {line.strip()}"
+                    pytest.fail(
+                        f"Line {line_num}: Found incorrect data access '{pattern}': {line.strip()}"
+                    )
 
     def test_data_attribute_consistency(self):
         """Test that HTML and JavaScript data attributes are consistent."""
         # Read HTML
         html_file = Path("../frontend/workflow-builder.html")
-        with open(html_file) as f:
+        with html_file.open() as f:
             html_content = f.read()
 
         # Read JavaScript
         js_file = Path("../frontend/js/workflow-builder.js")
-        with open(js_file) as f:
+        with js_file.open() as f:
             js_content = f.read()
 
         # Extract data attributes from HTML
@@ -109,7 +109,7 @@ class TestWorkflowDataAttributeBug:
     def test_click_handler_implementation(self):
         """Ensure click handler uses correct data attribute."""
         js_file = Path("../frontend/js/workflow-builder.js")
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Look for click handler
@@ -130,7 +130,7 @@ class TestWorkflowDataAttributeBug:
     def test_drag_handler_implementation(self):
         """Ensure drag handlers use correct data attribute."""
         js_file = Path("../frontend/js/workflow-builder.js")
-        with open(js_file) as f:
+        with js_file.open() as f:
             content = f.read()
 
         # Look for dragstart handler
@@ -151,7 +151,7 @@ class TestWorkflowDataAttributeBug:
     def test_specific_node_types_work(self):
         """Test that specific node types have correct attributes."""
         html_file = Path("../frontend/workflow-builder.html")
-        with open(html_file) as f:
+        with html_file.open() as f:
             content = f.read()
 
         # Test specific node configurations
@@ -183,21 +183,21 @@ class TestWorkflowDataAttributeBug:
         # This test serves as documentation
         bug_description = """
         BUG: Workflow Builder Data Attribute Mismatch
-        
+
         SYMPTOMS:
         - Clicking node items in sidebar doesn't add nodes
         - Drag and drop from sidebar doesn't work
         - No JavaScript errors, but functionality silently fails
-        
+
         ROOT CAUSE:
         - HTML uses: data-node-type="input"
         - JavaScript expects: item.dataset.node
         - Mismatch: nodeType vs node
-        
+
         FIX:
         - Updated JavaScript to use item.dataset.nodeType
         - This matches HTML data-node-type attribute
-        
+
         PREVENTION:
         - This test ensures consistency between HTML and JS
         - Tests both click and drag handlers

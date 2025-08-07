@@ -10,10 +10,11 @@ import re
 import sys
 from datetime import UTC, datetime
 from re import Pattern
-from typing import Any
+from typing import Any, Dict, List, MutableMapping, Optional, Tuple
 
 import structlog
 from structlog.processors import CallsiteParameter
+from structlog.types import EventDict, WrappedLogger
 
 # Patterns for sensitive data that should be masked
 SENSITIVE_PATTERNS: dict[str, Pattern] = {
@@ -90,7 +91,7 @@ def sanitize_sensitive_data(text: str) -> str:
     return sanitize_value(text)
 
 
-def sanitize_event_dict(_, __, event_dict: dict[str, Any]) -> dict[str, Any]:
+def sanitize_event_dict(_: WrappedLogger, __: str, event_dict: EventDict) -> EventDict:
     """Processor to sanitize sensitive data in log events.
 
     Args:
@@ -105,13 +106,13 @@ def sanitize_event_dict(_, __, event_dict: dict[str, Any]) -> dict[str, Any]:
     return sanitize_value(event_dict)
 
 
-def add_timestamp(_, __, event_dict):
+def add_timestamp(_: WrappedLogger, __: str, event_dict: EventDict) -> EventDict:
     """Add ISO format timestamp to log entries."""
     event_dict["timestamp"] = datetime.now(UTC).isoformat()
     return event_dict
 
 
-def setup_structured_logging(level="INFO", log_file="app.log"):
+def setup_structured_logging(level: str = "INFO", log_file: str = "app.log") -> WrappedLogger:
     """
     Configure structlog for structured logging.
 
@@ -210,7 +211,7 @@ def setup_structured_logging(level="INFO", log_file="app.log"):
     return structlog.get_logger()
 
 
-def get_logger(name=None, **context):
+def get_logger(name: Optional[str] = None, **context: Any) -> WrappedLogger:
     """
     Get a structured logger with optional context.
 
@@ -235,32 +236,42 @@ def get_logger(name=None, **context):
 class RequestContext:
     """Context manager for adding request ID to all logs within a request."""
 
-    def __init__(self, request_id):
+    def __init__(self, request_id: str):
         self.request_id = request_id
-        self.token = None
+        self.token: Optional[structlog.contextvars.Token] = None
 
-    def __enter__(self):
+    def __enter__(self) -> "RequestContext":
         self.token = structlog.contextvars.bind_contextvars(request_id=self.request_id)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
         structlog.contextvars.unbind_contextvars("request_id")
         return False
 
 
 # Example usage functions with built-in sanitization
-def log_api_request(logger, method, path, **kwargs):
+def log_api_request(logger: WrappedLogger, method: str, path: str, **kwargs: Any) -> None:
     """Log API request with structured data (sanitized)."""
     # Note: sanitization happens automatically via processor
     logger.info("api_request", method=method, path=path, **kwargs)
 
 
-def log_api_response(logger, status_code, duration_ms, **kwargs):
+def log_api_response(
+    logger: WrappedLogger, status_code: int, duration_ms: float, **kwargs: Any
+) -> None:
     """Log API response with structured data (sanitized)."""
     logger.info("api_response", status_code=status_code, duration_ms=duration_ms, **kwargs)
 
 
-def log_llm_call(logger, provider, model, tokens, duration_ms, success=True, **kwargs):
+def log_llm_call(
+    logger: WrappedLogger,
+    provider: str,
+    model: str,
+    tokens: int,
+    duration_ms: float,
+    success: bool = True,
+    **kwargs: Any,
+) -> None:
     """Log LLM API call with structured data (sanitized)."""
     logger.info(
         "llm_call",
@@ -273,7 +284,9 @@ def log_llm_call(logger, provider, model, tokens, duration_ms, success=True, **k
     )
 
 
-def log_circuit_breaker_event(logger, breaker_name, state, **kwargs):
+def log_circuit_breaker_event(
+    logger: WrappedLogger, breaker_name: str, state: str, **kwargs: Any
+) -> None:
     """Log circuit breaker state change (sanitized)."""
     logger.warning("circuit_breaker", breaker_name=breaker_name, state=state, **kwargs)
 

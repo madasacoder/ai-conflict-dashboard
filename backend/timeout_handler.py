@@ -14,7 +14,7 @@ import time
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from statistics import mean, stdev
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar
 
 import structlog
 
@@ -49,7 +49,7 @@ class ResponseTimeTracker:
         self.window_size = window_size
         self.response_times: dict[str, list[float]] = {}
 
-    def record(self, operation: str, duration: float):
+    def record(self, operation: str, duration: float) -> None:
         """Record a response time for an operation."""
         if operation not in self.response_times:
             self.response_times[operation] = []
@@ -124,7 +124,7 @@ async def with_timeout(
     timeout: float,
     operation: str = "unknown",
     raise_on_timeout: bool = True,
-) -> T | None:
+) -> Optional[T]:
     """Execute a coroutine with timeout.
 
     Args:
@@ -181,11 +181,11 @@ async def with_timeout(
 async def with_retry(
     coro_func: Callable[[], Coroutine[Any, Any, T]],
     operation: str = "unknown",
-    timeout: float | None = None,
-    max_attempts: int | None = None,
-    base_delay: float | None = None,
-    max_delay: float | None = None,
-    exponential_backoff: bool | None = None,
+    timeout: Optional[float] = None,
+    max_attempts: Optional[int] = None,
+    base_delay: Optional[float] = None,
+    max_delay: Optional[float] = None,
+    exponential_backoff: Optional[bool] = None,
 ) -> T:
     """Execute a coroutine with timeout and retry logic.
 
@@ -206,31 +206,30 @@ async def with_retry(
         Exception: If all attempts fail with other errors
     """
     # Use defaults from config if not specified
-    max_attempts = max_attempts or RETRY_CONFIG["max_attempts"]
-    base_delay = base_delay or RETRY_CONFIG["base_delay"]
-    max_delay = max_delay or RETRY_CONFIG["max_delay"]
-    exponential_backoff = (
+    _max_attempts = max_attempts or RETRY_CONFIG["max_attempts"]
+    _base_delay = base_delay or RETRY_CONFIG["base_delay"]
+    _max_delay = max_delay or RETRY_CONFIG["max_delay"]
+    _exponential_backoff = (
         exponential_backoff
         if exponential_backoff is not None
         else RETRY_CONFIG["exponential_backoff"]
     )
 
     # Use adaptive timeout if not specified
-    if timeout is None:
-        timeout = response_tracker.get_recommended_timeout(operation)
+    _timeout = timeout or response_tracker.get_recommended_timeout(operation)
 
-    last_error = None
-    total_elapsed = 0
+    last_error: Optional[Exception] = None
+    total_elapsed = 0.0
     start_time = time.time()
 
-    for attempt in range(max_attempts):
+    for attempt in range(_max_attempts):
         try:
             logger.debug(
                 "Attempting operation",
                 operation=operation,
                 attempt=attempt + 1,
-                max_attempts=max_attempts,
-                timeout=round(timeout, 2),
+                max_attempts=_max_attempts,
+                timeout=round(_timeout, 2),
             )
 
             # Create fresh coroutine for each attempt
@@ -238,7 +237,7 @@ async def with_retry(
 
             # Execute with timeout
             result = await with_timeout(
-                coro, timeout=timeout, operation=operation, raise_on_timeout=True
+                coro, timeout=_timeout, operation=operation, raise_on_timeout=True
             )
 
             # Success!
@@ -255,12 +254,12 @@ async def with_retry(
         except TimeoutError as e:
             last_error = e
 
-            if attempt < max_attempts - 1:
+            if attempt < _max_attempts - 1:
                 # Calculate retry delay
-                if exponential_backoff:
-                    delay = min(base_delay * (2**attempt), max_delay)
+                if _exponential_backoff:
+                    delay = min(_base_delay * (2**attempt), _max_delay)
                 else:
-                    delay = base_delay
+                    delay = _base_delay
 
                 logger.warning(
                     "Operation failed, retrying",
@@ -277,7 +276,7 @@ async def with_retry(
                 logger.error(
                     "Operation failed after all retries",
                     operation=operation,
-                    attempts=max_attempts,
+                    attempts=_max_attempts,
                     total_elapsed=round(total_elapsed, 2),
                     error=str(e),
                 )
@@ -300,19 +299,19 @@ async def with_retry(
         raise last_error
     else:
         raise TimeoutError(
-            f"Operation '{operation}' failed after {max_attempts} attempts",
+            f"Operation '{operation}' failed after {_max_attempts} attempts",
             operation=operation,
-            timeout=timeout,
+            timeout=_timeout,
             elapsed=total_elapsed,
         )
 
 
 def timeout_handler(
-    operation: str | None = None,
-    timeout: float | None = None,
+    operation: Optional[str] = None,
+    timeout: Optional[float] = None,
     retry: bool = True,
-    **retry_kwargs,
-):
+    **retry_kwargs: Any,
+) -> Callable[[Callable[..., Coroutine[Any, Any, T]]], Callable[..., Coroutine[Any, Any, T]]]:
     """Decorator for adding timeout and retry logic to async functions.
 
     Args:
@@ -325,9 +324,11 @@ def timeout_handler(
         Decorated function
     """
 
-    def decorator(func):
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, T]],
+    ) -> Callable[..., Coroutine[Any, Any, T]]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
             op_name = operation or func.__name__
 
             if retry:
@@ -341,12 +342,15 @@ def timeout_handler(
             else:
                 # Just timeout, no retry
                 timeout_val = timeout or response_tracker.get_recommended_timeout(op_name)
-                return await with_timeout(
+                result = await with_timeout(
                     func(*args, **kwargs),
                     timeout=timeout_val,
                     operation=op_name,
                     raise_on_timeout=True,
                 )
+                if result is None:
+                    raise TimeoutError("Operation timed out", op_name, timeout_val, timeout_val)
+                return result
 
         return wrapper
 
@@ -356,7 +360,7 @@ def timeout_handler(
 # Monitoring functions
 def get_timeout_stats() -> dict[str, Any]:
     """Get timeout statistics for monitoring."""
-    stats = {}
+    stats: Dict[str, Any] = {}
 
     for operation, times in response_tracker.response_times.items():
         if times:
@@ -383,12 +387,12 @@ def get_timeout_stats() -> dict[str, Any]:
 # Example usage
 if __name__ == "__main__":
 
-    async def slow_operation():
+    async def slow_operation() -> str:
         """Simulate a slow operation."""
         await asyncio.sleep(2)
         return "Success!"
 
-    async def flaky_operation():
+    async def flaky_operation() -> str:
         """Simulate a flaky operation that sometimes times out."""
         import random
 
@@ -397,12 +401,12 @@ if __name__ == "__main__":
         return f"Completed in {delay:.2f}s"
 
     @timeout_handler(operation="test_decorated", timeout=2.0, retry=True)
-    async def decorated_operation():
+    async def decorated_operation() -> str:
         """Decorated async function with timeout."""
         await asyncio.sleep(1.5)
         return "Decorated success!"
 
-    async def test():
+    async def test() -> None:
         # Test basic timeout
         try:
             result = await with_timeout(slow_operation(), timeout=1.0, operation="slow_op")

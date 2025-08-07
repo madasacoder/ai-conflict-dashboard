@@ -150,17 +150,19 @@ class TestParallelStress:
             await asyncio.sleep(0.01)  # Simulate API delay
             return {"model": "test", "response": "test", "error": None}
 
-        with patch("llm_providers.call_openai", side_effect=mock_provider_call):
-            with patch("llm_providers.call_claude", side_effect=mock_provider_call):
-                # Run many concurrent analysis calls
-                tasks = []
-                for i in range(50):
-                    task = analyze_with_models(
-                        f"Test {i}", openai_key=f"key-{i}", claude_key=f"key-{i}"
-                    )
-                    tasks.append(task)
+        with (
+            patch("llm_providers.call_openai", side_effect=mock_provider_call),
+            patch("llm_providers.call_claude", side_effect=mock_provider_call),
+        ):
+            # Run many concurrent analysis calls
+            tasks = []
+            for i in range(50):
+                task = analyze_with_models(
+                    f"Test {i}", openai_key=f"key-{i}", claude_key=f"key-{i}"
+                )
+                tasks.append(task)
 
-                results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks)
 
         # Verify all calls completed
         assert len(results) == 50

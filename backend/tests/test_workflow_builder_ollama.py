@@ -3,16 +3,18 @@ Test suite for Ollama integration in workflow builder.
 Ensures the API returns the correct format that the frontend expects.
 """
 
+from typing import Any, Dict, List
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi.testclient import TestClient
 
 
 class TestWorkflowBuilderOllamaIntegration:
     """Test Ollama model dropdown functionality in workflow builder."""
 
     @pytest.fixture
-    def mock_ollama_response(self):
+    def mock_ollama_response(self) -> Dict[str, List[Dict[str, Any]]]:
         """Mock Ollama API response with model objects."""
         return {
             "models": [
@@ -49,7 +51,9 @@ class TestWorkflowBuilderOllamaIntegration:
             ]
         }
 
-    def test_ollama_models_endpoint_returns_correct_format(self, client, mock_ollama_response):
+    def test_ollama_models_endpoint_returns_correct_format(
+        self, client: TestClient, mock_ollama_response: Dict[str, List[Dict[str, Any]]]
+    ):
         """Test that /api/ollama/models returns the format expected by frontend."""
         # Mock the OllamaProvider instance
         mock_provider = AsyncMock()
@@ -100,7 +104,7 @@ class TestWorkflowBuilderOllamaIntegration:
             assert data["models"][1]["name"] == "llama3.3:70b"
             assert data["models"][1]["size"] == 42520413916
 
-    def test_ollama_models_endpoint_handles_empty_list(self, client):
+    def test_ollama_models_endpoint_handles_empty_list(self, client: TestClient):
         """Test that endpoint handles empty model list gracefully."""
         # Mock the OllamaProvider instance
         mock_provider = AsyncMock()
@@ -125,7 +129,7 @@ class TestWorkflowBuilderOllamaIntegration:
             assert data["available"] is True
             assert data["models"] == []
 
-    def test_ollama_models_endpoint_handles_service_down(self, client):
+    def test_ollama_models_endpoint_handles_service_down(self, client: TestClient):
         """Test that endpoint handles Ollama service being down."""
         # Mock the OllamaProvider instance
         mock_provider = AsyncMock()
@@ -149,7 +153,9 @@ class TestWorkflowBuilderOllamaIntegration:
             assert "error" in data
             assert "help" in data
 
-    def test_frontend_can_parse_model_response(self, mock_ollama_response):
+    def test_frontend_can_parse_model_response(
+        self, mock_ollama_response: Dict[str, List[Dict[str, Any]]]
+    ):
         """Simulate frontend parsing logic to ensure compatibility."""
         # This test simulates what the frontend JavaScript does
         models_data = {
@@ -188,7 +194,7 @@ class TestWorkflowBuilderOllamaIntegration:
 class TestWorkflowBuilderOllamaFrontendIntegration:
     """Test the actual frontend JavaScript handling of Ollama models."""
 
-    def test_loadOllamaModels_function_contract(self):
+    def test_load_ollama_models_function_contract(self):
         """Document the expected contract for loadOllamaModels function."""
         expected_api_response = {
             "available": True,

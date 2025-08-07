@@ -152,20 +152,22 @@ class TestExtremeParallel:
             await asyncio.sleep(0.001)  # Tiny delay
             return {"model": "test", "response": "test", "error": None}
 
-        with patch("llm_providers.call_openai", side_effect=mock_provider):
-            with patch("llm_providers.call_claude", side_effect=mock_provider):
-                # Create 50 concurrent analysis tasks
-                tasks = []
-                for i in range(50):
-                    task = analyze_with_models(
-                        f"Test {i}", openai_key=f"key-{i}", claude_key=f"key-{i}"
-                    )
-                    tasks.append(task)
+        with (
+            patch("llm_providers.call_openai", side_effect=mock_provider),
+            patch("llm_providers.call_claude", side_effect=mock_provider),
+        ):
+            # Create 50 concurrent analysis tasks
+            tasks = []
+            for i in range(50):
+                task = analyze_with_models(
+                    f"Test {i}", openai_key=f"key-{i}", claude_key=f"key-{i}"
+                )
+                tasks.append(task)
 
-                # Run all concurrently
-                start = time.time()
-                results = await asyncio.gather(*tasks)
-                elapsed = time.time() - start
+            # Run all concurrently
+            start = time.time()
+            results = await asyncio.gather(*tasks)
+            elapsed = time.time() - start
 
         # All should complete
         assert len(results) == 50

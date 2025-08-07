@@ -6,8 +6,12 @@ NO MOCKS - These tests will stress the ACTUAL running system.
 import concurrent.futures
 import random
 import time
+import contextlib
+import sys
+from typing import Any, Dict, List
 
 import requests
+import pytest
 
 BASE_URL = "http://localhost:8000"
 
@@ -17,9 +21,9 @@ class TestRealStressConditions:
 
     def test_find_concurrent_request_limit(self):
         """Find the actual concurrent request limit before failure."""
-        results = {}
+        results: Dict[int, Dict[str, Any]] = {}
 
-        def make_request(i):
+        def make_request(i: int) -> Dict[str, Any]:
             try:
                 start = time.time()
                 response = requests.post(
@@ -44,7 +48,7 @@ class TestRealStressConditions:
                 batch_results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
             success = sum(1 for r in batch_results if r["success"])
-            status_codes = {}
+            status_codes: Dict[int, int] = {}
             for r in batch_results:
                 if r["success"]:
                     code = r["status"]
@@ -81,8 +85,8 @@ class TestRealStressConditions:
         print("\nTesting sustained load for 30 seconds...")
 
         start_time = time.time()
-        request_times = []
-        errors = []
+        request_times: List[float] = []
+        errors: List[str] = []
 
         while time.time() - start_time < 30:
             req_start = time.time()
@@ -130,7 +134,7 @@ class TestRealStressConditions:
         print("\nTesting request size limits...")
 
         sizes_kb = [1, 10, 100, 500, 1000, 5000, 10000, 20000]
-        results = {}
+        results: Dict[int, Dict[str, Any]] = {}
 
         for size_kb in sizes_kb:
             text = "x" * (size_kb * 1024)
@@ -176,7 +180,7 @@ class TestRealStressConditions:
             "🏴󠁧󠁢󠁳󠁣󠁴󠁿" * 100,  # Complex emoji
             "\u202e\u202d" * 1000,  # Direction override
             "नमस्ते" * 500,  # Devanagari
-            "А" * 1000,  # Cyrillic looking like Latin
+            "A" * 1000,  # Cyrillic looking like Latin
             "\x00" * 100,  # Null bytes
         ]
 
@@ -192,7 +196,7 @@ class TestRealStressConditions:
                 ), f"Server error on Unicode test {i}: {response.status_code}"
 
             except UnicodeError as e:
-                assert False, f"Unicode handling error on test {i}: {e}"
+                raise AssertionError(f"Unicode handling error on test {i}: {e}") from e
 
     def test_connection_pool_exhaustion(self):
         """Test behavior when connections aren't closed properly."""
@@ -232,15 +236,13 @@ class TestRealStressConditions:
                 response.status_code == 200
             ), f"Health check failed after connection exhaustion: {response.status_code}"
         except Exception as e:
-            assert False, f"Cannot reach server after connection test: {e}"
+            raise AssertionError(f"Cannot reach server after connection test: {e}") from e
 
         finally:
             # Clean up
             for sock in connections:
-                try:
+                with contextlib.suppress(Exception):
                     sock.close()
-                except:
-                    pass
 
     def test_rapid_circuit_breaker_triggers(self):
         """Test rapid circuit breaker state changes."""
@@ -253,6 +255,7 @@ class TestRealStressConditions:
             response = requests.post(
                 f"{BASE_URL}/api/analyze",
                 json={"text": f"Test {i}", "openai_key": "invalid-key-to-trigger-failure"},
+                timeout=5,
             )
             failure_responses.append(response.status_code)
             time.sleep(0.05)  # Rapid but not instant
@@ -280,9 +283,11 @@ class TestRealDataIntegrity:
 
         request_ids = []
 
-        def get_request_id(i):
+        def get_request_id(i: int) -> str | None:
             response = requests.post(
-                f"{BASE_URL}/api/analyze", json={"text": f"ID test {i}", "openai_key": "test"}
+                f"{BASE_URL}/api/analyze",
+                json={"text": f"ID test {i}", "openai_key": "test"},
+                timeout=5,
             )
             if response.status_code == 200:
                 return response.json().get("request_id")
@@ -314,11 +319,12 @@ class TestRealDataIntegrity:
         print("\nTesting response consistency...")
 
         # Send identical requests
-        responses = []
-        for i in range(5):
+        responses: List[Dict[str, Any]] = []
+        for _ in range(5):
             response = requests.post(
                 f"{BASE_URL}/api/analyze",
                 json={"text": "Consistency test: What is 2+2?", "openai_key": "test-key"},
+                timeout=10,
             )
             if response.status_code == 200:
                 responses.append(response.json())
@@ -346,8 +352,6 @@ class TestRealDataIntegrity:
 
 
 if __name__ == "__main__":
-    import sys
-
     print("=" * 60)
     print("REAL STRESS TESTS - Finding Breaking Points")
     print("=" * 60)
@@ -358,13 +362,20 @@ if __name__ == "__main__":
         print(f"✅ Backend is healthy: {health.json()}\n")
     except Exception as e:
         print(f"❌ Backend not accessible: {e}")
+        print("Please start the backend with: cd backend && ./venv/bin/python main.py")
         sys.exit(1)
 
-    # Run tests with pytest
-    import subprocess
+    # Check Ollama
+    try:
+        ollama = requests.get("http://localhost:11434/api/tags", timeout=2)
+        models = [m["name"] for m in ollama.json()["models"]]
+        print(f"✅ Ollama is running with {len(models)} models")
+    except Exception as e:
+        print(f"⚠️  Ollama not accessible: {e}")
+        print("Some tests will be skipped")
 
-    result = subprocess.run(
-        [sys.executable, "-m", "pytest", __file__, "-v", "-s"], capture_output=False
-    )
+    print("-" * 50)
+    print("Starting tests...")
 
-    sys.exit(result.returncode)
+    # Run pytest
+    pytest.main([__file__, "-v", "-s"])

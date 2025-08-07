@@ -19,7 +19,7 @@ class TestRealBackendIntegration:
 
     def test_backend_is_actually_running(self):
         """Verify backend is up and responding."""
-        response = requests.get(f"{BASE_URL}/api/health")
+        response = requests.get(f"{BASE_URL}/api/health", timeout=5)
 
         # Strong assertions on real response
         assert response.status_code == 200, f"Backend not healthy: {response.status_code}"
@@ -28,7 +28,7 @@ class TestRealBackendIntegration:
 
         # Measure response time
         start = time.time()
-        response = requests.get(f"{BASE_URL}/api/health")
+        response = requests.get(f"{BASE_URL}/api/health", timeout=5)
         duration = time.time() - start
 
         assert duration < 0.5, f"Health check too slow: {duration}s"
@@ -40,7 +40,7 @@ class TestRealBackendIntegration:
             "Analyze the implications of quantum computing on cybersecurity.",
             "Compare the economic impacts of renewable vs fossil fuel energy.",
             "What are the ethical considerations of AI in healthcare?",
-            "中文文本：分析人工智能的未来发展趋势。",  # Chinese text
+            "中文文本:分析人工智能的未来发展趋势。",  # Chinese text
             "🤖 Emoji test: How do AI models handle emoji? 🚀",
             "Very " + "long " * 1000 + "text to test chunking.",
             "",  # Empty text
@@ -60,6 +60,7 @@ class TestRealBackendIntegration:
                     "text": text,
                     "openai_key": "test-key-123",  # Will fail but test error handling
                 },
+                timeout=10,
             )
 
             # Validate response structure
@@ -136,6 +137,7 @@ class TestRealBackendIntegration:
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "content-type",
             },
+            timeout=5,
         )
 
         # Validate CORS headers
@@ -168,10 +170,12 @@ class TestRealBackendIntegration:
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
         # Send large requests
-        for i in range(10):
+        for _ in range(10):
             large_text = "x" * (1024 * 1024)  # 1MB of text
             _ = requests.post(
-                f"{BASE_URL}/api/analyze", json={"text": large_text, "openai_key": "test-key"}
+                f"{BASE_URL}/api/analyze",
+                json={"text": large_text, "openai_key": "test-key"},
+                timeout=10,
             )
 
             # Check memory after each request
@@ -194,6 +198,7 @@ class TestRealBackendIntegration:
                 "claude_key": "claude-api-key-secret-123",
                 "gemini_key": "AIza-gemini-secret-key",
             },
+            timeout=10,
         )
 
         # Check response doesn't leak keys
@@ -218,7 +223,7 @@ class TestRealOllamaIntegration:
     def test_ollama_is_actually_running(self):
         """Verify Ollama service is accessible."""
         try:
-            response = requests.get("http://localhost:11434/api/tags")
+            response = requests.get("http://localhost:11434/api/tags", timeout=5)
             assert response.status_code == 200, "Ollama not running"
 
             data = response.json()
@@ -265,7 +270,9 @@ class TestRealOllamaIntegration:
     def test_backend_ollama_integration(self):
         """Test backend's integration with Ollama."""
         response = requests.post(
-            f"{BASE_URL}/api/analyze", json={"text": "What is 2+2?", "ollama_model": "gemma3:4b"}
+            f"{BASE_URL}/api/analyze",
+            json={"text": "What is 2+2?", "ollama_model": "gemma3:4b"},
+            timeout=10,
         )
 
         # Should handle Ollama requests
@@ -313,7 +320,7 @@ class TestRealEndToEnd:
     def test_complete_analysis_workflow(self):
         """Test a complete user workflow end-to-end."""
         # Step 1: Check health
-        health_response = requests.get(f"{BASE_URL}/api/health")
+        health_response = requests.get(f"{BASE_URL}/api/health", timeout=5)
         assert health_response.status_code == 200
 
         # Step 2: Submit analysis request
@@ -330,7 +337,7 @@ class TestRealEndToEnd:
         }
 
         start_time = time.time()
-        response = requests.post(f"{BASE_URL}/api/analyze", json=analysis_request)
+        response = requests.post(f"{BASE_URL}/api/analyze", json=analysis_request, timeout=10)
         duration = time.time() - start_time
 
         # Step 3: Validate response
@@ -365,17 +372,17 @@ class TestRealEndToEnd:
         # Simulate file content
         file_content = """
         # Technical Specification
-        
+
         ## Overview
         This document describes the architecture for a distributed system.
-        
+
         ## Components
         1. Load Balancer: Nginx
         2. Application Servers: Python/FastAPI
         3. Database: PostgreSQL with replication
         4. Cache: Redis cluster
         5. Message Queue: RabbitMQ
-        
+
         ## Performance Requirements
         - 10,000 requests per second
         - 99.9% uptime
@@ -385,6 +392,7 @@ class TestRealEndToEnd:
         response = requests.post(
             f"{BASE_URL}/api/analyze",
             json={"text": file_content, "openai_key": "test", "analysis_type": "technical_review"},
+            timeout=10,
         )
 
         assert response.status_code in [200, 207]
@@ -400,7 +408,9 @@ class TestRealEndToEnd:
 
         for i in range(20):
             response = requests.post(
-                f"{BASE_URL}/api/analyze", json={"text": f"Request {i}", "openai_key": "test"}
+                f"{BASE_URL}/api/analyze",
+                json={"text": f"Request {i}", "openai_key": "test"},
+                timeout=10,
             )
 
             if response.status_code == 200:
@@ -438,7 +448,7 @@ class TestRealSecurityValidation:
 
         for payload in xss_payloads:
             response = requests.post(
-                f"{BASE_URL}/api/analyze", json={"text": payload, "openai_key": "test"}
+                f"{BASE_URL}/api/analyze", json={"text": payload, "openai_key": "test"}, timeout=10
             )
 
             # Should not reflect payload unchanged
@@ -464,6 +474,7 @@ class TestRealSecurityValidation:
                     "openai_key": "test",
                     "user_id": payload,  # Try injection in different fields
                 },
+                timeout=10,
             )
 
             # Should handle safely
@@ -524,11 +535,4 @@ if __name__ == "__main__":
     print("Starting tests...")
 
     # Run pytest
-    import subprocess
-    import sys
-
-    result = subprocess.run(
-        [sys.executable, "-m", "pytest", __file__, "-v", "--tb=short"], capture_output=False
-    )
-
-    exit(result.returncode)
+    pytest.main([__file__, "-v", "--tb=short"])

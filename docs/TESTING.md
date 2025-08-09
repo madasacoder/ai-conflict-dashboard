@@ -7,16 +7,16 @@ The AI Conflict Dashboard has a comprehensive testing strategy covering unit tes
 ## Test Statistics
 
 ### Backend Tests (Python/FastAPI)
-- **Total Tests**: 97
-- **Coverage**: 92.23%
+- **Status (latest local run, server running, TESTING=1)**: 364 passed, 50 failed, 26 skipped, 23 errors
+- **Coverage**: ~51% overall
 - **Types**:
   - Unit Tests: ~60 tests
   - Integration Tests: 25 tests
   - API Integration Tests: 12 tests
 
-### Frontend Tests (JavaScript)
-- **Unit Tests**: Vitest framework
-- **E2E Tests**: Playwright framework
+### Frontend Tests (TypeScript/React)
+- **Unit/Integration**: Vitest (currently blocked by TypeScript errors)
+- **E2E**: Playwright (blocked until type-check passes)
 - **Coverage Target**: 85%
 
 ## Backend Testing
@@ -91,11 +91,11 @@ Located in `backend/tests/`:
 ### Setting Up Frontend Tests
 
 ```bash
-cd frontend
+cd ui
 npm install
 
-# Run unit tests
-npm test
+# Type check
+npm run type-check
 
 # Run tests with UI
 npm run test:ui
@@ -103,8 +103,9 @@ npm run test:ui
 # Run tests with coverage
 npm run test:coverage
 
-# Run E2E tests
-npm run test:e2e
+# Run E2E tests (after type-check is green)
+npx playwright install
+npx playwright test --reporter=line
 ```
 
 ### Test Structure

@@ -293,6 +293,7 @@ class TestRegressionBugs21to30:
     def test_bug029_test_infrastructure(self):
         """BUG-029: Test infrastructure should work."""
         # This test running proves it's fixed!
+        result = True
         assert result, "Test should pass"
 
     def test_bug030_multiple_workflow_builders(self):

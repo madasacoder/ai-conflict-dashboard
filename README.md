@@ -7,9 +7,9 @@ A comprehensive AI model comparison and analysis platform with testing and secur
 This project includes a test suite that aims to prevent critical bugs from reoccurring. The implementation is currently in progress.
 
 ### Current Test Status (latest local run)
-- **Backend Tests**: 319 passing, 108 failing, 13 skipped, 23 errors
-- **Coverage**: ~51% overall (module gaps: `workflow_executor.py` low coverage)
-- **Frontend (ui/)**: Type-check failing with strict TS errors; Vitest blocked by types; Playwright E2E failing to launch workflow builder flow
+- **Backend Tests (server running, TESTING=1)**: 364 passing, 50 failing, 26 skipped, 23 errors
+- **Coverage**: ~51% overall (notable gaps e.g. `workflow_executor.py`)
+- **Frontend (ui/)**: Type-check failing with many TS errors; Vitest blocked; Playwright E2E blocked until type-check is green
 - **Grade**: Honest baseline B- quality; not production-ready
 
 ### Quick Start - Run Tests
@@ -34,11 +34,10 @@ cd backend && pytest tests/ -v
 - **BUG-110**: Memory Leak Under Parallel Load (not fully resolved)
 
 ### Known Issues
-- 100+ backend tests failing/errors; some require live server or mocks
-- 23 test collection/execution errors in critical bug regression suite
+- Backend: failing/erroring tests remain (circuit breaker concurrency, provider adapters, security assertions)
+- 23 test collection/execution errors persist in critical regression suite
 - Gemini/Grok providers are mock-only
-- Race conditions in circuit breaker under concurrency
-- UI E2E cannot find launch button; base URL/project config requires alignment
+- UI: E2E blocked by TypeScript errors; fix `ui/src/types/workflow.ts`, `services/workflowExecutor.ts`, file upload helpers, and store types
 
 For documentation (note: being updated for accuracy), see [GRADE_A_REGRESSION_TEST_DOCUMENTATION.md](GRADE_A_REGRESSION_TEST_DOCUMENTATION.md)
 

@@ -47,26 +47,35 @@ def get_circuit_breaker(provider: str, api_key: str) -> CircuitBreaker:
     Returns:
         CircuitBreaker instance for this provider/key combination
     """
+    # Normalize provider key to avoid case/key mismatches
+    normalized_provider = (provider or "").strip().lower()
+
     with _circuit_breaker_lock:
-        if api_key not in circuit_breakers[provider]:
+        # Lazily initialize provider map if missing
+        if normalized_provider not in circuit_breakers:
+            circuit_breakers[normalized_provider] = {}
+
+        provider_breakers = circuit_breakers[normalized_provider]
+
+        if api_key not in provider_breakers:
             # Create new circuit breaker for this API key
             breaker = CircuitBreaker(
                 fail_max=BREAKER_FAIL_MAX,
                 reset_timeout=BREAKER_TIMEOUT,  # Fixed parameter name
-                name=f"{provider}_{api_key[:8]}...{api_key[-4:]}",  # Partial key in name for logging
+                name=f"{normalized_provider}_{api_key[:8]}...{api_key[-4:]}",  # Partial key in name for logging
             )
 
             # Skip callbacks for now - they're causing issues
             # TODO: Fix callback implementation
 
-            circuit_breakers[provider][api_key] = breaker
+            provider_breakers[api_key] = breaker
             logger.info(
-                f"Created new circuit breaker for {provider}",
-                provider=provider,
+                f"Created new circuit breaker for {normalized_provider}",
+                provider=normalized_provider,
                 key_prefix=api_key[:8],
             )
 
-        return circuit_breakers[provider][api_key]
+        return provider_breakers[api_key]
 
 
 def on_circuit_open(breaker: CircuitBreaker) -> None:

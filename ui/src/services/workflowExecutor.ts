@@ -6,6 +6,7 @@
 import { CustomNode, Edge } from '@/state/workflowStore'
 import toast from 'react-hot-toast'
 import { ollamaService } from './ollamaService'
+import { fetchWithRetry, networkMonitor } from '@/utils/networkUtils'
 
 export interface ExecutionProgress {
   nodeId: string
@@ -455,21 +456,31 @@ export class WorkflowExecutor {
         executionTime: ollamaResponse.total_duration ? ollamaResponse.total_duration / 1e9 : 0
       }
     } else {
-      // Use backend API for cloud models
+      // Use backend API for cloud models with retry logic
       const apiKey = this.getAPIKey(model)
+      const timeout = networkMonitor.getAdaptiveTimeout()
       
-      const response = await fetch(`${this.baseUrl}/api/llm/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          prompt,
-          temperature: config.temperature || 0.5,
-          max_tokens: config.maxTokens || 2000,
-          api_key: apiKey
-        }),
-        signal: this.abortController?.signal
-      })
+      const response = await fetchWithRetry(
+        `${this.baseUrl}/api/llm/analyze`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            prompt,
+            temperature: config.temperature || 0.5,
+            max_tokens: config.maxTokens || 2000,
+            api_key: apiKey
+          }),
+          signal: this.abortController?.signal
+        },
+        {
+          timeout,
+          retries: 3,
+          onSlowNetwork: () => toast.loading(`Slow network detected. Processing ${model}...`),
+          onRetry: (attempt) => toast.warning(`Retrying ${model} (attempt ${attempt}/3)`)
+        }
+      )
       
       if (!response.ok) {
         throw new Error(`LLM request failed: ${response.statusText}`)

@@ -130,8 +130,8 @@ describe('fileUpload utilities', () => {
 
       expect(result.files).toHaveLength(2)
       expect(result.errors).toHaveLength(0)
-      expect(result.files[0].displayName).toBe('file1.txt')
-      expect(result.files[1].displayName).toBe('file2.txt')
+      expect(result.files[0]!.displayName).toBe('file1.txt')
+      expect(result.files[1]!.displayName).toBe('file2.txt')
     })
 
     it('should handle duplicate filenames', async () => {
@@ -144,9 +144,9 @@ describe('fileUpload utilities', () => {
       const result = await processFileList(fileList)
 
       expect(result.files).toHaveLength(3)
-      expect(result.files[0].displayName).toBe('test.txt (1)')
-      expect(result.files[1].displayName).toBe('test.txt (2)')
-      expect(result.files[2].displayName).toBe('test.txt (3)')
+      expect(result.files[0]!.displayName).toBe('test.txt (1)')
+      expect(result.files[1]!.displayName).toBe('test.txt (2)')
+      expect(result.files[2]!.displayName).toBe('test.txt (3)')
     })
 
     it('should respect max files limit', async () => {
@@ -173,7 +173,7 @@ describe('fileUpload utilities', () => {
 
       expect(result.files).toHaveLength(1)
       expect(result.errors).toHaveLength(1)
-      expect(result.files[0].originalName).toBe('valid.txt')
+      expect(result.files[0]!.originalName).toBe('valid.txt')
       expect(result.errors[0]).toContain('invalid.pdf')
     })
 
@@ -187,7 +187,7 @@ describe('fileUpload utilities', () => {
 
       expect(result.files).toHaveLength(1)
       expect(result.errors).toHaveLength(1)
-      expect(result.files[0].originalName).toBe('good.txt')
+      expect(result.files[0]!.originalName).toBe('good.txt')
       expect(result.errors[0]).toContain('error.txt')
     })
   })
@@ -237,7 +237,7 @@ describe('fileUpload utilities', () => {
     })
 
     it('should handle single file', () => {
-      const combined = combineFileContents([mockFiles[0]])
+      const combined = combineFileContents([mockFiles[0]!])
       
       expect(combined).toBe('--- File: file1.txt ---\n\nContent 1')
     })

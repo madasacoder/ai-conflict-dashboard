@@ -1,4 +1,5 @@
-"""Grade A Regression Tests for High Priority Bugs
+"""Grade A Regression Tests for High Priority Bugs.
+
 These tests ensure high priority bugs never regress and use strong assertions with real-world scenarios.
 """
 
@@ -24,11 +25,7 @@ class TestHighPriorityBugs:
         return TestClient(app)
 
     def test_bug068_vitest_playwright_confusion(self, client):
-        """BUG-068: Vitest and Playwright Test Confusion (HIGH)
-        
-        This issue caused 62 integration tests to fail due to framework conflicts.
-        Test ensures proper test isolation and framework separation.
-        """
+        """BUG-068: Vitest and Playwright Test Confusion (HIGH)."""
         # Test that backend API endpoints work correctly
         # (This is the core functionality that the frontend tests would use)
         
@@ -49,11 +46,7 @@ class TestHighPriorityBugs:
                 assert field in data, f"Response must contain '{field}' field"
 
     def test_bug070_missing_workflow_store_import(self, client):
-        """BUG-070: Missing useWorkflowStore Import in Tests (HIGH)
-        
-        This issue caused tests to fail due to undefined references.
-        Test ensures proper module imports and dependencies.
-        """
+        """BUG-070: Missing useWorkflowStore Import in Tests (HIGH)."""
         # Test that the backend can handle workflow-related requests
         # (This simulates what the frontend workflow store would do)
         
@@ -95,11 +88,7 @@ class TestHighPriorityBugs:
         ]
         assert mock_func.call_args_list == expected_calls, "Calls don't match"
     def test_bug072_circuit_breaker_concurrent_failures(self, client):
-        """BUG-072: Circuit Breaker Concurrent Failures Test (MEDIUM)
-        
-        This reliability issue could cause circuit breaker to not open under high load.
-        Test ensures circuit breaker handles concurrent failures correctly.
-        """
+        """BUG-072: Circuit Breaker Concurrent Failures Test (MEDIUM)."""
         # Clear existing circuit breakers
         for provider in circuit_breakers:
             circuit_breakers[provider].clear()
@@ -152,11 +141,7 @@ class TestHighPriorityBugs:
         assert yes_count == 2, "Should have 2 Yes votes"
         assert no_count == 1, "Should have 1 No vote"
     def test_bug074_missing_https_redirect_documentation(self, client):
-        """BUG-074: Missing HTTPS Redirect Documentation (LOW)
-        
-        This documentation issue left users without guidance.
-        Test ensures proper error handling for HTTPS issues.
-        """
+        """BUG-074: Missing HTTPS Redirect Documentation (LOW)."""
         # Test that the backend handles HTTPS-related requests properly
         response = client.get("/api/health")
         assert response.status_code == 200, "Health endpoint should work regardless of protocol"
@@ -173,11 +158,7 @@ class TestHighPriorityBugs:
             assert len(response_text) > 0, "Error response should not be empty"
 
     def test_bug076_ollama_service_integration_issues(self, client):
-        """BUG-076: Ollama Service Integration Issues (MEDIUM)
-        
-        This integration issue prevented Ollama models from working.
-        Test ensures Ollama integration is properly configured.
-        """
+        """BUG-076: Ollama Service Integration Issues (MEDIUM)."""
         # Test Ollama health check endpoint
         response = client.get("/api/health")
         assert response.status_code == 200, "Health endpoint should be accessible"
@@ -193,11 +174,7 @@ class TestHighPriorityBugs:
         assert response.status_code in [200, 422], "Ollama requests should be handled gracefully"
 
     def test_bug077_workflow_builder_http_https_confusion(self, client):
-        """BUG-077: Workflow Builder HTTP/HTTPS Confusion (MEDIUM)
-        
-        This protocol issue caused connection failures.
-        Test ensures proper protocol handling.
-        """
+        """BUG-077: Workflow Builder HTTP/HTTPS Confusion (MEDIUM)."""
         # Test that the backend handles requests regardless of protocol
         response = client.get("/api/health")
         assert response.status_code == 200, "Health endpoint should work with any protocol"
@@ -211,11 +188,7 @@ class TestHighPriorityBugs:
         assert response.status_code in [200, 422], "Workflow execution should work with any protocol"
 
     def test_bug078_missing_event_handlers_workflow_builder(self, client):
-        """BUG-078: Missing Event Handlers in Workflow Builder (HIGH)
-        
-        This functionality issue broke core drag-and-drop features.
-        Test ensures workflow creation works via API.
-        """
+        """BUG-078: Missing Event Handlers in Workflow Builder (HIGH)."""
         # Test workflow creation via API (alternative to drag-and-drop)
         workflow_data = {
             "nodes": [
@@ -234,11 +207,7 @@ class TestHighPriorityBugs:
         assert response.status_code in [200, 422], "Workflow creation should work via API"
 
     def test_bug079_test_file_naming_convention_violations(self, client):
-        """BUG-079: Test File Naming Convention Violations (LOW)
-        
-        This infrastructure issue could cause tests to be missed.
-        Test ensures proper test discovery.
-        """
+        """BUG-079: Test File Naming Convention Violations (LOW)."""
         # Test that our test file is discoverable and runs correctly
         response = client.get("/api/health")
         assert response.status_code == 200, "Test should be discoverable and runnable"
@@ -252,11 +221,7 @@ class TestHighPriorityBugs:
         assert response.status_code in [200, 422], "Test environment should be properly configured"
 
     def test_bug080_frontend_logger_test_expectation_mismatch(self, client):
-        """BUG-080: Frontend Logger Test Expectation Mismatch (LOW)
-        
-        This test infrastructure issue caused test failures.
-        Test ensures proper error message handling.
-        """
+        """BUG-080: Frontend Logger Test Expectation Mismatch (LOW)."""
         # Test that the backend provides consistent error messages
         response = client.post("/api/analyze", json={
             "text": "Test error message consistency",
@@ -269,11 +234,7 @@ class TestHighPriorityBugs:
             assert len(response_text) > 0, "Error response should not be empty"
 
     def test_bug083_playwright_tests_cannot_find_application(self, client):
-        """BUG-083: Playwright Tests Cannot Find Application (HIGH)
-        
-        This E2E testing issue prevented automated testing.
-        Test ensures the backend is accessible for E2E tests.
-        """
+        """BUG-083: Playwright Tests Cannot Find Application (HIGH)."""
         # Test that the backend is accessible and responsive
         response = client.get("/api/health")
         assert response.status_code == 200, "Backend should be accessible for E2E tests"
@@ -287,11 +248,7 @@ class TestHighPriorityBugs:
         assert response.status_code in [200, 422], "API should be responsive for E2E tests"
 
     def test_bug084_app_component_rendering_issues(self, client):
-        """BUG-084: App Component Rendering Issues (HIGH)
-        
-        This frontend issue caused application rendering problems.
-        Test ensures the backend provides proper data for frontend rendering.
-        """
+        """BUG-084: App Component Rendering Issues (HIGH)."""
         # Test that the backend provides proper data structure for frontend
         response = client.post("/api/analyze", json={
             "text": "Test frontend data structure",
@@ -307,11 +264,7 @@ class TestHighPriorityBugs:
                 assert field in data, f"Frontend requires '{field}' field for rendering"
 
     def test_bug085_edge_case_handling_failures(self, client):
-        """BUG-085: Edge Case Handling Failures (MEDIUM)
-        
-        This robustness issue caused crashes in edge scenarios.
-        Test ensures proper edge case handling.
-        """
+        """BUG-085: Edge Case Handling Failures (MEDIUM)."""
         # Test various edge cases
         edge_cases = [
             "",  # Empty text
@@ -330,11 +283,7 @@ class TestHighPriorityBugs:
             assert response.status_code in [200, 422, 413], f"Should handle edge case gracefully: {type(edge_case)}"
 
     def test_bug089_sql_injection_not_properly_handled(self, client):
-        """BUG-089: SQL Injection Not Properly Handled (MEDIUM)
-        
-        This security issue allowed SQL injection attempts.
-        Test ensures proper input validation and sanitization.
-        """
+        """BUG-089: SQL Injection Not Properly Handled (MEDIUM)."""
         # Test SQL injection attempts
         sql_payloads = [
             "'; DROP TABLE users; --",
@@ -353,11 +302,7 @@ class TestHighPriorityBugs:
             assert response.status_code in [200, 422, 400], f"Should handle SQL injection safely: {payload[:20]}..."
 
     def test_bug090_memory_not_released_after_large_requests(self, client):
-        """BUG-090: Memory Not Released After Large Requests (MEDIUM)
-        
-        This performance issue caused memory leaks.
-        Test ensures proper memory management.
-        """
+        """BUG-090: Memory Not Released After Large Requests (MEDIUM)."""
         import psutil
         import os
         
@@ -390,11 +335,7 @@ class TestHighPriorityBugs:
         assert memory_increase_mb < 100, f"Memory increase should be < 100MB, got {memory_increase_mb:.2f}MB"
 
     def test_bug091_ollama_integration_not_working_with_backend(self, client):
-        """BUG-091: Ollama Integration Not Working with Backend (MEDIUM)
-        
-        This integration issue prevented Ollama from working through the backend.
-        Test ensures proper Ollama backend integration.
-        """
+        """BUG-091: Ollama Integration Not Working with Backend (MEDIUM)."""
         # Test Ollama integration through backend
         response = client.post("/api/analyze", json={
             "text": "Test Ollama backend integration",

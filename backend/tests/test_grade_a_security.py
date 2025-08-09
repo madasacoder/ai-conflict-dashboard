@@ -1,4 +1,5 @@
-"""Grade A Security Tests - Finding Real Vulnerabilities
+"""Grade A Security Tests - Finding Real Vulnerabilities.
+
 ======================================================
 These tests are designed to find actual security bugs, not just pass.
 Every test should try to break the system in realistic ways.
@@ -22,18 +23,14 @@ from main import app
 
 
 class TestGradeASecurityVulnerabilities:
-    """Grade A Security Tests - No compromises, no shortcuts.
-    Every test is designed to find real vulnerabilities.
-    """
+    """Grade A Security Tests - No compromises, no shortcuts."""
 
     @pytest.fixture
     def client(self):
         return TestClient(app)
 
     def test_api_key_leakage_in_all_scenarios(self, client):
-        """BUG HUNT: API keys should NEVER appear in responses, logs, or errors.
-        Tests every possible way an API key could leak.
-        """
+        """BUG HUNT: API keys should NEVER appear in responses, logs, or errors."""
         api_key = "sk-secret-key-12345-do-not-leak"
         test_cases = [
             # Normal request
@@ -74,8 +71,7 @@ class TestGradeASecurityVulnerabilities:
                 pass
 
     def test_sql_injection_advanced(self, client):
-        """BUG HUNT: Advanced SQL injection attempts that might bypass basic filters.
-        """
+        """BUG HUNT: Advanced SQL injection attempts that might bypass basic filters."""
         sql_payloads = [
             # Classic injections
             "'; DROP TABLE users; --",
@@ -132,8 +128,7 @@ class TestGradeASecurityVulnerabilities:
                     ), f"Database info leaked for payload: {payload}"
 
     def test_xss_advanced_vectors(self, client):
-        """BUG HUNT: Advanced XSS vectors that might bypass sanitization.
-        """
+        """BUG HUNT: Advanced XSS vectors that might bypass sanitization."""
         xss_payloads = [
             # Basic XSS
             "<script>alert('XSS')</script>",
@@ -193,8 +188,7 @@ class TestGradeASecurityVulnerabilities:
                     ), f"Dangerous pattern '{pattern}' found in response"
 
     def test_command_injection_comprehensive(self, client):
-        """BUG HUNT: Command injection through all possible vectors.
-        """
+        """BUG HUNT: Command injection through all possible vectors."""
         cmd_payloads = [
             # Basic command injection
             "test; cat /etc/passwd",
@@ -254,8 +248,7 @@ class TestGradeASecurityVulnerabilities:
                     ), f"Command execution indicator '{indicator}' found"
 
     def test_path_traversal_advanced(self, client):
-        """BUG HUNT: Path traversal attacks through various encoding methods.
-        """
+        """BUG HUNT: Path traversal attacks through various encoding methods."""
         traversal_payloads = [
             # Basic traversal
             "../../../etc/passwd",
@@ -307,8 +300,7 @@ class TestGradeASecurityVulnerabilities:
                         assert indicator not in response_text
 
     def test_xxe_injection(self, client):
-        """BUG HUNT: XML External Entity injection attempts.
-        """
+        """BUG HUNT: XML External Entity injection attempts."""
         xxe_payloads = [
             # Basic XXE
             '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><test>&xxe;</test>',
@@ -335,8 +327,7 @@ class TestGradeASecurityVulnerabilities:
                 assert "/etc/passwd" not in response_text
 
     def test_prototype_pollution(self, client):
-        """BUG HUNT: Prototype pollution attacks (relevant if JSON parsing is unsafe).
-        """
+        """BUG HUNT: Prototype pollution attacks (relevant if JSON parsing is unsafe)."""
         pollution_payloads = [
             {"text": "test", "__proto__": {"isAdmin": True}},
             {"text": "test", "constructor": {"prototype": {"isAdmin": True}}},
@@ -362,9 +353,7 @@ class TestGradeASecurityVulnerabilities:
                 assert "isAdmin" not in str(data)
 
     def test_race_condition_circuit_breaker(self, client):
-        """BUG HUNT: Race conditions in circuit breaker implementation.
-        BUG-072 CONFIRMED: Circuit breaker has race condition issues.
-        """
+        """BUG HUNT: Race conditions in circuit breaker implementation."""
         from llm_providers import circuit_breakers, get_circuit_breaker
 
         # Clear existing breakers
@@ -394,8 +383,7 @@ class TestGradeASecurityVulnerabilities:
         ), f"Race condition detected: {len(unique_ids)} different breaker instances created"
 
     def test_memory_exhaustion_attack(self, client):
-        """BUG HUNT: Memory exhaustion through large payloads.
-        """
+        """BUG HUNT: Memory exhaustion through large payloads."""
         # Try increasingly large payloads
         sizes = [1_000, 10_000, 100_000, 1_000_000, 10_000_000]
 
@@ -418,8 +406,7 @@ class TestGradeASecurityVulnerabilities:
                 assert "timeout" in str(e).lower() or "too large" in str(e).lower()
 
     def test_timing_attack_on_api_keys(self, client):
-        """BUG HUNT: Timing attacks to determine valid API key patterns.
-        """
+        """BUG HUNT: Timing attacks to determine valid API key patterns."""
         import time
 
         # Test various API key patterns
@@ -451,8 +438,7 @@ class TestGradeASecurityVulnerabilities:
         assert max_diff < 0.01, f"Timing attack possible: {max_diff*1000:.2f}ms difference detected"
 
     def test_integer_overflow(self, client):
-        """BUG HUNT: Integer overflow in token counting or limits.
-        """
+        """BUG HUNT: Integer overflow in token counting or limits."""
         overflow_values = [
             2**31 - 1,  # Max 32-bit signed
             2**31,  # Overflow 32-bit signed

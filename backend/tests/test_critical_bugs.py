@@ -1,4 +1,5 @@
-"""Grade A Regression Tests for Critical Bugs
+"""Grade A Regression Tests for Critical Bugs.
+
 These tests ensure critical bugs never regress and use strong assertions with real-world scenarios.
 """
 
@@ -24,11 +25,7 @@ class TestCriticalBugs:
         return TestClient(app)
 
     def test_bug081_desktop_app_react_flow_missing(self, client):
-        """BUG-081: Desktop App Missing React Flow Instance (CRITICAL)
-        
-        This bug caused 30+ MVP tests to fail because React Flow wasn't properly initialized.
-        Test ensures the core workflow functionality is available.
-        """
+        """BUG-081: Desktop App Missing React Flow Instance (CRITICAL)."""
         # This is a frontend bug, but we can test the backend API endpoints
         # that the React Flow would interact with
         
@@ -51,11 +48,7 @@ class TestCriticalBugs:
             assert isinstance(data["responses"], list), "Responses must be a list"
 
     def test_bug082_drag_drop_completely_broken(self, client):
-        """BUG-082: Drag and Drop Completely Broken (CRITICAL)
-        
-        This bug prevented users from adding nodes to workflows.
-        Test ensures the backend can handle workflow node creation via API.
-        """
+        """BUG-082: Drag and Drop Completely Broken (CRITICAL)."""
         # Test workflow creation via API (alternative to drag/drop)
         workflow_data = {
             "nodes": [
@@ -85,11 +78,7 @@ class TestCriticalBugs:
         assert response.status_code in [200, 422], "Workflow execution should be accessible"
 
     def test_bug086_api_key_exposed_in_error_messages(self, client):
-        """BUG-086: API Key Exposed in Error Messages (CRITICAL)
-        
-        This security vulnerability exposed full API keys in error responses.
-        Test ensures API keys are properly sanitized.
-        """
+        """BUG-086: API Key Exposed in Error Messages (CRITICAL)."""
         test_api_key = "sk-test1234567890abcdefghijklmnopqrstuvwxyz"
         
         # Test with invalid API key
@@ -114,11 +103,7 @@ class TestCriticalBugs:
                 assert test_api_key[10:] not in response_text, "Should not show full key"
 
     def test_bug108_data_leakage_between_concurrent_requests(self, client):
-        """BUG-108: Data Leakage Between Concurrent Requests (CRITICAL)
-        
-        This privacy vulnerability could expose user data between requests.
-        Test ensures complete request isolation.
-        """
+        """BUG-108: Data Leakage Between Concurrent Requests (CRITICAL)."""
         @pytest.mark.asyncio
         async def test_concurrent_isolation():
             # Create two different requests with different data
@@ -169,11 +154,7 @@ class TestCriticalBugs:
         asyncio.run(test_concurrent_isolation())
 
     def test_bug075_circuit_breaker_doesnt_open_after_failures(self, client):
-        """BUG-075: Circuit Breaker Doesn't Open After Failures (HIGH)
-        
-        This reliability issue could cause cascading failures.
-        Test ensures circuit breaker opens after consecutive failures.
-        """
+        """BUG-075: Circuit Breaker Doesn't Open After Failures (HIGH)."""
         # Clear existing circuit breakers
         for provider in circuit_breakers:
             circuit_breakers[provider].clear()
@@ -198,11 +179,7 @@ class TestCriticalBugs:
         assert failure_count >= 5, "Should have at least 5 failures"
 
     def test_bug087_rate_limiting_too_aggressive(self, client):
-        """BUG-087: Rate Limiting Too Aggressive (HIGH)
-        
-        This issue blocked normal usage with 429 errors.
-        Test ensures rate limiting allows reasonable usage.
-        """
+        """BUG-087: Rate Limiting Too Aggressive (HIGH)."""
         # Make a reasonable number of requests (should not trigger rate limit)
         responses = []
         for i in range(10):  # 10 requests should be reasonable
@@ -220,11 +197,7 @@ class TestCriticalBugs:
         assert rate_limited_count < 5, "Rate limiting should not be too aggressive"
 
     def test_bug088_no_payload_size_validation(self, client):
-        """BUG-088: No Payload Size Validation (HIGH)
-        
-        This DoS vulnerability allowed 10MB+ payloads.
-        Test ensures request size limits are enforced.
-        """
+        """BUG-088: No Payload Size Validation (HIGH)."""
         # Create a large payload (should be rejected)
         large_text = "x" * (2 * 1024 * 1024)  # 2MB text
         
@@ -248,11 +221,7 @@ class TestCriticalBugs:
         assert response.status_code in [200, 422], "Reasonable size payload should be accepted"
 
     def test_bug102_race_condition_circuit_breaker(self, client):
-        """BUG-102: Race Condition in Circuit Breaker Implementation (HIGH)
-        
-        This concurrency issue could create multiple circuit breaker instances.
-        Test ensures thread-safe circuit breaker creation.
-        """
+        """BUG-102: Race Condition in Circuit Breaker Implementation (HIGH)."""
         import threading
         
         # Clear existing circuit breakers
@@ -282,11 +251,7 @@ class TestCriticalBugs:
         assert len(breakers) == 10, "Should have created 10 breaker references"
 
     def test_bug103_consensus_analysis_false_agreement(self, client):
-        """BUG-103: Consensus Analysis Shows False Agreement (HIGH)
-        
-        This logic error showed consensus for conflicting responses.
-        Test ensures proper conflict detection.
-        """
+        """BUG-103: Consensus Analysis Shows False Agreement (HIGH)."""
         # Mock responses that clearly conflict
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai, \
              patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
@@ -326,11 +291,7 @@ class TestCriticalBugs:
                     assert consensus_data["has_conflict"] is True, "Conflicting responses should indicate conflict"
 
     def test_bug105_missing_input_size_validation(self, client):
-        """BUG-105: Missing Input Size Validation (HIGH)
-        
-        This DoS vulnerability allowed extremely large inputs.
-        Test ensures input size limits are enforced.
-        """
+        """BUG-105: Missing Input Size Validation (HIGH)."""
         # Test with extremely large input
         huge_text = "x" * (10 * 1024 * 1024)  # 10MB text
         
@@ -354,11 +315,7 @@ class TestCriticalBugs:
         assert response.status_code in [200, 422], "Reasonable input should be accepted"
 
     def test_bug109_rate_limiting_can_be_bypassed(self, client):
-        """BUG-109: Rate Limiting Can Be Bypassed (HIGH)
-        
-        This security issue allowed rate limit bypass via header manipulation.
-        Test ensures proper client identification.
-        """
+        """BUG-109: Rate Limiting Can Be Bypassed (HIGH)."""
         # Test rate limiting with different headers
         headers_variations = [
             {"X-Forwarded-For": "192.168.1.1"},
@@ -385,11 +342,7 @@ class TestCriticalBugs:
         assert rate_limited_count in [0, len(responses)], "Rate limiting should be consistent across header variations"
 
     def test_bug110_memory_leak_under_parallel_load(self, client):
-        """BUG-110: Memory Leak Under Parallel Load (HIGH)
-        
-        This performance issue caused memory exhaustion.
-        Test ensures proper resource cleanup.
-        """
+        """BUG-110: Memory Leak Under Parallel Load (HIGH)."""
         import psutil
         import os
         
@@ -428,11 +381,7 @@ class TestCriticalBugs:
         assert memory_increase_mb < 50, f"Memory increase should be < 50MB, got {memory_increase_mb:.2f}MB"
 
     def test_bug104_token_counting_fails_complex_unicode(self, client):
-        """BUG-104: Token Counting Fails for Complex Unicode (MEDIUM)
-        
-        This billing issue caused token count discrepancies.
-        Test ensures accurate token counting for Unicode.
-        """
+        """BUG-104: Token Counting Fails for Complex Unicode (MEDIUM)."""
         from token_utils import estimate_tokens
         
         # Test cases with complex Unicode
@@ -453,11 +402,7 @@ class TestCriticalBugs:
             assert tokens <= char_count * 2, f"Token count should not be excessive for '{text}'"
 
     def test_bug106_integer_overflow_token_limits(self, client):
-        """BUG-106: Integer Overflow in Token Limits (MEDIUM)
-        
-        This validation issue allowed extreme token values.
-        Test ensures proper bounds checking.
-        """
+        """BUG-106: Integer Overflow in Token Limits (MEDIUM)."""
         # Test with extreme token values
         extreme_values = [
             2**63 - 1,  # Max 64-bit signed integer
@@ -476,11 +421,7 @@ class TestCriticalBugs:
             assert response.status_code in [200, 422, 400], f"Should handle max_tokens={max_tokens} gracefully"
 
     def test_bug107_unicode_normalization_security_issue(self, client):
-        """BUG-107: Unicode Normalization Security Issue (MEDIUM)
-        
-        This security issue allowed homograph attacks.
-        Test ensures Unicode normalization.
-        """
+        """BUG-107: Unicode Normalization Security Issue (MEDIUM)."""
         # Test cases with different Unicode representations
         test_cases = [
             ("admin", "аdmin"),  # Latin 'a' vs Cyrillic 'а'

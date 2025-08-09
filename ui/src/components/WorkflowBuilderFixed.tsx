@@ -16,6 +16,7 @@ import ReactFlow, {
   ConnectionMode,
   BackgroundVariant,
   Node,
+  Edge,
   useStore,
   ReactFlowState
 } from 'reactflow'
@@ -76,7 +77,8 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
     onEdgesChange,
     onConnect,
     addNode,
-    selectNode
+    selectNode,
+    removeEdge
   } = useWorkflowStore()
 
   // Initialize React Flow
@@ -185,6 +187,37 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     selectNode(node.id)
   }, [selectNode])
+  
+  // Edge click handler for selection
+  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    // Edge will be selected by React Flow automatically
+    event.stopPropagation()
+  }, [])
+  
+  // Keyboard shortcuts for edge deletion
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Delete key or Backspace for edge deletion
+      if ((event.key === 'Delete' || event.key === 'Backspace') && !event.metaKey && !event.ctrlKey) {
+        // Check if any edges are selected
+        const selectedEdges = edges.filter((edge: any) => edge.selected)
+        
+        if (selectedEdges.length > 0) {
+          event.preventDefault()
+          // Delete all selected edges
+          selectedEdges.forEach(edge => {
+            console.log('Deleting edge:', edge.id)
+            removeEdge(edge.id)
+          })
+        }
+      }
+    }
+    
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [edges, removeEdge])
 
   // Pane click handler
   const onPaneClick = useCallback(() => {
@@ -219,7 +252,13 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
+          onEdgeClick={onEdgeClick}
           onPaneClick={onPaneClick}
+          deleteKeyCode={['Delete', 'Backspace']}
+          edgesFocusable={true}
+          edgesUpdatable={true}
+          elementsSelectable={true}
+          selectNodesOnDrag={false}
           nodeTypes={nodeTypes}
           connectionMode={ConnectionMode.Loose}
           connectionLineStyle={connectionLineStyle}
@@ -231,8 +270,6 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
           attributionPosition="bottom-left"
           proOptions={{ hideAttribution: true }}
           className="workflow-flow"
-          deleteKeyCode={['Backspace', 'Delete']}
-          selectNodesOnDrag={false}
           zoomOnDoubleClick={false}
           preventScrolling={false}
         >

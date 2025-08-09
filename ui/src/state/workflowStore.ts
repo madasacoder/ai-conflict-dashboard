@@ -180,6 +180,68 @@ const generateId = (): string => {
   return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
+// Debounce helper
+export const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): ((...args: Parameters<T>) => void) => {
+  let timeoutId: NodeJS.Timeout | null = null
+  let lastArgs: Parameters<T> | null = null
+  
+  return (...args: Parameters<T>) => {
+    lastArgs = args
+    
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+    
+    timeoutId = setTimeout(() => {
+      if (lastArgs) {
+        func(...lastArgs)
+      }
+      timeoutId = null
+      lastArgs = null
+    }, delay)
+  }
+}
+
+// Node creation queue to prevent race conditions
+class NodeCreationQueue {
+  private queue: Array<() => void> = []
+  private processing = false
+  
+  async add(operation: () => void): Promise<void> {
+    return new Promise((resolve) => {
+      this.queue.push(() => {
+        operation()
+        resolve()
+      })
+      this.process()
+    })
+  }
+  
+  private async process() {
+    if (this.processing || this.queue.length === 0) {
+      return
+    }
+    
+    this.processing = true
+    
+    while (this.queue.length > 0) {
+      const operation = this.queue.shift()
+      if (operation) {
+        operation()
+        // Small delay between operations to prevent race conditions
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+    }
+    
+    this.processing = false
+  }
+}
+
+const nodeCreationQueue = new NodeCreationQueue()
+
 // Default node data generators
 const createDefaultNodeData = (type: NodeType, label: string): CustomNodeData => {
   const base: BaseNodeData = {
@@ -337,100 +399,102 @@ export const useWorkflowStore = create<WorkflowState>()(
       })
     },
     
-    // Node management
-    addNode: (type: NodeType, position: { x: number; y: number }) => {
-      try {
-        console.log('addNode called with:', { type, position })
-        
-        // Validate inputs
-        if (!type || typeof type !== 'string') {
-          console.error('addNode: Invalid node type provided:', type)
-          return
-        }
-        
-        if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
-          console.error('addNode: Invalid position provided:', position)
-          return
-        }
-        
-        // Validate position coordinates
-        if (isNaN(position.x) || isNaN(position.y)) {
-          console.error('addNode: Position contains NaN values:', position)
-          return
-        }
-        
-        const newNode: CustomNode = {
-          id: generateId(),
-          type,
-          position,
-          selected: true,  // Mark as selected for React Flow
-          data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
-        }
-        
-        console.log('Created newNode:', newNode)
-        
-        // Deselect all existing nodes first
-        set(state => ({
-          nodes: state.nodes.map(node => ({
-            ...node,
-            selected: false
-          }))
-        }))
-        
-        // Add the new node with selection
-        set(state => ({
-          nodes: [...state.nodes, newNode],
-          selectedNode: newNode,
-          isConfigPanelOpen: true
-        }))
-        
-        // Update other state that doesn't go through React Flow
-        set(state => {
-          try {
-            // Auto-create default workflow if none exists
-            let currentWorkflow = state.workflow
-            if (!currentWorkflow) {
-              currentWorkflow = {
-                id: generateId(),
-                name: 'Untitled Workflow',
-                description: 'Auto-created workflow',
-                icon: '🔄',
-                color: '#3498db',
-                tags: [],
-                created: new Date(),
-                modified: new Date(),
-                isTemplate: false
-              }
-            }
-            
-            // Save workflow with nodes
-            if (currentWorkflow) {
-              try {
-                WorkflowStorage.saveWorkflow(currentWorkflow, [...state.nodes, newNode], state.edges)
-              } catch (error) {
-                console.error('addNode: Failed to save workflow:', error)
-              }
-            }
-            
-            return {
-              workflow: currentWorkflow,
-              selectedNode: newNode,
-              isConfigPanelOpen: true
-            }
-          } catch (error) {
-            console.error('addNode: Failed to update workflow state:', error)
-            return {
-              selectedNode: newNode,
-              isConfigPanelOpen: true
-            }
+    // Node management - with queue to prevent race conditions
+    addNode: async (type: NodeType, position: { x: number; y: number }) => {
+      await nodeCreationQueue.add(() => {
+        try {
+          console.log('addNode called with:', { type, position })
+          
+          // Validate inputs
+          if (!type || typeof type !== 'string') {
+            console.error('addNode: Invalid node type provided:', type)
+            return
           }
-        })
-        
-        console.log('addNode: Successfully created node:', newNode.id)
-      } catch (error) {
-        console.error('addNode: Unexpected error:', error)
-        // Don't throw - we want to handle errors gracefully
-      }
+          
+          if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
+            console.error('addNode: Invalid position provided:', position)
+            return
+          }
+          
+          // Validate position coordinates
+          if (isNaN(position.x) || isNaN(position.y)) {
+            console.error('addNode: Position contains NaN values:', position)
+            return
+          }
+          
+          const newNode: CustomNode = {
+            id: generateId(),
+            type,
+            position,
+            selected: true,  // Mark as selected for React Flow
+            data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
+          }
+          
+          console.log('Created newNode:', newNode)
+          
+          // Deselect all existing nodes first
+          set(state => ({
+            nodes: state.nodes.map(node => ({
+              ...node,
+              selected: false
+            }))
+          }))
+          
+          // Add the new node with selection
+          set(state => ({
+            nodes: [...state.nodes, newNode],
+            selectedNode: newNode,
+            isConfigPanelOpen: true
+          }))
+          
+          // Update other state that doesn't go through React Flow
+          set(state => {
+            try {
+              // Auto-create default workflow if none exists
+              let currentWorkflow = state.workflow
+              if (!currentWorkflow) {
+                currentWorkflow = {
+                  id: generateId(),
+                  name: 'Untitled Workflow',
+                  description: 'Auto-created workflow',
+                  icon: '🔄',
+                  color: '#3498db',
+                  tags: [],
+                  created: new Date(),
+                  modified: new Date(),
+                  isTemplate: false
+                }
+              }
+              
+              // Save workflow with nodes
+              if (currentWorkflow) {
+                try {
+                  WorkflowStorage.saveWorkflow(currentWorkflow, [...state.nodes, newNode], state.edges)
+                } catch (error) {
+                  console.error('addNode: Failed to save workflow:', error)
+                }
+              }
+              
+              return {
+                workflow: currentWorkflow,
+                selectedNode: newNode,
+                isConfigPanelOpen: true
+              }
+            } catch (error) {
+              console.error('addNode: Failed to update workflow state:', error)
+              return {
+                selectedNode: newNode,
+                isConfigPanelOpen: true
+              }
+            }
+          })
+          
+          console.log('addNode: Successfully created node:', newNode.id)
+        } catch (error) {
+          console.error('addNode: Unexpected error:', error)
+          // Don't throw - we want to handle errors gracefully
+        }
+      })
     },
     
     updateNodeData: ((nodeId: string, arg2: any, arg3?: any) => {
@@ -723,7 +787,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         if (result.status === 'success') {
           toast.success('Workflow executed successfully!')
         } else if (result.status === 'partial') {
-          toast.warning('Workflow completed with some errors')
+          toast((t) => 'Workflow completed with some errors')
         } else {
           toast.error('Workflow execution failed')
         }
@@ -737,7 +801,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           execution: {
             workflowId: state.workflow?.id || 'unknown',
             status: 'failed',
-            results: {},
+            results: [],
             startTime: new Date(),
             endTime: new Date(),
             errors: [error instanceof Error ? error.message : 'Unknown error']

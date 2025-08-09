@@ -53,16 +53,16 @@ describe('Workflow Store', () => {
         result.current.addNode('llm', { x: 100, y: 100 })
       })
 
-      const nodeId = result.current.nodes[0].id
+      const nodeId = result.current.nodes[0]!.id
       
       // Check initial state
-      expect(result.current.nodes[0].data.prompt).toEqual('Analyze the following text:\n\n{input}')
+      expect(result.current.nodes[0]!.data['prompt']).toEqual('Analyze the following text:\n\n{input}')
 
       act(() => {
         result.current.updateNodeData(nodeId, 'prompt', 'New prompt')
       })
 
-      expect(result.current.nodes[0].data.prompt).toEqual('New prompt')
+      expect(result.current.nodes[0]!.data['prompt']).toEqual('New prompt')
     })
 
     it('should handle node selection', () => {
@@ -72,8 +72,8 @@ describe('Workflow Store', () => {
         result.current.addNode('input', { x: 100, y: 100 })
       })
 
-      const nodeId = result.current.nodes[0].id
-      const node = result.current.nodes[0]
+      const nodeId = result.current.nodes[0]!.id
+      const node = result.current.nodes[0]!
 
       act(() => {
         result.current.selectNode(nodeId)
@@ -108,7 +108,7 @@ describe('Workflow Store', () => {
         result.current.onNodesChange(changes)
       })
 
-      expect(result.current.nodes[0].position).toEqual({ x: 200, y: 300 })
+      expect(result.current.nodes[0]!.position).toEqual({ x: 200, y: 300 })
     })
   })
 

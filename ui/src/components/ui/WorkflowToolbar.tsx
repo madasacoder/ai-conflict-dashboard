@@ -124,7 +124,7 @@ export const WorkflowToolbar: React.FC = () => {
             className="toolbar-btn primary"
             data-testid="execute-workflow"
             onClick={handleExecuteClick}
-            disabled={!workflow}
+            disabled={false}
             aria-label={isExecuting ? 'Stop workflow execution' : 'Execute workflow'}
           >
             {isExecuting ? <Pause size={16} /> : <Play size={16} />}

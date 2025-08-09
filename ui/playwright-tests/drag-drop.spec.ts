@@ -15,7 +15,10 @@ test.describe('Drag and Drop Fix Tests', () => {
     await expect(launchButton).toBeEnabled({ timeout: 10000 })
     await launchButton.click()
     
-    await page.waitForSelector('.workflow-builder', { timeout: 5000 })
+    await page.waitForSelector('[data-testid="workflow-builder"]', { timeout: 5000 })
+    
+    // Wait for palette to be visible
+    await page.waitForSelector('.node-palette', { timeout: 5000 })
   })
 
   test.describe('Understanding the Drag Drop Problem', () => {
@@ -43,7 +46,7 @@ test.describe('Drag and Drop Fix Tests', () => {
 
     test('should receive correct data on drop', async ({ page }) => {
       // Drag LLM node to canvas
-      const llmNode = page.locator('.palette-node:has-text("LLM")').first()
+      const llmNode = page.locator('.palette-node:has-text("AI Analysis")').first()
       await expect(llmNode).toBeVisible()
       
       const canvas = page.locator('.workflow-canvas')
@@ -52,7 +55,7 @@ test.describe('Drag and Drop Fix Tests', () => {
       })
       
       // Verify LLM node was created
-      const createdNode = page.locator('[data-testid^="rf__node-"]:has-text("LLM")')
+      const createdNode = page.locator('[data-testid^="rf__node-"]:has-text("AI Analysis")')
       await expect(createdNode).toBeVisible({ timeout: 5000 })
       
       // Verify it has the correct type
@@ -109,7 +112,7 @@ test.describe('Drag and Drop Fix Tests', () => {
       }
       
       // Add another node - position should be adjusted for zoom
-      const llmNode = page.locator('.palette-node:has-text("LLM")').first()
+      const llmNode = page.locator('.palette-node:has-text("AI Analysis")').first()
       await llmNode.dragTo(canvas, {
         targetPosition: { x: 400, y: 200 }
       })
@@ -240,7 +243,7 @@ test.describe('Drag and Drop Fix Tests', () => {
       await expect(firstNode).toHaveClass(/selected/)
       
       // Drop second node
-      const llmNode = page.locator('.palette-node:has-text("LLM")').first()
+      const llmNode = page.locator('.palette-node:has-text("AI Analysis")').first()
       await llmNode.dragTo(canvas, {
         targetPosition: { x: 400, y: 200 }
       })

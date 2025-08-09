@@ -16,50 +16,34 @@ This guide covers our comprehensive frontend testing strategy using modern tools
 
 ---
 
-## 🚀 **Quick Start**
+## 🚀 **Quick Start (UI)**
 
 ### **Install Dependencies**
 ```bash
-cd frontend
-npm install
+cd ui
+npm ci --no-audit --no-fund
 ```
 
 ### **Run Tests**
 ```bash
-# Unit tests
-npm test
+# Type check (currently failing; fix TS to enable unit/integration tests)
+npm run type-check
 
-# Unit tests with UI
-npm run test:ui
-
-# Coverage report
-npm run test:coverage
-
-# E2E tests
-npm run test:e2e
+# E2E tests (real browser)
+npx playwright install --with-deps
+npx playwright test --reporter=line
 ```
 
 ---
 
-## 🏗️ **Project Structure**
+## 🏗️ **Project Structure (current)**
 
 ```
-frontend/
-├── tests/
-│   ├── setup.ts                    # Global test setup
-│   ├── components/                 # Component tests
-│   │   └── WorkflowBuilder.test.js
-│   ├── utils/                      # Utility tests
-│   │   └── logger.test.js
-│   ├── global-setup.js             # Playwright global setup
-│   └── global-teardown.js          # Playwright global teardown
-├── e2e/
-│   ├── workflow-builder-comprehensive.spec.js
-│   ├── api-integration.spec.js
-│   └── basic-flow.spec.js
-├── vitest.config.ts                # Vitest configuration
-├── playwright.config.js            # Playwright configuration
-└── package.json                    # Dependencies & scripts
+ui/
+├── src/__tests__/                  # Vitest (blocked by TS errors)
+├── playwright-tests/               # Playwright E2E suites
+├── playwright.config.ts            # Playwright config (Chromium, dev server)
+└── package.json
 ```
 
 ---
@@ -89,24 +73,17 @@ export default defineConfig({
 });
 ```
 
-### **Playwright Configuration**
-```javascript
-// playwright.config.js
+### **Playwright Configuration (current)**
+```ts
+// ui/playwright.config.ts
+import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
-  testDir: './e2e',
-  timeout: 30000,
-  projects: [
-    { name: 'chromium' },           // Desktop Chrome
-    { name: 'firefox' },            // Desktop Firefox  
-    { name: 'webkit' },             // Desktop Safari
-    { name: 'Mobile Chrome' },      // Mobile testing
-    { name: 'Mobile Safari' }       // iOS testing
-  ],
-  webServer: [
-    { command: 'python3 -m http.server 8080', port: 8080 },
-    { command: 'uvicorn main:app --port 8000', port: 8000 }
-  ]
-});
+  testDir: './playwright-tests',
+  reporter: 'html',
+  use: { baseURL: 'http://localhost:3001', trace: 'on-first-retry' },
+  projects: [{ name: 'chromium', use: devices['Desktop Chrome'] }],
+  webServer: { command: 'npm run dev', port: 3001, reuseExistingServer: true, timeout: 30000 },
+})
 ```
 
 ---
@@ -151,15 +128,18 @@ describe('WorkflowBuilder', () => {
 });
 ```
 
-### **E2E Test Example**
+### **E2E Test Example (current selectors)**
 ```javascript
-// e2e/workflow-builder-comprehensive.spec.js
+// ui/playwright-tests/workflow.spec.ts
 import { test, expect } from '@playwright/test';
 
 test.describe('Workflow Builder E2E', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/workflow-builder.html');
-    await page.waitForSelector('#drawflow', { state: 'visible' });
+    await page.goto('/');
+    const launch = page.locator('button:has-text("Launch Workflow Builder")');
+    await expect(launch).toBeEnabled();
+    await launch.click();
+    await page.waitForSelector('[data-testid="workflow-builder"]');
   });
   
   test('should create workflow via drag and drop', async ({ page }) => {
@@ -373,7 +353,7 @@ test('should maintain visual consistency', async ({ page }) => {
 
 ---
 
-**Last Updated**: 2025-08-03  
-**Status**: Production Ready  
-**Coverage Target**: 85%+ (Per CLAUDE.md)  
+**Last Updated**: 2025-08-09  
+**Status**: In progress; E2E running with failures  
+**Coverage Target**: 85%+ (UI), Backend ~51% current  
 **Maintainer**: AI Conflict Dashboard Team

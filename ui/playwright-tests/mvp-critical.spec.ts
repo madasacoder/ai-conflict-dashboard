@@ -19,7 +19,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Step 2: Create new workflow
       const workflowButton = page.locator('button:has-text("Workflow")')
@@ -103,7 +103,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Try to execute without proper setup
       const executeButton = page.locator('button:has-text("Execute")')
@@ -123,7 +123,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Try to run empty workflow
       const executeButton = page.locator('button:has-text("Execute")')
@@ -146,7 +146,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Create a workflow with nodes
       const canvas = page.locator('.workflow-canvas')
@@ -178,7 +178,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButtonAfter).toBeEnabled({ timeout: 10000 })
       await launchButtonAfter.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Check if nodes are restored
       const nodesAfter = await page.locator('[data-testid^="rf__node-"]').count()
@@ -196,7 +196,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Check if palette is accessible (might be in hamburger menu)
       const paletteToggle = page.locator('button[aria-label*="palette"], button[aria-label*="menu"]').first()
@@ -216,7 +216,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Add input node
       const canvas = page.locator('.workflow-canvas')
@@ -257,7 +257,7 @@ test.describe('CRITICAL: MVP Must-Have Features', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Create a simple workflow
       const canvas = page.locator('.workflow-canvas')

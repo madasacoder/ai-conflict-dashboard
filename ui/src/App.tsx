@@ -37,7 +37,7 @@ function App(): JSX.Element {
           <div 
             id="workflow-builder" 
             data-testid="workflow-builder" 
-            className="workflow-builder"
+            className="workflow-builder-container"
             style={{ height: '80vh', border: '1px solid #ddd', borderRadius: '8px' }}
           >
             <WorkflowBuilderFixed />

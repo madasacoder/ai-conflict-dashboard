@@ -199,7 +199,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
   }, [nodes.length, reactFlowInstance])
 
   return (
-    <div className={`workflow-builder ${className || ''} ${currentTheme}`}>
+    <div className={`workflow-builder-inner ${className || ''} ${currentTheme}`} style={{ height: '100%', width: '100%' }}>
       {/* Main Canvas with proper drop zone */}
       <div 
         className={`workflow-canvas ${isValidDrop ? 'valid-drop' : ''}`}

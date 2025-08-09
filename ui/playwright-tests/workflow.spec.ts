@@ -22,7 +22,7 @@ test.describe('Workflow Builder E2E', () => {
     await launchButton.click()
     
     // Wait for workflow builder to load
-    await page.waitForSelector('.workflow-builder', { timeout: 5000 })
+    await page.waitForSelector('[data-testid="workflow-builder"]', { timeout: 5000 })
   })
 
   test('should create a simple workflow with drag and drop', async ({ page }) => {
@@ -109,14 +109,14 @@ test.describe('Workflow Builder E2E', () => {
     const themeToggle = page.locator('button[aria-label*="theme"]')
     
     // Check initial state
-    const initialTheme = await page.locator('.workflow-builder').getAttribute('class')
+    const initialTheme = await page.locator('[data-testid="workflow-builder"]').getAttribute('class')
     
     // Toggle theme
     await themeToggle.click()
     
     // Check theme changed
     await page.waitForTimeout(100)
-    const newTheme = await page.locator('.workflow-builder').getAttribute('class')
+    const newTheme = await page.locator('[data-testid="workflow-builder"]').getAttribute('class')
     expect(newTheme).not.toBe(initialTheme)
   })
 

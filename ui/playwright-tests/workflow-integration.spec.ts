@@ -14,7 +14,7 @@ test.describe('WorkflowBuilder Integration', () => {
     await expect(launchButton).toBeEnabled({ timeout: 10000 })
     await launchButton.click()
     
-    await page.waitForSelector('.workflow-builder')
+    await page.waitForSelector('[data-testid="workflow-builder"]')
   })
 
   test.describe('Complete Workflow Creation', () => {
@@ -158,7 +158,7 @@ test.describe('WorkflowBuilder Integration', () => {
       await expect(launchButton).toBeEnabled({ timeout: 10000 })
       await launchButton.click()
       
-      await page.waitForSelector('.workflow-builder')
+      await page.waitForSelector('[data-testid="workflow-builder"]')
       
       // Check if workflow loaded
       const nodes = page.locator('[data-testid^="rf__node-"]')
@@ -245,7 +245,7 @@ test.describe('WorkflowBuilder Integration', () => {
       }
       
       // Should not crash
-      await expect(page.locator('.workflow-builder')).toBeVisible()
+      await expect(page.locator('[data-testid="workflow-builder"]')).toBeVisible()
     })
 
     test('should show error for invalid API keys', async ({ page }) => {

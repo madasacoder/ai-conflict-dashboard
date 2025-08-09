@@ -14,7 +14,7 @@ test.describe('Edge Cases and Boundary Conditions', () => {
     await expect(launchButton).toBeEnabled({ timeout: 10000 })
     await launchButton.click()
     
-    await page.waitForSelector('.workflow-builder')
+    await page.waitForSelector('[data-testid="workflow-builder"]')
   })
 
   test.describe('Large Workflows', () => {
@@ -101,7 +101,7 @@ test.describe('Edge Cases and Boundary Conditions', () => {
         }
         
         // App should still work
-        await expect(page.locator('.workflow-builder')).toBeVisible()
+        await expect(page.locator('[data-testid="workflow-builder"]')).toBeVisible()
       }
     })
   })
@@ -184,7 +184,7 @@ test.describe('Edge Cases and Boundary Conditions', () => {
       await page.keyboard.press('Control+z')
       
       // Should not crash
-      await expect(page.locator('.workflow-builder')).toBeVisible()
+      await expect(page.locator('[data-testid="workflow-builder"]')).toBeVisible()
     })
 
     test('should handle redo when nothing to redo', async ({ page }) => {
@@ -192,7 +192,7 @@ test.describe('Edge Cases and Boundary Conditions', () => {
       await page.keyboard.press('Control+Shift+z')
       
       // Should not crash
-      await expect(page.locator('.workflow-builder')).toBeVisible()
+      await expect(page.locator('[data-testid="workflow-builder"]')).toBeVisible()
     })
   })
 

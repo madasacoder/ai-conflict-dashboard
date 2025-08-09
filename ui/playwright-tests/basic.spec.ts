@@ -16,7 +16,7 @@ test.describe('Basic E2E Tests', () => {
     await launchButton.click()
     
     // Look for workflow builder elements
-    const workflowContainer = page.locator('[data-testid="workflow-builder"], .workflow-builder, #workflow-builder')
+    const workflowContainer = page.locator('[data-testid="workflow-builder"], [data-testid="workflow-builder"], #workflow-builder')
     await expect(workflowContainer.first()).toBeVisible({ timeout: 10000 })
   })
 

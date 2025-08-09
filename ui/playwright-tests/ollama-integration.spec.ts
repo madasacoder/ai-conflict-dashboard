@@ -15,7 +15,7 @@ test.describe('Desktop Workflow Builder - Ollama Integration', () => {
     await expect(launchButton).toBeEnabled({ timeout: 10000 })
     await launchButton.click()
     
-    await page.waitForSelector('.workflow-builder')
+    await page.waitForSelector('[data-testid="workflow-builder"]')
   })
 
   test('should display Ollama models correctly in dropdown', async ({ page }) => {
@@ -142,7 +142,7 @@ test.describe('Desktop Workflow Builder - Ollama Integration', () => {
     }
     
     // App should not crash
-    await expect(page.locator('.workflow-builder')).toBeVisible()
+    await expect(page.locator('[data-testid="workflow-builder"]')).toBeVisible()
   })
 
   test('should refresh Ollama models list', async ({ page }) => {

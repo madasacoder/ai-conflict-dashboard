@@ -15,8 +15,8 @@ The AI Conflict Dashboard has a comprehensive testing strategy covering unit tes
   - API Integration Tests: 12 tests
 
 ### Frontend Tests (TypeScript/React)
-- **Unit/Integration**: Vitest (currently blocked by TypeScript errors)
-- **E2E**: Playwright (blocked until type-check passes)
+- **Unit/Integration (Vitest)**: currently blocked by TypeScript errors across many files
+- **E2E (Playwright)**: runs in real browser; latest run → 10 passed, 46 failed
 - **Coverage Target**: 85%
 
 ## Backend Testing
@@ -25,7 +25,7 @@ The AI Conflict Dashboard has a comprehensive testing strategy covering unit tes
 
 ```bash
 cd backend
-source venv/bin/activate
+source ../venv311/bin/activate
 
 # Run all tests
 pytest
@@ -88,59 +88,27 @@ Located in `backend/tests/`:
 
 ## Frontend Testing
 
-### Setting Up Frontend Tests
+### Setting Up Frontend Tests (UI)
 
 ```bash
 cd ui
-npm install
+npm ci --no-audit --no-fund
 
-# Type check
+# Type check (currently failing)
 npm run type-check
 
-# Run tests with UI
-npm run test:ui
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests (after type-check is green)
-npx playwright install
+# E2E in real browser
+npx playwright install --with-deps
 npx playwright test --reporter=line
 ```
 
 ### Test Structure
 
-#### Unit Tests (Vitest)
-Located in `frontend/tests/`:
-- `utils.test.js` - Utility function tests
-  - Character/token counting
-  - Text processing
-  - File handling
-  - Error handling
-  - Logger functionality
-
-- `api.test.js` - API integration tests
-  - Request/response handling
-  - Error scenarios
-  - Multi-provider support
-  - Request tracking
+#### Unit/Integration (Vitest)
+- Located in `ui/src/**/__tests__/` (blocked until TS errors are resolved)
 
 #### E2E Tests (Playwright)
-Located in `frontend/e2e/`:
-- `basic-flow.spec.js` - Basic UI interactions
-  - Page loading
-  - Settings toggle
-  - Model selection
-  - File upload
-  - Dark mode
-  - LocalStorage persistence
-
-- `api-integration.spec.js` - API integration flows
-  - Single/multi provider analysis
-  - Error handling
-  - Loading states
-  - History management
-  - Search functionality
+- Located in `ui/playwright-tests/`
 
 ### Frontend Test Configuration
 
@@ -160,12 +128,11 @@ Located in `frontend/e2e/`:
 }
 ```
 
-#### Playwright Configuration (`playwright.config.js`)
-- Tests against Chrome, Firefox, and Safari
-- Automatic server startup
-- Screenshots on failure
-- Video recording for failures
-- Trace collection
+#### Playwright Configuration (`ui/playwright.config.ts`)
+- Base URL: `http://localhost:3001`
+- Web server: `npm run dev` on port 3001 (reuses existing server)
+- Project: Chromium desktop
+- Trace: on first retry; Reporter: html
 
 ## Test Data and Fixtures
 
@@ -176,10 +143,8 @@ Located in `frontend/e2e/`:
 - Unicode test strings
 
 ### Frontend Test Fixtures
-- HTML element mocks
-- LocalStorage mock
-- File upload mocks
-- Network request mocks
+- Prefer E2E for drag-and-drop/React Flow interactions
+- Use MSW for network mocks in unit/integration (after TS is green)
 
 ## Continuous Integration
 
@@ -246,20 +211,20 @@ pytest --pdb
 
 ### Frontend Debugging
 ```bash
-# Run Vitest in watch mode
-npm test -- --watch
-
 # Debug Playwright tests
 npx playwright test --debug
 
-# Show Playwright browser
+# Headed mode
 npx playwright test --headed
+
+# Inspect a single spec
+npx playwright test playwright-tests/workflow.spec.ts --headed --debug
 ```
 
 ## Test Coverage Goals
 
 ### Current Coverage
-- Backend: 92.23% ✅
+- Backend: ~51%
 - Frontend: TBD (target 85%)
 
 ### Coverage Reports
@@ -289,24 +254,14 @@ npx playwright test --headed
 - Test rate limiting
 - Test CORS headers
 
+## Known E2E Issues (latest run)
+1. `.workflow-canvas` ends up with 0 height → drag timeouts (invisible target)
+2. Duplicate `.workflow-builder` selectors (outer and inner) → strict selector conflicts
+3. Execute button disabled when tests expect validation click
+4. Label mismatches (tests expect “Workflow”/“Create New”; UI uses icon dropdown/“New Workflow”)
+
 ## Future Testing Improvements
-
-1. **Performance Testing**
-   - Load testing with Locust
-   - Response time benchmarks
-   - Memory usage profiling
-
-2. **Security Testing**
-   - OWASP ZAP integration
-   - Dependency vulnerability scanning
-   - Input fuzzing
-
-3. **Visual Regression Testing**
-   - Percy or Chromatic integration
-   - Screenshot comparison
-   - Cross-browser visual tests
-
-4. **Contract Testing**
-   - OpenAPI schema validation
-   - Frontend/backend contract tests
-   - Provider API contract tests
+1. Performance testing (Locust), response time benchmarks, memory profiling
+2. Security testing (OWASP ZAP), dependency scanning, input fuzzing
+3. Visual regression (Percy/Chromatic) and cross-browser coverage
+4. Contract testing (OpenAPI validation, UI/backend contract tests)

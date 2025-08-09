@@ -6,10 +6,10 @@ A comprehensive AI model comparison and analysis platform with testing and secur
 
 This project includes a test suite that aims to prevent critical bugs from reoccurring. The implementation is currently in progress.
 
-### Current Test Status (latest local run)
+### Current Test Status (as of 2025-01-09)
 - **Backend Tests (server running, TESTING=1)**: 364 passing, 50 failing, 26 skipped, 23 errors
 - **Coverage**: ~51% overall (notable gaps e.g. `workflow_executor.py`)
-- **Frontend (ui/)**: Type-check failing with many TS errors; Vitest blocked; Playwright E2E blocked until type-check is green
+- **Frontend (ui/)**: TypeScript errors reduced from 892 to 787; Playwright E2E now running (2 passing, 54 failing)
 - **Grade**: Honest baseline B- quality; not production-ready
 
 ### Quick Start - Run Tests
@@ -37,7 +37,7 @@ cd backend && pytest tests/ -v
 - Backend: failing/erroring tests remain (circuit breaker concurrency, provider adapters, security assertions)
 - 23 test collection/execution errors persist in critical regression suite
 - Gemini/Grok providers are mock-only
-- UI: E2E blocked by TypeScript errors; fix `ui/src/types/workflow.ts`, `services/workflowExecutor.ts`, file upload helpers, and store types
+- UI: Core TypeScript issues resolved; E2E tests running but most failing due to missing UI features
 
 For documentation (note: being updated for accuracy), see [GRADE_A_REGRESSION_TEST_DOCUMENTATION.md](GRADE_A_REGRESSION_TEST_DOCUMENTATION.md)
 

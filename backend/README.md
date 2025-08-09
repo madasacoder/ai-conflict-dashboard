@@ -6,7 +6,7 @@ A FastAPI backend for the AI Conflict Dashboard with testing in development.
 
 The backend test suite is currently under development with known structural issues.
 
-### Current Issues (latest local run)
+### Current Issues (as of 2025-01-09)
 - **Test Results (server running, TESTING=1)**: 364 passing, 50 failing, 26 skipped, 23 errors
 - **Coverage**: ~51% overall (notable gaps in `workflow_executor.py`, `timeout_handler.py`)
 - **Known Problems**: Provider adapter/signature mismatches, circuit breaker concurrency/state under load, security assertions; Gemini/Grok providers are mock-only

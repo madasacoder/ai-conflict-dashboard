@@ -34,6 +34,7 @@ class SmartChunker:
         Args:
             chunk_size: Target size for each chunk in characters
             overlap: Number of characters to overlap between chunks
+
         """
         self.chunk_size = chunk_size
         self.overlap = overlap
@@ -51,6 +52,7 @@ class SmartChunker:
 
         Returns:
             List of TextBlock objects
+
         """
         blocks = []
         last_end = 0
@@ -130,6 +132,7 @@ class SmartChunker:
 
         Returns:
             List of text chunks
+
         """
         blocks = self.parse_blocks(text)
         chunks = []
@@ -363,6 +366,7 @@ def chunk_text_smart(
 
     Returns:
         List of text chunks
+
     """
     chunker = SmartChunker(chunk_size=chunk_size)
     return chunker.chunk_text(text)

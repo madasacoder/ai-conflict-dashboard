@@ -34,6 +34,7 @@ class RateLimiter:
             requests_per_hour: Max requests per hour
             requests_per_day: Max requests per day
             burst_size: Max burst requests allowed
+
         """
         self.requests_per_minute = requests_per_minute
         self.requests_per_hour = requests_per_hour
@@ -93,6 +94,7 @@ class RateLimiter:
 
         Returns:
             Tuple of (allowed, retry_after_seconds)
+
         """
         now = datetime.now(UTC)
         self._clean_old_entries(identifier, now)
@@ -170,6 +172,7 @@ def get_identifier(request: Request) -> str:
 
     Returns:
         Unique identifier string
+
     """
     # Check for API key in headers
     api_key = request.headers.get("X-API-Key")
@@ -199,6 +202,7 @@ def rate_limit_middleware(
 
     Returns:
         Middleware function
+
     """
 
     async def middleware(request: Request, call_next):

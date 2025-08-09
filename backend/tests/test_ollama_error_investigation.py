@@ -8,8 +8,7 @@ import requests
 
 
 class TestOllamaErrorInvestigation:
-    """
-    Tests to investigate BUG-039: Ollama Integration Error
+    """Tests to investigate BUG-039: Ollama Integration Error
 
     User reported seeing Ollama errors but we haven't investigated the root cause.
     These tests will help identify and document the specific issues.

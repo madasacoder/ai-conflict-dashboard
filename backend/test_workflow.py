@@ -12,7 +12,6 @@ from workflow_executor import WorkflowExecutor
 
 async def test_workflow():
     """Test the workflow executor with a simple input node."""
-
     # Create a simple workflow with one input node
     nodes = [{"id": "test", "type": "input", "data": {"text": "Hello world"}}]
     edges = []

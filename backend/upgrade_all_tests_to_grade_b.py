@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Automated Test Upgrade Script - Grade B Standards
+"""Automated Test Upgrade Script - Grade B Standards
 ==================================================
 This script automatically upgrades all tests to Grade B standards.
 
@@ -87,7 +86,6 @@ def analyze_test_file(filepath: Path) -> dict:
 
 def generate_grade_b_fixes(test_name: str, issues: List[str]) -> str:
     """Generate Grade B compliant test code."""
-    
     # Template for Grade B test
     template = '''
     def {test_name}_fixed(self, client):
@@ -123,7 +121,6 @@ def generate_grade_b_fixes(test_name: str, issues: List[str]) -> str:
 
 def upgrade_test_file(filepath: Path) -> Tuple[str, dict]:
     """Upgrade a single test file to Grade B standards."""
-    
     with open(filepath, 'r') as f:
         content = f.read()
     
@@ -176,7 +173,6 @@ def upgrade_test_file(filepath: Path) -> Tuple[str, dict]:
 
 def main():
     """Main upgrade process."""
-    
     # Find all test files
     test_dir = Path(__file__).parent / "tests"
     test_files = list(test_dir.glob("test_*.py"))

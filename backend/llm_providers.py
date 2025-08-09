@@ -1,5 +1,4 @@
-"""
-Fixed version of LLM provider integrations with per-key circuit breakers.
+"""Fixed version of LLM provider integrations with per-key circuit breakers.
 
 This module provides a unified interface for interacting with multiple
 LLM providers (OpenAI, Claude, Gemini, Grok) with proper error handling,
@@ -48,6 +47,7 @@ def get_circuit_breaker(provider: str, api_key: str) -> CircuitBreaker:
 
     Returns:
         CircuitBreaker instance for this provider/key combination
+
     """
     # Normalize provider key to avoid case/key mismatches
     normalized_provider = (provider or "").strip().lower()
@@ -117,6 +117,7 @@ def call_with_circuit_breaker(breaker: CircuitBreaker, func, provider: str, api_
         
     Raises:
         Exception: If breaker is open or func fails
+
     """
     breaker_key = f"{provider}_{api_key}"
     lock = _breaker_operation_locks.get(breaker_key)
@@ -139,6 +140,7 @@ async def call_openai(text: str, api_key: str | None = None, model: str = "gpt-3
 
     Returns:
         dict with model, response, and error fields
+
     """
     if not api_key:
         api_key = os.getenv("OPENAI_API_KEY")
@@ -192,6 +194,7 @@ async def _call_openai_with_breaker(
 
     Returns:
         dict with response
+
     """
 
     def call_with_breaker():
@@ -398,6 +401,7 @@ async def call_gemini(
 
     Returns:
         dict with model, response, and error fields
+
     """
     if not api_key:
         api_key = os.getenv("GEMINI_API_KEY")
@@ -475,6 +479,7 @@ async def call_grok(text: str, api_key: str | None = None, model: str = "grok-2-
 
     Returns:
         dict with model, response, and error fields
+
     """
     if not api_key:
         api_key = os.getenv("GROK_API_KEY")
@@ -552,6 +557,7 @@ async def call_ollama_fixed(text: str, model: str = "llama2", base_url: str | No
 
     Returns:
         dict with model, response, and error fields
+
     """
     # Import here to avoid circular dependency
     from plugins.ollama_provider import call_ollama

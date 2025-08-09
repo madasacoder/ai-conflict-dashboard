@@ -1,5 +1,4 @@
-"""
-Pytest configuration and fixtures for AI Conflict Dashboard tests.
+"""Pytest configuration and fixtures for AI Conflict Dashboard tests.
 """
 
 # Import the FastAPI app
@@ -20,8 +19,7 @@ from main import app  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def reset_rate_limits():
-    """
-    Reset rate limits before each test to prevent test interference.
+    """Reset rate limits before each test to prevent test interference.
     """
     from main import rate_limiter
 
@@ -40,8 +38,7 @@ def reset_rate_limits():
 
 @pytest.fixture(autouse=True)
 def reset_circuit_breakers():
-    """
-    Reset circuit breakers before each test to prevent test interference.
+    """Reset circuit breakers before each test to prevent test interference.
     """
     from llm_providers import _circuit_breaker_lock, circuit_breakers
 
@@ -58,11 +55,11 @@ def reset_circuit_breakers():
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
-    """
-    Create a test client for the FastAPI app.
+    """Create a test client for the FastAPI app.
 
     Yields:
         TestClient: A test client instance
+
     """
     with TestClient(app) as test_client:
         yield test_client
@@ -70,11 +67,11 @@ def client() -> Generator[TestClient, None, None]:
 
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
-    """
-    Create an async test client for the FastAPI app.
+    """Create an async test client for the FastAPI app.
 
     Yields:
         AsyncClient: An async test client instance
+
     """
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
@@ -82,11 +79,11 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.fixture
 def test_api_keys() -> dict:
-    """
-    Provide test API keys for testing.
+    """Provide test API keys for testing.
 
     Returns:
         dict: Dictionary of test API keys
+
     """
     return {
         "openai": "test-openai-key",
@@ -98,22 +95,22 @@ def test_api_keys() -> dict:
 
 @pytest.fixture
 def sample_text() -> str:
-    """
-    Provide sample text for testing.
+    """Provide sample text for testing.
 
     Returns:
         str: Sample text
+
     """
     return "This is a sample text for testing the AI Conflict Dashboard."
 
 
 @pytest.fixture
 def long_text() -> str:
-    """
-    Provide long text for testing chunking.
+    """Provide long text for testing chunking.
 
     Returns:
         str: Long text that requires chunking
+
     """
     return " ".join(
         ["This is a very long sentence that will be used for testing text chunking functionality."]
@@ -123,11 +120,11 @@ def long_text() -> str:
 
 @pytest.fixture
 def mock_llm_response() -> dict:
-    """
-    Provide a mock LLM response structure.
+    """Provide a mock LLM response structure.
 
     Returns:
         dict: Mock response from LLM
+
     """
     return {
         "model": "test-model",

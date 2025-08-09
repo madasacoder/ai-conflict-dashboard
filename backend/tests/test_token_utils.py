@@ -1,5 +1,4 @@
-"""
-Unit tests for token_utils module.
+"""Unit tests for token_utils module.
 """
 
 from token_utils import check_token_limits, estimate_tokens

@@ -333,7 +333,6 @@ class TestAPIErrorScenarios:
 
     def test_timeout_handling(self, client: TestClient):
         """Test request timeout handling."""
-
         # Mock the call_openai to simulate timeout
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
             # Return a timeout error response

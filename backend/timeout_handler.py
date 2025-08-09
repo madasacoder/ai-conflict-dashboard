@@ -1,5 +1,4 @@
-"""
-Request timeout handling module for the AI Conflict Dashboard.
+"""Request timeout handling module for the AI Conflict Dashboard.
 
 This module provides:
 1. Configurable timeouts for different operations
@@ -70,6 +69,7 @@ class ResponseTimeTracker:
 
         Returns:
             Recommended timeout in seconds
+
         """
         if operation not in self.response_times or len(self.response_times[operation]) < 5:
             # Not enough data, use default
@@ -138,6 +138,7 @@ async def with_timeout(
 
     Raises:
         TimeoutError: If raise_on_timeout is True and operation times out
+
     """
     start_time = time.time()
 
@@ -204,6 +205,7 @@ async def with_retry(
     Raises:
         TimeoutError: If all attempts timeout
         Exception: If all attempts fail with other errors
+
     """
     # Use defaults from config if not specified
     _max_attempts = max_attempts or RETRY_CONFIG["max_attempts"]
@@ -322,6 +324,7 @@ def timeout_handler(
 
     Returns:
         Decorated function
+
     """
 
     def decorator(

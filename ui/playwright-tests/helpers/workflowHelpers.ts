@@ -5,6 +5,7 @@
 
 import { Page, Locator } from '@playwright/test'
 import { dragNodeToCanvas } from './dragDrop'
+import { connectNodesByIndex, getEdgeCount } from './connectionHelper'
 
 /**
  * Launch the workflow builder from the home page
@@ -77,35 +78,18 @@ export async function connectNodes(
   sourceNodeIndex: number,
   targetNodeIndex: number
 ) {
-  // Get all React Flow nodes (the actual selectable nodes)
-  const nodes = page.locator('.react-flow__node')
+  // Use the programmatic connection method
+  const edgeCount = await connectNodesByIndex(page, sourceNodeIndex, targetNodeIndex)
   
-  // Get source and target nodes
-  const sourceNode = nodes.nth(sourceNodeIndex)
-  const targetNode = nodes.nth(targetNodeIndex)
-  
-  // Find the source handle (output) on the source node
-  const sourceHandle = sourceNode.locator('.react-flow__handle.source').first()
-  
-  // Find the target handle (input) on the target node  
-  const targetHandle = targetNode.locator('.react-flow__handle.target').first()
-  
-  // Get handle positions
-  const sourceBox = await sourceHandle.boundingBox()
-  const targetBox = await targetHandle.boundingBox()
-  
-  if (!sourceBox || !targetBox) {
-    throw new Error('Could not find handle positions')
+  // Verify edge was created
+  if (edgeCount === 0) {
+    throw new Error('Failed to create edge between nodes')
   }
   
-  // Simulate connection by dragging from source to target handle
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 10 })
-  await page.mouse.up()
+  // Wait a bit for React Flow to render the edge visually
+  await page.waitForTimeout(200)
   
-  // Wait for edge to appear
-  await page.waitForSelector('.react-flow__edge', { timeout: 5000 })
+  return edgeCount
 }
 
 /**

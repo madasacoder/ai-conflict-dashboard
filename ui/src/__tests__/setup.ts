@@ -92,7 +92,7 @@ global.DragEvent = class DragEvent extends Event {
 vi.mock('reactflow', () => {
   const React = require('react')
   
-  const MockReactFlow = React.forwardRef((props, ref) => {
+  const MockReactFlow = React.forwardRef<any, any>((props: any, ref: any) => {
     // Render the nodes that are passed as props
     const nodeElements = (props.nodes || []).map(node => {
       return React.createElement('div', {
@@ -130,7 +130,7 @@ vi.mock('reactflow', () => {
     }, nodeElements)
   })
   
-  const MockHandle = (props) => {
+  const MockHandle = (props: any) => {
     return React.createElement('div', {
       className: `react-flow__handle react-flow__handle-${props.type}`,
       'data-testid': `handle-${props.type}`
@@ -139,7 +139,7 @@ vi.mock('reactflow', () => {
   
   return {
     default: MockReactFlow,
-    ReactFlowProvider: ({ children }) => React.createElement('div', {}, children),
+    ReactFlowProvider: ({ children }: { children?: React.ReactNode }) => React.createElement('div', {}, children),
     Background: () => React.createElement('div', { className: 'react-flow__background' }),
     Controls: () => React.createElement('div', { className: 'react-flow__controls' }),
     MiniMap: () => React.createElement('div', { className: 'react-flow__minimap' }),

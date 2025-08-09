@@ -15,6 +15,7 @@ def get_allowed_origins() -> list[str]:
 
     Returns:
         List of allowed origin URLs
+
     """
     env = os.getenv("ENVIRONMENT", "development")
 
@@ -73,6 +74,7 @@ def get_cors_config() -> dict:
 
     Returns:
         Dictionary with CORS settings
+
     """
     return {
         "allow_origins": get_allowed_origins(),

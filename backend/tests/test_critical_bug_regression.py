@@ -1,5 +1,4 @@
-"""
-🚨 CRITICAL BUG REGRESSION TESTS - GRADE A
+"""🚨 CRITICAL BUG REGRESSION TESTS - GRADE A
 Backend regression tests to ensure critical bugs never reappear.
 
 This test suite implements the GRADE A testing strategy with zero tolerance

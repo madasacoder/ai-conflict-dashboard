@@ -20,7 +20,7 @@ import {
 import { LocalStorage, STORAGE_KEYS, WorkflowStorage, UIStorage } from '@/utils/localStorage'
 import { sanitizeWorkflowImport } from '@/utils/sanitize'
 import { WorkflowExecution } from '@/types/workflow'
-import { ExecutionProgress } from '@/services/workflowExecutor'
+import { ExecutionProgress, workflowExecutor } from '@/services/workflowExecutor'
 import toast from 'react-hot-toast'
 
 // Custom node types
@@ -660,84 +660,90 @@ export const useWorkflowStore = create<WorkflowState>()(
       const state = get()
       
       if (!state.workflow) {
+        toast.error('No workflow selected')
         throw new Error('No workflow selected')
       }
       
-      set({ isExecuting: true, executionProgress: null })
+      set({ 
+        isExecuting: true, 
+        executionProgress: null,
+        nodeExecutionStatus: {},
+        isExecutionPanelOpen: true 
+      })
       
       try {
-        // Get API keys from localStorage
-        const apiKeys = {
-          openai: localStorage.getItem('openai_api_key') || '',
-          claude: localStorage.getItem('claude_api_key') || '',
-          gemini: localStorage.getItem('gemini_api_key') || '',
-          grok: localStorage.getItem('grok_api_key') || ''
-        }
-        
-        // Step 1: Validate workflow using backend API
-        console.log('Validating workflow with backend...')
-        const validationResponse = await fetch(`http://localhost:8000/api/workflows/validate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            workflow: {
-              nodes: state.nodes,
-              edges: state.edges
+        // Reset all node statuses
+        state.nodes.forEach(node => {
+          set(state => ({
+            nodeExecutionStatus: {
+              ...state.nodeExecutionStatus,
+              [node.id]: 'pending'
             }
-          })
+          }))
         })
         
-        if (!validationResponse.ok) {
-          throw new Error(`Validation failed: ${validationResponse.statusText}`)
-        }
-        
-        const validationResult = await validationResponse.json()
-        console.log('Backend validation result:', validationResult)
-        
-        if (!validationResult.valid) {
-          throw new Error(`Workflow validation failed: ${validationResult.errors.join(', ')}`)
-        }
-        
-        // Step 2: Execute workflow
-        console.log('Executing workflow...')
-        const response = await fetch(`http://localhost:8000/api/workflows/execute`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            workflow: {
-              nodes: state.nodes,
-              edges: state.edges
-            },
-            api_keys: apiKeys
-          })
-        })
-        
-        if (!response.ok) {
-          throw new Error(`Execution failed: ${response.statusText}`)
-        }
-        
-        const result = await response.json()
-        console.log('Workflow executed successfully:', result)
+        // Execute using the new executor service
+        const result = await workflowExecutor.executeWorkflow(
+          state.nodes,
+          state.edges,
+          (progress) => {
+            // Update progress in store
+            set(state => ({
+              executionProgress: progress,
+              nodeExecutionStatus: {
+                ...state.nodeExecutionStatus,
+                [progress.nodeId]: progress.status
+              }
+            }))
+            
+            // Show toast notifications for important events
+            if (progress.status === 'error') {
+              toast.error(`Error in ${progress.message}`)
+            } else if (progress.status === 'completed') {
+              toast.success(`Completed: ${progress.message}`)
+            }
+          }
+        )
         
         // Store results for display
         set({ 
           executionProgress: null,
           execution: {
-            workflowId: state.workflow?.id || 'unknown',
-            status: 'completed',
+            workflowId: state.workflow?.id || result.workflowId,
+            status: result.status === 'success' ? 'completed' : 'failed',
             results: result.results,
-            startTime: new Date(),
-            endTime: new Date()
-          }
+            startTime: new Date(Date.now() - result.executionTime),
+            endTime: new Date(),
+            errors: result.errors
+          },
+          isExecutionPanelOpen: true
         })
+        
+        // Show final status
+        if (result.status === 'success') {
+          toast.success('Workflow executed successfully!')
+        } else if (result.status === 'partial') {
+          toast.warning('Workflow completed with some errors')
+        } else {
+          toast.error('Workflow execution failed')
+        }
         
         return result
       } catch (error) {
         console.error('Workflow execution failed:', error)
+        toast.error(error instanceof Error ? error.message : 'Workflow execution failed')
+        
+        set({
+          execution: {
+            workflowId: state.workflow?.id || 'unknown',
+            status: 'failed',
+            results: {},
+            startTime: new Date(),
+            endTime: new Date(),
+            errors: [error instanceof Error ? error.message : 'Unknown error']
+          }
+        })
+        
         throw error
       } finally {
         set({ isExecuting: false, executionProgress: null })

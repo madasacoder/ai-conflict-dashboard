@@ -1,5 +1,4 @@
-"""
-Memory management module to prevent memory leaks in the AI Conflict Dashboard.
+"""Memory management module to prevent memory leaks in the AI Conflict Dashboard.
 
 This module provides utilities for:
 1. Response size limiting
@@ -188,6 +187,7 @@ def limit_response_size(response: str) -> str:
 
     Returns:
         The response, truncated if necessary
+
     """
     if not response:
         return response
@@ -219,6 +219,7 @@ def cache_response(request_id: str, response: Any, ttl_seconds: int = 300):
         request_id: Unique request identifier
         response: The response to cache
         ttl_seconds: Time to live in seconds (default 5 minutes)
+
     """
     # Store in weak reference dictionary (automatically cleaned up)
     _response_cache[request_id] = response
@@ -239,6 +240,7 @@ def get_cached_response(request_id: str) -> Any | None:
 
     Returns:
         The cached response or None
+
     """
     return _response_cache.get(request_id)
 

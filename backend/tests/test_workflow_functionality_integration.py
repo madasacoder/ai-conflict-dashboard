@@ -8,8 +8,7 @@ import requests
 
 
 class TestWorkflowBuilderIntegration:
-    """
-    Integration tests for BUG-038: Workflow Builder JavaScript Missing Core Functionality
+    """Integration tests for BUG-038: Workflow Builder JavaScript Missing Core Functionality
 
     These tests verify that the workflow builder actually works end-to-end,
     not just that individual components exist.

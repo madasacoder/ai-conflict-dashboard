@@ -1,5 +1,4 @@
-"""
-Fixed token counting and validation utilities with proper Unicode support.
+"""Fixed token counting and validation utilities with proper Unicode support.
 
 This module provides accurate token counting for all models, handling
 Unicode characters, emojis, and non-ASCII text correctly.
@@ -57,6 +56,7 @@ def estimate_tokens(text: str) -> int:
 
     Returns:
         int: Estimated number of tokens (conservative/higher estimate).
+
     """
     if not text:
         return 0
@@ -133,6 +133,7 @@ def is_emoji(char: str, text: str, pos: int) -> bool:
 
     Returns:
         bool: True if character is part of an emoji
+
     """
     # Basic emoji ranges
     code_point = ord(char)
@@ -182,6 +183,7 @@ def count_emoji_tokens(text: str, start_pos: int) -> tuple[int, int]:
 
     Returns:
         tuple: (characters consumed, token count)
+
     """
     pos = start_pos
     token_count = 1
@@ -239,6 +241,7 @@ def check_token_limits(text: str) -> dict:
             - warnings: List of warning dicts for models that exceed limits
             - recommendations: List of string recommendations
             - safe_for_all: Boolean indicating if text fits all models
+
     """
     estimated_tokens = estimate_tokens(text)
 

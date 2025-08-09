@@ -1,5 +1,4 @@
-"""
-Real Integration Tests for LLM Providers
+"""Real Integration Tests for LLM Providers
 
 These tests make ACTUAL API calls to verify integration.
 Run separately from unit tests to avoid costs and rate limits.

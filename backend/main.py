@@ -47,6 +47,7 @@ def process_workflow(nodes: list[dict], edges: list[dict], api_keys: dict | None
 
     Returns:
         dict: execution results keyed by node id
+
     """
     # Import inline to avoid circular imports at module import time
     from workflow_executor import WorkflowExecutor
@@ -157,6 +158,7 @@ async def log_requests(request: Request, call_next):
 
     Returns:
         The response object with added X-Request-ID header.
+
     """
     start_time = time.time()
     request_id = str(uuid4())
@@ -197,6 +199,7 @@ async def rate_limit_requests(request: Request, call_next):
 
     Returns:
         The response or rate limit error.
+
     """
     # Skip rate limiting for health checks
     if request.url.path == "/api/health":
@@ -272,6 +275,7 @@ async def root():
 
     Returns:
         dict: API name and version information.
+
     """
     return {"message": "AI Conflict Dashboard API", "version": "0.1.0"}
 
@@ -282,6 +286,7 @@ async def health_check():
 
     Returns:
         dict: Health status of the API with Ollama availability.
+
     """
     # Check Ollama availability
     ollama_status = await check_ollama_status()
@@ -295,6 +300,7 @@ async def memory_status():
 
     Returns:
         dict: Current memory usage statistics.
+
     """
     return memory_manager.check_memory_usage()
 
@@ -305,6 +311,7 @@ async def timeout_statistics():
 
     Returns:
         dict: Timeout statistics for all operations.
+
     """
     return get_timeout_stats()
 
@@ -318,6 +325,7 @@ async def validate_workflow(request: Request):
 
     Returns:
         dict: Validation results with errors if any
+
     """
     logger.info("Workflow validation endpoint called")
 
@@ -391,6 +399,7 @@ async def get_workflow_status(workflow_id: str):
 
     Returns:
         dict: Current execution status and progress
+
     """
     logger.info("Workflow status endpoint called", workflow_id=workflow_id)
 
@@ -427,6 +436,7 @@ async def stop_workflow(workflow_id: str):
 
     Returns:
         dict: Stop operation result
+
     """
     logger.info("Workflow stop endpoint called", workflow_id=workflow_id)
 
@@ -464,6 +474,7 @@ async def execute_workflow(request: Request):
 
     Returns:
         dict: Execution results for each node
+
     """
     logger.info("Workflow execution endpoint called")
 
@@ -545,6 +556,7 @@ async def analyze_text(request: AnalyzeRequest):
 
     Raises:
         HTTPException: If text is empty (400) or analysis fails (500).
+
     """
     # Basic validation
     if not request.text or len(request.text.strip()) == 0:
@@ -717,6 +729,7 @@ async def list_ollama_models():
 
     Returns:
         dict: Available models and status information
+
     """
     from plugins.ollama_provider import OllamaProvider
 
@@ -755,6 +768,7 @@ async def restart_backend():
 
     Returns:
         dict: Status message
+
     """
     import os
     import signal

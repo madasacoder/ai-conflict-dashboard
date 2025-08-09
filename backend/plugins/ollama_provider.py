@@ -1,5 +1,4 @@
-"""
-Ollama Provider Plugin for AI Conflict Dashboard
+"""Ollama Provider Plugin for AI Conflict Dashboard
 
 This plugin enables integration with Ollama for running local LLMs.
 Supports all models available in Ollama including Llama, Mistral, Phi, etc.
@@ -87,6 +86,7 @@ class OllamaProvider:
 
         Args:
             base_url: Base URL for Ollama API (default: http://localhost:11434)
+
         """
         self.base_url = base_url.rstrip("/")
         self.session = None
@@ -107,6 +107,7 @@ class OllamaProvider:
 
         Returns:
             Dict with health status and available models
+
         """
         try:
             async with (
@@ -157,6 +158,7 @@ class OllamaProvider:
 
         Returns:
             List of model information dictionaries
+
         """
         try:
             async with (
@@ -201,6 +203,7 @@ class OllamaProvider:
 
         Yields:
             Progress updates as the model downloads
+
         """
         try:
             async with aiohttp.ClientSession() as session:
@@ -243,6 +246,7 @@ class OllamaProvider:
 
         Returns:
             Dict with model response or error
+
         """
         start_time = datetime.now(UTC)
 
@@ -368,6 +372,7 @@ class OllamaProvider:
 
         Returns:
             Dict with model response or error
+
         """
         # Convert messages to a single prompt
         # This is a simple implementation - some models may support better formatting
@@ -411,6 +416,7 @@ async def call_ollama(
 
     Returns:
         Dict with model, response, and error fields
+
     """
     base_url = base_url or OLLAMA_BASE_URL
 

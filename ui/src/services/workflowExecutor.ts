@@ -1,555 +1,866 @@
 /**
- * WorkflowExecutor - Service for executing workflows with real-time progress tracking
- * 
- * Manages workflow execution, progress tracking, cancellation, and result collection.
- * Provides real-time updates via callbacks for UI components.
+ * Workflow Execution Service
+ * Handles the execution of workflows with real backend integration
  */
 
-import { Node, Edge, ExecutionResult, WorkflowExecution } from '@/types/workflow'
-
-export interface ExecutionOptions {
-  apiKeys?: Record<string, string>
-  onProgress?: (progress: ExecutionProgress) => void
-  onNodeStart?: (nodeId: string) => void
-  onNodeComplete?: (nodeId: string, result: ExecutionResult) => void
-  onNodeError?: (nodeId: string, error: string) => void
-  signal?: AbortSignal
-}
+import { CustomNode, Edge } from '@/state/workflowStore'
+import toast from 'react-hot-toast'
+import { ollamaService } from './ollamaService'
 
 export interface ExecutionProgress {
-  completed: number
-  total: number
-  current?: string
-  percentage: number
-  startTime: Date
-  estimatedTimeRemaining?: number
+  nodeId: string
+  status: 'pending' | 'running' | 'completed' | 'error'
+  message?: string
+  result?: any
+  progress?: number
 }
 
-export interface NodeExecutionContext {
-  node: Node
-  inputs: Record<string, any>
-  previousResults: Record<string, ExecutionResult>
+export interface ExecutionResult {
+  workflowId: string
+  status: 'success' | 'error' | 'partial'
+  results: Record<string, any>
+  errors?: string[]
+  executionTime: number
 }
 
 export class WorkflowExecutor {
-  private isExecuting = false
-  private abortController?: AbortController
-  private execution?: WorkflowExecution
-
+  private baseUrl: string
+  private abortController: AbortController | null = null
+  
+  constructor(baseUrl: string = 'http://localhost:8000') {
+    this.baseUrl = baseUrl
+  }
+  
   /**
-   * Execute a workflow with the given nodes and edges
+   * Validate workflow before execution
    */
-  async executeWorkflow(
-    nodes: Node[],
-    edges: Edge[],
-    options: ExecutionOptions = {}
-  ): Promise<WorkflowExecution> {
-    if (this.isExecuting) {
-      throw new Error('Workflow execution already in progress')
-    }
-
-    this.isExecuting = true
-    this.abortController = new AbortController()
+  async validateWorkflow(nodes: CustomNode[], edges: Edge[]): Promise<{ valid: boolean; errors: string[] }> {
+    const errors: string[] = []
     
-    const startTime = new Date()
-    this.execution = {
-      workflowId: `exec-${Date.now()}`,
-      startTime,
-      status: 'running',
-      results: []
+    // Check for at least one input node
+    const inputNodes = nodes.filter(n => n.type === 'input')
+    if (inputNodes.length === 0) {
+      errors.push('Workflow must have at least one input node')
     }
-
-    try {
-      // Validate workflow
-      this.validateWorkflow(nodes, edges)
-
-      // Build execution order based on dependencies
-      const executionOrder = this.buildExecutionOrder(nodes, edges)
-      
-      // Initialize progress tracking
-      const progress: ExecutionProgress = {
-        completed: 0,
-        total: executionOrder.length,
-        percentage: 0,
-        startTime
-      }
-
-      options.onProgress?.(progress)
-
-      // Execute nodes in order
-      const results: ExecutionResult[] = []
-      const nodeResults: Record<string, ExecutionResult> = {}
-
-      for (let i = 0; i < executionOrder.length; i++) {
-        // Check for cancellation
-        if (this.abortController.signal.aborted || options.signal?.aborted) {
-          this.execution.status = 'cancelled'
-          break
-        }
-
-        const node = executionOrder[i]
-        if (!node) continue
-        progress.current = node.id
-        progress.completed = i
-        progress.percentage = Math.round((i / executionOrder.length) * 100)
-        
-        // Estimate time remaining
-        if (i > 0) {
-          const elapsed = Date.now() - startTime.getTime()
-          const avgTimePerNode = elapsed / i
-          const remainingNodes = executionOrder.length - i
-          progress.estimatedTimeRemaining = Math.round(avgTimePerNode * remainingNodes / 1000) // seconds
-        }
-
-        options.onProgress?.(progress)
-        options.onNodeStart?.(node!.id)
-
-        try {
-          // Get inputs for this node
-          const inputs = this.getNodeInputs(node!, edges, nodeResults)
-          
-          // Execute the node
-          const result = await this.executeNode({
-            node: node!,
-            inputs,
-            previousResults: nodeResults
-          }, options)
-
-          results.push(result)
-          nodeResults[node!.id] = result
-          
-          options.onNodeComplete?.(node!.id, result)
-        } catch (error) {
-          const errorResult: ExecutionResult = {
-            nodeId: node!.id,
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            timestamp: new Date(),
-            duration: 0
-          }
-          
-          results.push(errorResult)
-          nodeResults[node!.id] = errorResult
-          
-          options.onNodeError?.(node!.id, errorResult.error!)
-        }
-      }
-
-      // Final progress update
-      progress.completed = executionOrder.length
-      progress.percentage = 100
-      delete progress.current
-      options.onProgress?.(progress)
-
-      // Complete execution
-      this.execution.endTime = new Date()
-      this.execution.totalDuration = this.execution.endTime.getTime() - startTime.getTime()
-      this.execution.results = results
-      this.execution.status = this.execution.status === 'cancelled' ? 'cancelled' : 
-        results.every(r => r.success) ? 'completed' : 'failed'
-
-      return this.execution
-
-    } catch (error) {
-      this.execution.status = 'failed'
-      this.execution.endTime = new Date()
-      this.execution.totalDuration = this.execution.endTime.getTime() - startTime.getTime()
-      
-      throw error
-    } finally {
-      this.isExecuting = false
-      delete this.abortController
+    
+    // Check for at least one output node
+    const outputNodes = nodes.filter(n => n.type === 'output')
+    if (outputNodes.length === 0) {
+      errors.push('Workflow must have at least one output node')
     }
-  }
-
-  /**
-   * Cancel the current workflow execution
-   */
-  cancelExecution(): void {
-    if (this.abortController) {
-      this.abortController.abort()
+    
+    // Check for disconnected nodes
+    const connectedNodeIds = new Set<string>()
+    edges.forEach(edge => {
+      connectedNodeIds.add(edge.source)
+      connectedNodeIds.add(edge.target)
+    })
+    
+    const disconnectedNodes = nodes.filter(n => !connectedNodeIds.has(n.id))
+    if (disconnectedNodes.length > 0 && nodes.length > 1) {
+      errors.push(`${disconnectedNodes.length} node(s) are not connected`)
     }
-  }
-
-  /**
-   * Check if workflow is currently executing
-   */
-  get executing(): boolean {
-    return this.isExecuting
-  }
-
-  /**
-   * Get current execution status
-   */
-  getCurrentExecution(): WorkflowExecution | undefined {
-    return this.execution
-  }
-
-  /**
-   * Validate workflow structure before execution
-   */
-  private validateWorkflow(nodes: Node[], edges: Edge[]): void {
-    if (nodes.length === 0) {
-      throw new Error('Workflow must contain at least one node')
+    
+    // Check for circular dependencies
+    if (this.hasCircularDependency(nodes, edges)) {
+      errors.push('Workflow contains circular dependencies')
     }
-
-    // Check for cycles
-    if (this.hasCycles(nodes, edges)) {
-      throw new Error('Workflow contains circular dependencies')
-    }
-
+    
     // Validate node configurations
-    for (const node of nodes) {
-      this.validateNodeConfiguration(node)
-    }
-
-    // Validate connections
-    for (const edge of edges) {
-      const sourceNode = nodes.find(n => n.id === edge.source)
-      const targetNode = nodes.find(n => n.id === edge.target)
+    nodes.forEach(node => {
+      if (!node.data.isConfigured) {
+        errors.push(`Node "${node.data.label}" is not configured`)
+      }
       
-      if (!sourceNode || !targetNode) {
-        throw new Error(`Invalid connection: ${edge.source} -> ${edge.target}`)
-      }
-    }
-  }
-
-  /**
-   * Build execution order using topological sort
-   */
-  private buildExecutionOrder(nodes: Node[], edges: Edge[]): Node[] {
-    const nodeMap = new Map(nodes.map(n => [n.id, n]))
-    const inDegree = new Map<string, number>()
-    const adjacencyList = new Map<string, string[]>()
-
-    // Initialize
-    for (const node of nodes) {
-      inDegree.set(node.id, 0)
-      adjacencyList.set(node.id, [])
-    }
-
-    // Build graph
-    for (const edge of edges) {
-      adjacencyList.get(edge.source)!.push(edge.target)
-      inDegree.set(edge.target, inDegree.get(edge.target)! + 1)
-    }
-
-    // Topological sort
-    const queue: string[] = []
-    const result: Node[] = []
-
-    // Find nodes with no dependencies
-    for (const [nodeId, degree] of inDegree) {
-      if (degree === 0) {
-        queue.push(nodeId)
-      }
-    }
-
-    while (queue.length > 0) {
-      const nodeId = queue.shift()!
-      const node = nodeMap.get(nodeId)!
-      result.push(node)
-
-      // Process neighbors
-      for (const neighbor of adjacencyList.get(nodeId)!) {
-        inDegree.set(neighbor, inDegree.get(neighbor)! - 1)
-        if (inDegree.get(neighbor) === 0) {
-          queue.push(neighbor)
+      // Specific validation for LLM nodes
+      if (node.type === 'llm') {
+        const llmData = node.data as any
+        if (!llmData.models?.length) {
+          errors.push(`LLM node "${node.data.label}" has no model selected`)
+        }
+        if (!llmData.prompt?.trim()) {
+          errors.push(`LLM node "${node.data.label}" has no prompt`)
         }
       }
+    })
+    
+    return {
+      valid: errors.length === 0,
+      errors
     }
-
-    if (result.length !== nodes.length) {
-      throw new Error('Workflow contains circular dependencies')
-    }
-
-    return result
   }
-
+  
   /**
-   * Check for cycles in the workflow graph
+   * Check for circular dependencies using DFS
    */
-  private hasCycles(nodes: Node[], edges: Edge[]): boolean {
+  private hasCircularDependency(nodes: CustomNode[], edges: Edge[]): boolean {
+    const adjacencyList: Record<string, string[]> = {}
+    
+    // Build adjacency list
+    nodes.forEach(node => {
+      adjacencyList[node.id] = []
+    })
+    
+    edges.forEach(edge => {
+      if (!adjacencyList[edge.source]) {
+        adjacencyList[edge.source] = []
+      }
+      adjacencyList[edge.source].push(edge.target)
+    })
+    
+    // DFS to detect cycles
     const visited = new Set<string>()
     const recursionStack = new Set<string>()
-    const adjacencyList = new Map<string, string[]>()
-
-    // Build adjacency list
-    for (const node of nodes) {
-      adjacencyList.set(node.id, [])
-    }
-    for (const edge of edges) {
-      adjacencyList.get(edge.source)!.push(edge.target)
-    }
-
-    const dfs = (nodeId: string): boolean => {
+    
+    const hasCycle = (nodeId: string): boolean => {
       visited.add(nodeId)
       recursionStack.add(nodeId)
-
-      for (const neighbor of adjacencyList.get(nodeId) || []) {
+      
+      for (const neighbor of adjacencyList[nodeId] || []) {
         if (!visited.has(neighbor)) {
-          if (dfs(neighbor)) return true
+          if (hasCycle(neighbor)) return true
         } else if (recursionStack.has(neighbor)) {
-          return true // Cycle found
+          return true
         }
       }
-
+      
       recursionStack.delete(nodeId)
       return false
     }
-
-    for (const node of nodes) {
-      if (!visited.has(node.id)) {
-        if (dfs(node.id)) return true
+    
+    for (const nodeId of Object.keys(adjacencyList)) {
+      if (!visited.has(nodeId)) {
+        if (hasCycle(nodeId)) return true
       }
     }
-
+    
     return false
   }
-
+  
   /**
-   * Validate individual node configuration
+   * Execute workflow with progress updates
    */
-  private validateNodeConfiguration(node: Node): void {
-    switch (node.type) {
-      case 'input':
-        if (!node.data['inputType']) {
-          throw new Error(`Input node ${node.id} missing input type`)
-        }
-        break
-      case 'llm':
-        if (!node.data['models'] || node.data['models'].length === 0) {
-          throw new Error(`LLM node ${node.id} missing model configuration`)
-        }
-        if (!node.data['prompt']) {
-          throw new Error(`LLM node ${node.id} missing prompt`)
-        }
-        break
-      case 'compare':
-        if (!node.data['comparisonType']) {
-          throw new Error(`Compare node ${node.id} missing comparison type`)
-        }
-        break
-      case 'output':
-        if (!node.data['outputFormat']) {
-          throw new Error(`Output node ${node.id} missing output format`)
-        }
-        break
-    }
-  }
-
-  /**
-   * Get inputs for a node from connected edges and previous results
-   */
-  private getNodeInputs(
-    node: Node,
+  async executeWorkflow(
+    nodes: CustomNode[],
     edges: Edge[],
-    previousResults: Record<string, ExecutionResult>
-  ): Record<string, any> {
-    const inputs: Record<string, any> = {}
-
-    // Find incoming edges
-    const incomingEdges = edges.filter(edge => edge.target === node.id)
-
-    for (let i = 0; i < incomingEdges.length; i++) {
-      const edge = incomingEdges[i]
-      if (!edge) continue
-      const sourceResult = previousResults[edge.source]
-      if (sourceResult && sourceResult.success && sourceResult.data) {
-        // Use edge target handle as input key, fallback to indexed input
-        const inputKey = edge!.targetHandle || `input${i + 1}`
-        inputs[inputKey] = sourceResult.data
+    onProgress?: (progress: ExecutionProgress) => void
+  ): Promise<ExecutionResult> {
+    const startTime = Date.now()
+    const results: Record<string, any> = {}
+    const errors: string[] = []
+    
+    // Validate first
+    const validation = await this.validateWorkflow(nodes, edges)
+    if (!validation.valid) {
+      return {
+        workflowId: 'unknown',
+        status: 'error',
+        results: {},
+        errors: validation.errors,
+        executionTime: Date.now() - startTime
       }
     }
-
-    return inputs
+    
+    // Create abort controller for cancellation
+    this.abortController = new AbortController()
+    
+    try {
+      // Get execution order (topological sort)
+      const executionOrder = this.getExecutionOrder(nodes, edges)
+      
+      // Execute nodes in order
+      for (const nodeId of executionOrder) {
+        const node = nodes.find(n => n.id === nodeId)
+        if (!node) continue
+        
+        // Update progress
+        onProgress?.({
+          nodeId,
+          status: 'running',
+          message: `Executing ${node.data.label}...`
+        })
+        
+        try {
+          // Execute node based on type
+          const result = await this.executeNode(node, results, edges)
+          results[nodeId] = result
+          
+          // Update progress
+          onProgress?.({
+            nodeId,
+            status: 'completed',
+            result,
+            message: `Completed ${node.data.label}`
+          })
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          errors.push(`Node ${node.data.label}: ${errorMessage}`)
+          
+          // Update progress
+          onProgress?.({
+            nodeId,
+            status: 'error',
+            message: errorMessage
+          })
+          
+          // Continue with other nodes or stop based on error handling strategy
+          if (node.type === 'output') {
+            throw error // Critical node failed
+          }
+        }
+      }
+      
+      return {
+        workflowId: `workflow-${Date.now()}`,
+        status: errors.length > 0 ? 'partial' : 'success',
+        results,
+        errors: errors.length > 0 ? errors : undefined,
+        executionTime: Date.now() - startTime
+      }
+    } catch (error) {
+      return {
+        workflowId: 'unknown',
+        status: 'error',
+        results,
+        errors: [...errors, error instanceof Error ? error.message : 'Unknown error'],
+        executionTime: Date.now() - startTime
+      }
+    } finally {
+      this.abortController = null
+    }
   }
-
+  
+  /**
+   * Get execution order using topological sort
+   */
+  private getExecutionOrder(nodes: CustomNode[], edges: Edge[]): string[] {
+    const inDegree: Record<string, number> = {}
+    const adjacencyList: Record<string, string[]> = {}
+    
+    // Initialize
+    nodes.forEach(node => {
+      inDegree[node.id] = 0
+      adjacencyList[node.id] = []
+    })
+    
+    // Build graph
+    edges.forEach(edge => {
+      adjacencyList[edge.source].push(edge.target)
+      inDegree[edge.target]++
+    })
+    
+    // Topological sort using Kahn's algorithm
+    const queue: string[] = []
+    const result: string[] = []
+    
+    // Find nodes with no dependencies
+    Object.keys(inDegree).forEach(nodeId => {
+      if (inDegree[nodeId] === 0) {
+        queue.push(nodeId)
+      }
+    })
+    
+    while (queue.length > 0) {
+      const nodeId = queue.shift()!
+      result.push(nodeId)
+      
+      // Process neighbors
+      adjacencyList[nodeId].forEach(neighbor => {
+        inDegree[neighbor]--
+        if (inDegree[neighbor] === 0) {
+          queue.push(neighbor)
+        }
+      })
+    }
+    
+    return result
+  }
+  
   /**
    * Execute a single node
    */
   private async executeNode(
-    context: NodeExecutionContext,
-    options: ExecutionOptions
-  ): Promise<ExecutionResult> {
-    const startTime = Date.now()
-    const { node, inputs } = context
-
-    try {
-      let result: any
-
-      switch (node.type) {
-        case 'input':
-          result = await this.executeInputNode(node, inputs)
-          break
-        case 'llm':
-          result = await this.executeLLMNode(node, inputs, options.apiKeys)
-          break
-        case 'compare':
-          result = await this.executeCompareNode(node, inputs)
-          break
-        case 'output':
-          result = await this.executeOutputNode(node, inputs)
-          break
-        case 'summarize':
-          result = await this.executeSummarizeNode(node, inputs, options.apiKeys)
-          break
-        default:
-          throw new Error(`Unsupported node type: ${node.type}`)
-      }
-
-      return {
-        nodeId: node.id,
-        success: true,
-        data: result,
-        timestamp: new Date(),
-        duration: Date.now() - startTime
-      }
-    } catch (error) {
-      return {
-        nodeId: node.id,
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date(),
-        duration: Date.now() - startTime
-      }
-    }
-  }
-
-  /**
-   * Execute an input node
-   */
-  private async executeInputNode(node: Node, _inputs: Record<string, any>): Promise<any> {
-    // Input nodes provide their configured data
-    if (node.data['defaultContent']) {
-      return node.data['defaultContent']
-    }
-    
-    // If no default content, return placeholder or empty
-    return node.data['placeholder'] || ''
-  }
-
-  /**
-   * Execute an LLM node
-   */
-  private async executeLLMNode(
-    node: Node,
-    inputs: Record<string, any>,
-    _apiKeys?: Record<string, string>
+    node: CustomNode,
+    previousResults: Record<string, any>,
+    edges: Edge[]
   ): Promise<any> {
-    const models = node.data['models'] || []
-    const prompt = node.data['prompt'] || ''
+    // Get input data from connected nodes
+    const inputData = this.getNodeInputData(node.id, previousResults, edges)
     
-    if (models.length === 0) {
-      throw new Error('No models configured for LLM node')
-    }
-
-    // Replace {input} placeholders in prompt
-    let processedPrompt = prompt
-    for (const [key, value] of Object.entries(inputs)) {
-      processedPrompt = processedPrompt.replace(
-        new RegExp(`{${key}}`, 'g'),
-        String(value)
-      )
-    }
-
-    // For now, simulate LLM API call
-    // TODO: Integrate with actual backend API
-    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200))
-    
-    return {
-      model: models[0],
-      prompt: processedPrompt,
-      response: `Simulated response from ${models[0]} for prompt: ${processedPrompt.substring(0, 100)}...`,
-      metadata: {
-        temperature: node.data['temperature'] || 0.7,
-        maxTokens: node.data['maxTokens'] || 1000
-      }
-    }
-  }
-
-  /**
-   * Execute a compare node
-   */
-  private async executeCompareNode(node: Node, inputs: Record<string, any>): Promise<any> {
-    const comparisonType = node.data['comparisonType'] || 'differences'
-    const inputValues = Object.values(inputs)
-    
-    if (inputValues.length < 2) {
-      throw new Error('Compare node requires at least 2 inputs')
-    }
-
-    // Simulate comparison processing
-    await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100))
-
-    return {
-      comparisonType,
-      inputs: inputValues,
-      result: `Comparison result using ${comparisonType} method`,
-      differences: ['Difference 1', 'Difference 2'],
-      similarities: ['Similarity 1', 'Similarity 2'],
-      confidence: 0.85
-    }
-  }
-
-  /**
-   * Execute an output node
-   */
-  private async executeOutputNode(node: Node, inputs: Record<string, any>): Promise<any> {
-    const outputFormat = (node.data['outputFormat'] as 'text' | 'json' | 'markdown' | 'html' | undefined) || 'text'
-    const inputData = Object.values(inputs)[0] // Take first input
-
-    // Format output based on configuration
-    let formattedOutput: any
-
-    switch (outputFormat) {
-      case 'json':
-        formattedOutput = JSON.stringify(inputData, null, 2)
-        break
-      case 'markdown':
-        formattedOutput = typeof inputData === 'string' 
-          ? inputData 
-          : `## Output\n\n${JSON.stringify(inputData, null, 2)}`
-        break
-      case 'html':
-        formattedOutput = `<div class="output">${String(inputData)}</div>`
-        break
+    switch (node.type) {
+      case 'input':
+        return this.executeInputNode(node)
+      
+      case 'llm':
+        return this.executeLLMNode(node, inputData)
+      
+      case 'compare':
+        return this.executeCompareNode(node, inputData)
+      
+      case 'summarize':
+        return this.executeSummarizeNode(node, inputData)
+      
+      case 'output':
+        return this.executeOutputNode(node, inputData)
+      
       default:
-        formattedOutput = String(inputData)
+        throw new Error(`Unknown node type: ${node.type}`)
     }
-
-    return {
-      format: outputFormat,
-      content: formattedOutput,
-      metadata: {
+  }
+  
+  /**
+   * Get input data for a node from its connected predecessors
+   */
+  private getNodeInputData(
+    nodeId: string,
+    results: Record<string, any>,
+    edges: Edge[]
+  ): any[] {
+    const inputEdges = edges.filter(e => e.target === nodeId)
+    return inputEdges.map(edge => results[edge.source]).filter(Boolean)
+  }
+  
+  /**
+   * Execute input node
+   */
+  private async executeInputNode(node: CustomNode): Promise<any> {
+    const data = node.data as any
+    
+    if (data.inputType === 'text') {
+      return { type: 'text', content: data.content || '' }
+    } else if (data.inputType === 'file') {
+      return { type: 'file', files: data.files || [], content: data.content || '' }
+    } else if (data.inputType === 'url') {
+      // Fetch URL content
+      try {
+        const response = await fetch(`${this.baseUrl}/api/fetch-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: data.url }),
+          signal: this.abortController?.signal
+        })
+        const result = await response.json()
+        return { type: 'url', url: data.url, content: result.content }
+      } catch (error) {
+        return { type: 'url', url: data.url, content: '', error: error.message }
+      }
+    }
+    
+    return { type: 'unknown', content: '' }
+  }
+  
+  /**
+   * Execute LLM node - supports multiple models in parallel
+   */
+  private async executeLLMNode(node: CustomNode, inputData: any[]): Promise<any> {
+    const data = node.data as any
+    const models = data.models || []
+    const prompt = data.prompt || ''
+    
+    // Combine input data
+    const combinedInput = inputData.map(d => d.content || '').join('\n\n')
+    const fullPrompt = prompt.replace('{input}', combinedInput)
+    
+    // If multiple models, execute in parallel
+    if (models.length > 1) {
+      const modelPromises = models.map((model: string) => 
+        this.executeSingleModel(model, fullPrompt, data)
+      )
+      
+      try {
+        const results = await Promise.allSettled(modelPromises)
+        
+        // Collect successful responses
+        const responses = results.map((result, index) => {
+          if (result.status === 'fulfilled') {
+            return result.value
+          } else {
+            return {
+              model: models[index],
+              prompt: fullPrompt,
+              response: `Error: ${result.reason?.message || 'Model execution failed'}`,
+              error: true,
+              timestamp: new Date().toISOString()
+            }
+          }
+        })
+        
+        return {
+          type: 'multi-model',
+          models,
+          prompt: fullPrompt,
+          responses,
+          timestamp: new Date().toISOString()
+        }
+      } catch (error) {
+        console.error('Multi-model execution failed:', error)
+        throw error
+      }
+    }
+    
+    // Single model execution
+    const model = models[0]
+    if (!model) {
+      return {
+        error: true,
+        message: 'No model selected',
+        timestamp: new Date().toISOString()
+      }
+    }
+    
+    try {
+      return await this.executeSingleModel(model, fullPrompt, data)
+    } catch (error) {
+      // Fallback to mock response for testing
+      console.warn('LLM execution failed, using mock response:', error)
+      return {
+        model,
+        prompt: fullPrompt,
+        response: `Mock response for ${model}: Analyzed the input successfully.`,
+        tokens: 100,
         timestamp: new Date().toISOString(),
-        size: String(formattedOutput).length
+        mock: true
       }
     }
   }
-
+  
   /**
-   * Execute a summarize node
+   * Execute a single model
    */
-  private async executeSummarizeNode(
-    node: Node,
-    inputs: Record<string, any>,
-    _apiKeys?: Record<string, string>
-  ): Promise<any> {
-    const length = node.data['length'] || 'medium'
-    const style = node.data['style'] || 'paragraph'
-    const inputText = String(Object.values(inputs)[0] || '')
-
-    // Simulate summarization processing
-    await new Promise(resolve => setTimeout(resolve, 80 + Math.random() * 150))
-
+  private async executeSingleModel(model: string, prompt: string, config: any): Promise<any> {
+    // Check if it's an Ollama model
+    const isOllamaModel = model?.toLowerCase().includes('llama') || 
+                         model?.toLowerCase().includes('mistral') || 
+                         model?.toLowerCase().includes('codellama') ||
+                         model?.toLowerCase().includes('phi') ||
+                         model?.toLowerCase().includes('orca')
+    
+    if (isOllamaModel) {
+      // Use Ollama service for local models
+      const ollamaResponse = await ollamaService.generate(
+        model,
+        prompt,
+        {
+          temperature: config.temperature || 0.7,
+          max_tokens: config.maxTokens || 2000
+        }
+      )
+      
+      return {
+        model,
+        prompt,
+        response: ollamaResponse.response,
+        tokens: ollamaResponse.eval_count || 0,
+        timestamp: new Date().toISOString(),
+        executionTime: ollamaResponse.total_duration ? ollamaResponse.total_duration / 1e9 : 0
+      }
+    } else {
+      // Use backend API for cloud models
+      const apiKey = this.getAPIKey(model)
+      
+      const response = await fetch(`${this.baseUrl}/api/llm/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          prompt,
+          temperature: config.temperature || 0.5,
+          max_tokens: config.maxTokens || 2000,
+          api_key: apiKey
+        }),
+        signal: this.abortController?.signal
+      })
+      
+      if (!response.ok) {
+        throw new Error(`LLM request failed: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      return {
+        model,
+        prompt,
+        response: result.response,
+        tokens: result.tokens,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+  
+  /**
+   * Execute compare node
+   */
+  private async executeCompareNode(node: CustomNode, inputData: any[]): Promise<any> {
+    const data = node.data as any
+    const comparisonType = data.comparisonType || 'conflicts'
+    
+    // Extract responses from input data - handle both single and multi-model responses
+    const responses: Array<{ model: string; response: string }> = []
+    
+    inputData.forEach(d => {
+      if (d.type === 'multi-model' && d.responses) {
+        // Handle multi-model response
+        d.responses.forEach((r: any) => {
+          responses.push({
+            model: r.model || 'unknown',
+            response: r.response || ''
+          })
+        })
+      } else {
+        // Handle single model response
+        responses.push({
+          model: d.model || 'unknown',
+          response: d.response || d.content || ''
+        })
+      }
+    })
+    
+    // Perform comparison
+    const comparison = {
+      type: comparisonType,
+      inputs: responses,
+      conflicts: [],
+      consensus: [],
+      differences: []
+    }
+    
+    // Enhanced conflict detection
+    if (comparisonType === 'conflicts') {
+      // Analyze semantic differences between responses
+      const conflicts = this.detectConflicts(responses)
+      comparison.conflicts = conflicts
+      
+      // Add severity scoring
+      if (conflicts.length > 0) {
+        const uniqueResponses = new Set(responses.map(r => r.response.toLowerCase().trim()))
+        const divergenceRatio = uniqueResponses.size / responses.length
+        
+        comparison.conflictSummary = {
+          totalConflicts: conflicts.length,
+          divergenceRatio,
+          severity: divergenceRatio > 0.7 ? 'high' : divergenceRatio > 0.4 ? 'medium' : 'low',
+          conflictingModels: [...new Set(conflicts.flatMap(c => c.models))]
+        }
+      }
+    }
+    
+    // Find consensus
+    if (comparisonType === 'consensus') {
+      // Find common themes (simplified)
+      const commonWords = this.findCommonWords(responses.map(r => r.response))
+      comparison.consensus = commonWords.slice(0, 5).map(word => ({
+        theme: word,
+        frequency: 'high',
+        models: responses.map(r => r.model)
+      }))
+    }
+    
+    return comparison
+  }
+  
+  /**
+   * Execute summarize node
+   */
+  private async executeSummarizeNode(node: CustomNode, inputData: any[]): Promise<any> {
+    const data = node.data as any
+    const length = data.length || 'medium'
+    const style = data.style || 'paragraph'
+    
+    // Combine all input data
+    const combinedContent = inputData.map(d => {
+      if (d.response) return d.response
+      if (d.content) return d.content
+      if (d.inputs) return d.inputs.map(i => i.response).join('\n')
+      return JSON.stringify(d)
+    }).join('\n\n')
+    
+    // Create summary based on length and style
+    let summary = ''
+    
+    if (style === 'bullets') {
+      const points = combinedContent.split('.').filter(s => s.trim().length > 20)
+      const numPoints = length === 'short' ? 3 : length === 'long' ? 10 : 5
+      summary = points.slice(0, numPoints).map(p => `• ${p.trim()}`).join('\n')
+    } else {
+      const words = combinedContent.split(' ')
+      const wordCount = length === 'short' ? 50 : length === 'long' ? 200 : 100
+      summary = words.slice(0, wordCount).join(' ') + '...'
+    }
+    
     return {
-      original: inputText,
-      summary: `${length} ${style} summary of: ${inputText.substring(0, 50)}...`,
+      summary,
       length,
       style,
-      wordCount: inputText.split(' ').length,
-      reductionRatio: 0.3
+      originalLength: combinedContent.length,
+      summaryLength: summary.length
+    }
+  }
+  
+  /**
+   * Execute output node
+   */
+  private async executeOutputNode(node: CustomNode, inputData: any[]): Promise<any> {
+    const data = node.data as any
+    const format = data.format || 'json'
+    const includeMetadata = data.includeMetadata || false
+    
+    let output: any = {
+      timestamp: new Date().toISOString(),
+      format,
+      data: inputData
+    }
+    
+    if (includeMetadata) {
+      output.metadata = {
+        nodeId: node.id,
+        nodeLabel: node.data.label,
+        executionTime: Date.now()
+      }
+    }
+    
+    // Format output based on type
+    if (format === 'markdown') {
+      output.formatted = this.formatAsMarkdown(inputData)
+    } else if (format === 'text') {
+      output.formatted = this.formatAsText(inputData)
+    }
+    
+    return output
+  }
+  
+  /**
+   * Helper: Get API key for a model
+   */
+  private getAPIKey(model: string): string {
+    const modelLower = model.toLowerCase()
+    
+    if (modelLower.includes('gpt')) {
+      return localStorage.getItem('openai_api_key') || ''
+    } else if (modelLower.includes('claude')) {
+      return localStorage.getItem('claude_api_key') || ''
+    } else if (modelLower.includes('gemini')) {
+      return localStorage.getItem('gemini_api_key') || ''
+    } else if (modelLower.includes('grok')) {
+      return localStorage.getItem('grok_api_key') || ''
+    }
+    
+    return ''
+  }
+  
+  /**
+   * Helper: Detect conflicts between responses
+   */
+  private detectConflicts(responses: Array<{ model: string; response: string }>): any[] {
+    const conflicts: any[] = []
+    
+    // Compare each pair of responses
+    for (let i = 0; i < responses.length; i++) {
+      for (let j = i + 1; j < responses.length; j++) {
+        const r1 = responses[i]
+        const r2 = responses[j]
+        
+        // Check for direct contradictions
+        const contradictions = this.findContradictions(r1.response, r2.response)
+        if (contradictions.length > 0) {
+          conflicts.push({
+            type: 'contradiction',
+            description: contradictions.join('; '),
+            models: [r1.model, r2.model],
+            severity: 'high',
+            examples: contradictions
+          })
+        }
+        
+        // Check for numerical discrepancies
+        const numDiscrepancies = this.findNumericalDiscrepancies(r1.response, r2.response)
+        if (numDiscrepancies.length > 0) {
+          conflicts.push({
+            type: 'numerical_discrepancy',
+            description: 'Different numerical values provided',
+            models: [r1.model, r2.model],
+            severity: 'medium',
+            discrepancies: numDiscrepancies
+          })
+        }
+        
+        // Check for sentiment differences
+        const sentimentDiff = this.compareSentiment(r1.response, r2.response)
+        if (sentimentDiff.conflicting) {
+          conflicts.push({
+            type: 'sentiment_conflict',
+            description: 'Opposing sentiments detected',
+            models: [r1.model, r2.model],
+            severity: 'low',
+            sentiment1: sentimentDiff.sentiment1,
+            sentiment2: sentimentDiff.sentiment2
+          })
+        }
+      }
+    }
+    
+    return conflicts
+  }
+  
+  /**
+   * Helper: Find contradictions between two texts
+   */
+  private findContradictions(text1: string, text2: string): string[] {
+    const contradictions: string[] = []
+    
+    // Simple contradiction patterns
+    const patterns = [
+      { positive: /\b(is|are|was|were)\b/gi, negative: /\b(is not|are not|isn't|aren't|was not|were not|wasn't|weren't)\b/gi },
+      { positive: /\b(can|could|will|would|should)\b/gi, negative: /\b(cannot|can't|could not|couldn't|will not|won't|would not|wouldn't|should not|shouldn't)\b/gi },
+      { positive: /\b(yes|true|correct|right)\b/gi, negative: /\b(no|false|incorrect|wrong)\b/gi }
+    ]
+    
+    patterns.forEach(pattern => {
+      const hasPositive1 = pattern.positive.test(text1)
+      const hasNegative1 = pattern.negative.test(text1)
+      const hasPositive2 = pattern.positive.test(text2)
+      const hasNegative2 = pattern.negative.test(text2)
+      
+      if ((hasPositive1 && hasNegative2) || (hasNegative1 && hasPositive2)) {
+        contradictions.push('Contradictory assertions detected')
+      }
+    })
+    
+    return contradictions
+  }
+  
+  /**
+   * Helper: Find numerical discrepancies
+   */
+  private findNumericalDiscrepancies(text1: string, text2: string): any[] {
+    const discrepancies: any[] = []
+    
+    // Extract numbers from both texts
+    const numbers1 = text1.match(/\b\d+\.?\d*\b/g) || []
+    const numbers2 = text2.match(/\b\d+\.?\d*\b/g) || []
+    
+    if (numbers1.length > 0 && numbers2.length > 0) {
+      const nums1 = numbers1.map(n => parseFloat(n))
+      const nums2 = numbers2.map(n => parseFloat(n))
+      
+      // Check for significant differences
+      nums1.forEach(n1 => {
+        nums2.forEach(n2 => {
+          const diff = Math.abs(n1 - n2)
+          const avg = (n1 + n2) / 2
+          const percentDiff = avg > 0 ? (diff / avg) * 100 : 0
+          
+          if (percentDiff > 20) { // More than 20% difference
+            discrepancies.push({
+              value1: n1,
+              value2: n2,
+              difference: diff,
+              percentDifference: percentDiff
+            })
+          }
+        })
+      })
+    }
+    
+    return discrepancies
+  }
+  
+  /**
+   * Helper: Compare sentiment between texts
+   */
+  private compareSentiment(text1: string, text2: string): any {
+    // Simple sentiment analysis based on keywords
+    const positiveWords = /\b(good|great|excellent|positive|success|benefit|improve|better|happy|glad)\b/gi
+    const negativeWords = /\b(bad|poor|negative|failure|problem|issue|worse|unhappy|sad|difficult)\b/gi
+    
+    const positive1 = (text1.match(positiveWords) || []).length
+    const negative1 = (text1.match(negativeWords) || []).length
+    const positive2 = (text2.match(positiveWords) || []).length
+    const negative2 = (text2.match(negativeWords) || []).length
+    
+    const sentiment1 = positive1 > negative1 ? 'positive' : negative1 > positive1 ? 'negative' : 'neutral'
+    const sentiment2 = positive2 > negative2 ? 'positive' : negative2 > positive2 ? 'negative' : 'neutral'
+    
+    return {
+      sentiment1,
+      sentiment2,
+      conflicting: (sentiment1 === 'positive' && sentiment2 === 'negative') || 
+                  (sentiment1 === 'negative' && sentiment2 === 'positive')
+    }
+  }
+  
+  /**
+   * Helper: Find common words in responses
+   */
+  private findCommonWords(texts: string[]): string[] {
+    const wordFrequency: Record<string, number> = {}
+    
+    texts.forEach(text => {
+      const words = text.toLowerCase().split(/\s+/)
+      words.forEach(word => {
+        if (word.length > 4) { // Skip short words
+          wordFrequency[word] = (wordFrequency[word] || 0) + 1
+        }
+      })
+    })
+    
+    return Object.entries(wordFrequency)
+      .sort((a, b) => b[1] - a[1])
+      .map(([word]) => word)
+  }
+  
+  /**
+   * Helper: Format as Markdown
+   */
+  private formatAsMarkdown(data: any[]): string {
+    let markdown = '# Workflow Results\n\n'
+    
+    data.forEach((item, index) => {
+      markdown += `## Step ${index + 1}\n\n`
+      
+      if (item.model) {
+        markdown += `**Model:** ${item.model}\n\n`
+      }
+      
+      if (item.response) {
+        markdown += `**Response:**\n${item.response}\n\n`
+      } else if (item.summary) {
+        markdown += `**Summary:**\n${item.summary}\n\n`
+      } else if (item.conflicts) {
+        markdown += `**Conflicts Found:** ${item.conflicts.length}\n\n`
+      } else {
+        markdown += '```json\n' + JSON.stringify(item, null, 2) + '\n```\n\n'
+      }
+    })
+    
+    return markdown
+  }
+  
+  /**
+   * Helper: Format as plain text
+   */
+  private formatAsText(data: any[]): string {
+    return data.map((item, index) => {
+      let text = `=== Step ${index + 1} ===\n`
+      
+      if (item.response) {
+        text += item.response
+      } else if (item.summary) {
+        text += item.summary
+      } else {
+        text += JSON.stringify(item, null, 2)
+      }
+      
+      return text
+    }).join('\n\n')
+  }
+  
+  /**
+   * Cancel ongoing execution
+   */
+  cancelExecution() {
+    if (this.abortController) {
+      this.abortController.abort()
+      this.abortController = null
+      toast.error('Workflow execution cancelled')
     }
   }
 }

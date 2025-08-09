@@ -1,5 +1,4 @@
-"""
-Workflow Executor for Web App
+"""Workflow Executor for Web App
 Handles workflow execution from the visual builder
 """
 
@@ -25,8 +24,7 @@ class WorkflowExecutor:
         self.results = {}
 
     async def execute(self, nodes: list[dict], edges: list[dict]) -> dict[str, Any]:
-        """
-        Execute a workflow defined by nodes and edges.
+        """Execute a workflow defined by nodes and edges.
 
         Args:
             nodes: List of node definitions with id, type, and data
@@ -34,6 +32,7 @@ class WorkflowExecutor:
 
         Returns:
             Dictionary with execution results for each node
+
         """
         logger.info("Starting workflow execution", node_count=len(nodes), edge_count=len(edges))
 

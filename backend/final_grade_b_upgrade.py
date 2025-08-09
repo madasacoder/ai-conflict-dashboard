@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Final Grade B Upgrade - Complete Test Suite Fix
+"""Final Grade B Upgrade - Complete Test Suite Fix
 ================================================
 This script completes the Grade B upgrade for ALL tests.
 """
@@ -68,7 +67,6 @@ def mock_all_providers():
 
 def fix_common_patterns(content: str) -> str:
     """Fix common test anti-patterns."""
-    
     # Fix assert True/False without messages
     content = re.sub(
         r'assert\s+True\s*$',
@@ -120,7 +118,6 @@ def fix_common_patterns(content: str) -> str:
 
 def add_missing_imports(content: str) -> str:
     """Add commonly missing imports."""
-    
     imports_needed = []
     
     # Check what's used in the file
@@ -160,7 +157,6 @@ def add_missing_imports(content: str) -> str:
 
 def upgrade_test_quality(filepath: Path) -> bool:
     """Upgrade a single test file to Grade B standard."""
-    
     try:
         with open(filepath, 'r') as f:
             content = f.read()
@@ -214,7 +210,6 @@ def upgrade_test_quality(filepath: Path) -> bool:
 
 def main():
     """Main upgrade process."""
-    
     test_dir = Path(__file__).parent / "tests"
     
     print("=" * 60)

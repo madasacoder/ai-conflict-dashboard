@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Fix All Failing Tests - Comprehensive Grade B Upgrade
+"""Fix All Failing Tests - Comprehensive Grade B Upgrade
 ======================================================
 This script fixes all 107 failing tests and upgrades them to Grade B standard.
 """
@@ -314,7 +313,6 @@ TEST_FIXES = {
 
 def fix_test_file(filepath: Path) -> bool:
     """Fix a single test file."""
-    
     filename = filepath.name
     
     if filename not in TEST_FIXES:
@@ -374,7 +372,6 @@ def fix_test_file(filepath: Path) -> bool:
 
 def apply_generic_fixes(filepath: Path) -> bool:
     """Apply generic Grade B fixes to any test file."""
-    
     with open(filepath, 'r') as f:
         content = f.read()
     

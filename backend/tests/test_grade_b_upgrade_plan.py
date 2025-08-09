@@ -1,5 +1,4 @@
-"""
-Grade B Test Upgrade Plan
+"""Grade B Test Upgrade Plan
 =========================
 This file contains upgraded versions of existing tests to meet Grade B standards.
 
@@ -32,8 +31,7 @@ from smart_chunking import chunk_text_smart
 
 
 class TestGradeBApiAnalyze:
-    """
-    Upgraded version of test_api_analyze.py tests to Grade B standard.
+    """Upgraded version of test_api_analyze.py tests to Grade B standard.
     Original grade: C (weak assertions, over-mocked)
     Target grade: B (strong assertions, real integration where possible)
     """
@@ -44,8 +42,7 @@ class TestGradeBApiAnalyze:
         return TestClient(app)
 
     def test_analyze_validates_input_thoroughly(self, client):
-        """
-        Grade B: Test input validation with multiple edge cases.
+        """Grade B: Test input validation with multiple edge cases.
         Tests both success and failure paths with specific assertions.
         """
         # Arrange: Various invalid inputs
@@ -71,8 +68,7 @@ class TestGradeBApiAnalyze:
                 assert "detail" in error_data or "error" in error_data, f"No error message for: {description}"
 
     def test_analyze_handles_api_failures_gracefully(self, client):
-        """
-        Grade B: Test error handling for various API failure scenarios.
+        """Grade B: Test error handling for various API failure scenarios.
         Uses minimal mocking and tests real error recovery.
         """
         # Arrange: Mock only external API calls
@@ -104,8 +100,7 @@ class TestGradeBApiAnalyze:
                     assert any(r.get("error") for r in data["responses"]), f"Error not captured for: {description}"
 
     def test_analyze_processes_unicode_correctly(self, client):
-        """
-        Grade B: Test Unicode handling with comprehensive character sets.
+        """Grade B: Test Unicode handling with comprehensive character sets.
         Tests actual processing, not just acceptance.
         """
         # Arrange: Comprehensive Unicode test cases
@@ -140,8 +135,7 @@ class TestGradeBApiAnalyze:
             assert text not in str(data).replace(text, ""), f"Text leaked unchanged for: {description}"
 
     def test_analyze_chunking_preserves_content_integrity(self, client):
-        """
-        Grade B: Test that chunking doesn't corrupt content.
+        """Grade B: Test that chunking doesn't corrupt content.
         Tests actual chunking behavior with various content types.
         """
         # Arrange: Content that shouldn't be split
@@ -175,8 +169,7 @@ class TestGradeBApiAnalyze:
 
     @pytest.mark.asyncio
     async def test_analyze_handles_concurrent_requests_safely(self, client):
-        """
-        Grade B: Test concurrent request handling and isolation.
+        """Grade B: Test concurrent request handling and isolation.
         Ensures no data leakage between requests.
         """
         # Arrange: Multiple unique requests
@@ -206,14 +199,12 @@ class TestGradeBApiAnalyze:
 
 
 class TestGradeBCircuitBreaker:
-    """
-    Upgrade circuit breaker tests to Grade B.
+    """Upgrade circuit breaker tests to Grade B.
     Focus on deterministic testing without race conditions.
     """
     
     def test_circuit_breaker_opens_after_failures_deterministic(self):
-        """
-        Grade B: Test circuit breaker with deterministic behavior.
+        """Grade B: Test circuit breaker with deterministic behavior.
         No race conditions, clear assertions.
         """
         from llm_providers import get_circuit_breaker, circuit_breakers
@@ -245,8 +236,7 @@ class TestGradeBCircuitBreaker:
         assert "circuit breaker is open" in str(exc_info.value).lower()
 
     def test_circuit_breaker_recovers_after_timeout(self):
-        """
-        Grade B: Test circuit breaker recovery with time mocking.
+        """Grade B: Test circuit breaker recovery with time mocking.
         Deterministic time-based testing.
         """
         from llm_providers import get_circuit_breaker, circuit_breakers
@@ -278,13 +268,11 @@ class TestGradeBCircuitBreaker:
 
 
 class TestGradeBTokenUtils:
-    """
-    Upgrade token utility tests to Grade B standard.
+    """Upgrade token utility tests to Grade B standard.
     """
     
     def test_token_estimation_accuracy_comprehensive(self):
-        """
-        Grade B: Test token estimation with comprehensive cases.
+        """Grade B: Test token estimation with comprehensive cases.
         Strong assertions on accuracy.
         """
         from token_utils import estimate_tokens
@@ -313,8 +301,7 @@ class TestGradeBTokenUtils:
             assert tokens > 0, f"Zero tokens for non-empty text: {description}"
 
     def test_chunking_handles_edge_cases_properly(self):
-        """
-        Grade B: Test chunking with edge cases and boundary conditions.
+        """Grade B: Test chunking with edge cases and boundary conditions.
         """
         from token_utils import chunk_text
         
@@ -348,8 +335,7 @@ class TestGradeBTokenUtils:
 
 
 class TestGradeBSecurity:
-    """
-    Upgrade security tests to Grade B standard.
+    """Upgrade security tests to Grade B standard.
     Less mocking, more real validation.
     """
     
@@ -358,8 +344,7 @@ class TestGradeBSecurity:
         return TestClient(app)
 
     def test_input_sanitization_comprehensive(self, client):
-        """
-        Grade B: Test input sanitization with real attack vectors.
+        """Grade B: Test input sanitization with real attack vectors.
         """
         # Arrange: Real attack vectors
         attack_vectors = [
@@ -398,8 +383,7 @@ class TestGradeBSecurity:
                         f"Possible execution of {attack_type}: found '{indicator}'"
 
     def test_api_key_never_logged_or_leaked(self, client):
-        """
-        Grade B: Comprehensive API key leak prevention test.
+        """Grade B: Comprehensive API key leak prevention test.
         """
         import logging
         from io import StringIO
@@ -438,8 +422,7 @@ class TestGradeBSecurity:
 
 
 class TestGradeBIntegration:
-    """
-    Upgrade integration tests to Grade B.
+    """Upgrade integration tests to Grade B.
     Real integration with minimal mocking.
     """
     
@@ -448,8 +431,7 @@ class TestGradeBIntegration:
         return TestClient(app)
 
     def test_full_request_lifecycle_with_timing(self, client):
-        """
-        Grade B: Test complete request lifecycle with performance checks.
+        """Grade B: Test complete request lifecycle with performance checks.
         """
         import time
         
@@ -483,8 +465,7 @@ class TestGradeBIntegration:
                 assert data["processing_time"] < max_time * 1000  # Convert to ms
 
     def test_error_recovery_and_graceful_degradation(self, client):
-        """
-        Grade B: Test system recovery from various error conditions.
+        """Grade B: Test system recovery from various error conditions.
         """
         # Arrange: Simulate various failures
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
@@ -530,8 +511,7 @@ class TestGradeBIntegration:
 
 # Helper function to verify test quality
 def verify_grade_b_compliance(test_function):
-    """
-    Verify a test meets Grade B standards.
+    """Verify a test meets Grade B standards.
     """
     import inspect
     import ast

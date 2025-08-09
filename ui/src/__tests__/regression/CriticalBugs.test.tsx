@@ -4,12 +4,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '@/App'
 import { useWorkflowStore } from '@/state/workflowStore'
 import { WorkflowBuilder } from '@/components/WorkflowBuilder'
-import { NodePalette } from '@/components/nodes/NodePalette'
+import { NodePalette } from '@/components/ui/NodePalette'
 
 // Mock the backend API
 const mockAPI = {

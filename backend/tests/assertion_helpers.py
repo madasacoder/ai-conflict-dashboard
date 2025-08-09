@@ -24,6 +24,7 @@ def assert_valid_llm_response(response: dict[str, Any], provider: str | None = N
 
     Raises:
         AssertionError: If any validation fails
+
     """
     # Basic structure validation
     assert response is not None, "Response should not be None"
@@ -82,6 +83,7 @@ def assert_conflict_detection(responses: list[dict], expected_conflicts: int | N
 
     Raises:
         AssertionError: If validation fails
+
     """
     assert len(responses) >= 2, "Need at least 2 responses to detect conflicts"
 
@@ -167,6 +169,7 @@ def assert_circuit_breaker_state(breaker_state: dict, expected_state: str) -> No
     Args:
         breaker_state: Current breaker state dictionary
         expected_state: Expected state ('closed', 'open', 'half_open')
+
     """
     assert "state" in breaker_state, "Missing breaker state"
     assert (
@@ -191,6 +194,7 @@ def assert_rate_limit_response(response: dict, expected_limited: bool = False) -
     Args:
         response: API response dictionary
         expected_limited: Whether we expect to be rate limited
+
     """
     if expected_limited:
         assert (
@@ -209,6 +213,7 @@ def assert_chunking_valid(chunk_info: dict, text_length: int) -> None:
     Args:
         chunk_info: Chunking metadata
         text_length: Original text length
+
     """
     assert "total_chunks" in chunk_info, "Missing total_chunks"
     assert chunk_info["total_chunks"] > 0, "Should have at least one chunk"
@@ -231,6 +236,7 @@ def assert_security_headers(headers: dict) -> None:
 
     Args:
         headers: Response headers dictionary
+
     """
     # CORS headers
     assert "access-control-allow-origin" in headers, "Missing CORS origin header"
@@ -260,6 +266,7 @@ def assert_api_error_format(error: dict) -> None:
 
     Args:
         error: Error response dictionary
+
     """
     assert "detail" in error, "Error missing 'detail' field"
     assert isinstance(error["detail"], str), "Error detail should be string"

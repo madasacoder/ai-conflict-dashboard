@@ -1,5 +1,4 @@
-"""
-Grade A Security Tests - Finding Real Vulnerabilities
+"""Grade A Security Tests - Finding Real Vulnerabilities
 ======================================================
 These tests are designed to find actual security bugs, not just pass.
 Every test should try to break the system in realistic ways.
@@ -23,8 +22,7 @@ from main import app
 
 
 class TestGradeASecurityVulnerabilities:
-    """
-    Grade A Security Tests - No compromises, no shortcuts.
+    """Grade A Security Tests - No compromises, no shortcuts.
     Every test is designed to find real vulnerabilities.
     """
 
@@ -33,8 +31,7 @@ class TestGradeASecurityVulnerabilities:
         return TestClient(app)
 
     def test_api_key_leakage_in_all_scenarios(self, client):
-        """
-        BUG HUNT: API keys should NEVER appear in responses, logs, or errors.
+        """BUG HUNT: API keys should NEVER appear in responses, logs, or errors.
         Tests every possible way an API key could leak.
         """
         api_key = "sk-secret-key-12345-do-not-leak"
@@ -77,8 +74,7 @@ class TestGradeASecurityVulnerabilities:
                 pass
 
     def test_sql_injection_advanced(self, client):
-        """
-        BUG HUNT: Advanced SQL injection attempts that might bypass basic filters.
+        """BUG HUNT: Advanced SQL injection attempts that might bypass basic filters.
         """
         sql_payloads = [
             # Classic injections
@@ -136,8 +132,7 @@ class TestGradeASecurityVulnerabilities:
                     ), f"Database info leaked for payload: {payload}"
 
     def test_xss_advanced_vectors(self, client):
-        """
-        BUG HUNT: Advanced XSS vectors that might bypass sanitization.
+        """BUG HUNT: Advanced XSS vectors that might bypass sanitization.
         """
         xss_payloads = [
             # Basic XSS
@@ -198,8 +193,7 @@ class TestGradeASecurityVulnerabilities:
                     ), f"Dangerous pattern '{pattern}' found in response"
 
     def test_command_injection_comprehensive(self, client):
-        """
-        BUG HUNT: Command injection through all possible vectors.
+        """BUG HUNT: Command injection through all possible vectors.
         """
         cmd_payloads = [
             # Basic command injection
@@ -260,8 +254,7 @@ class TestGradeASecurityVulnerabilities:
                     ), f"Command execution indicator '{indicator}' found"
 
     def test_path_traversal_advanced(self, client):
-        """
-        BUG HUNT: Path traversal attacks through various encoding methods.
+        """BUG HUNT: Path traversal attacks through various encoding methods.
         """
         traversal_payloads = [
             # Basic traversal
@@ -314,8 +307,7 @@ class TestGradeASecurityVulnerabilities:
                         assert indicator not in response_text
 
     def test_xxe_injection(self, client):
-        """
-        BUG HUNT: XML External Entity injection attempts.
+        """BUG HUNT: XML External Entity injection attempts.
         """
         xxe_payloads = [
             # Basic XXE
@@ -343,8 +335,7 @@ class TestGradeASecurityVulnerabilities:
                 assert "/etc/passwd" not in response_text
 
     def test_prototype_pollution(self, client):
-        """
-        BUG HUNT: Prototype pollution attacks (relevant if JSON parsing is unsafe).
+        """BUG HUNT: Prototype pollution attacks (relevant if JSON parsing is unsafe).
         """
         pollution_payloads = [
             {"text": "test", "__proto__": {"isAdmin": True}},
@@ -371,8 +362,7 @@ class TestGradeASecurityVulnerabilities:
                 assert "isAdmin" not in str(data)
 
     def test_race_condition_circuit_breaker(self, client):
-        """
-        BUG HUNT: Race conditions in circuit breaker implementation.
+        """BUG HUNT: Race conditions in circuit breaker implementation.
         BUG-072 CONFIRMED: Circuit breaker has race condition issues.
         """
         from llm_providers import circuit_breakers, get_circuit_breaker
@@ -404,8 +394,7 @@ class TestGradeASecurityVulnerabilities:
         ), f"Race condition detected: {len(unique_ids)} different breaker instances created"
 
     def test_memory_exhaustion_attack(self, client):
-        """
-        BUG HUNT: Memory exhaustion through large payloads.
+        """BUG HUNT: Memory exhaustion through large payloads.
         """
         # Try increasingly large payloads
         sizes = [1_000, 10_000, 100_000, 1_000_000, 10_000_000]
@@ -429,8 +418,7 @@ class TestGradeASecurityVulnerabilities:
                 assert "timeout" in str(e).lower() or "too large" in str(e).lower()
 
     def test_timing_attack_on_api_keys(self, client):
-        """
-        BUG HUNT: Timing attacks to determine valid API key patterns.
+        """BUG HUNT: Timing attacks to determine valid API key patterns.
         """
         import time
 
@@ -463,8 +451,7 @@ class TestGradeASecurityVulnerabilities:
         assert max_diff < 0.01, f"Timing attack possible: {max_diff*1000:.2f}ms difference detected"
 
     def test_integer_overflow(self, client):
-        """
-        BUG HUNT: Integer overflow in token counting or limits.
+        """BUG HUNT: Integer overflow in token counting or limits.
         """
         overflow_values = [
             2**31 - 1,  # Max 32-bit signed
@@ -491,8 +478,7 @@ class TestGradeASecurityVulnerabilities:
             assert response.status_code in [200, 400, 422]
 
     def test_unicode_normalization_attacks(self, client):
-        """
-        BUG HUNT: Unicode normalization vulnerabilities.
+        """BUG HUNT: Unicode normalization vulnerabilities.
         """
         # Different Unicode representations of the same character
         unicode_payloads = [
@@ -517,8 +503,7 @@ class TestGradeASecurityVulnerabilities:
         assert len(set(responses)) == 1, "Inconsistent handling of Unicode variants"
 
     def test_concurrent_request_isolation(self, client):
-        """
-        BUG HUNT: Data leakage between concurrent requests.
+        """BUG HUNT: Data leakage between concurrent requests.
         """
         import concurrent.futures
         import uuid
@@ -549,8 +534,7 @@ class TestGradeASecurityVulnerabilities:
         assert len(leaks) == 0, f"Data isolation failure: {leaks}"
 
     def test_rate_limit_bypass_attempts(self, client):
-        """
-        BUG HUNT: Rate limiting bypass techniques.
+        """BUG HUNT: Rate limiting bypass techniques.
         """
         # Different bypass techniques
         bypass_attempts = [
@@ -586,8 +570,7 @@ class TestGradeASecurityVulnerabilities:
 
 
 class TestGradeABusinessLogicBugs:
-    """
-    Grade A tests for business logic vulnerabilities.
+    """Grade A tests for business logic vulnerabilities.
     """
 
     @pytest.fixture
@@ -595,8 +578,7 @@ class TestGradeABusinessLogicBugs:
         return TestClient(app)
 
     def test_token_counting_edge_cases(self, client):
-        """
-        BUG HUNT: Token counting errors that could cause billing issues or limits bypass.
+        """BUG HUNT: Token counting errors that could cause billing issues or limits bypass.
         """
         from token_utils import estimate_tokens
 
@@ -640,8 +622,7 @@ class TestGradeABusinessLogicBugs:
             assert response.status_code in [200, 400, 422]
 
     def test_consensus_analysis_manipulation(self, client):
-        """
-        BUG HUNT: Consensus analysis that can be manipulated to show false agreement.
+        """BUG HUNT: Consensus analysis that can be manipulated to show false agreement.
         BUG-073 CONFIRMED: Incorrect consensus for conflicting responses.
         """
         # Make request that should show conflict, not consensus
@@ -680,8 +661,7 @@ class TestGradeABusinessLogicBugs:
                 )
 
     def test_chunking_boundary_corruption(self, client):
-        """
-        BUG HUNT: Text corruption at chunk boundaries.
+        """BUG HUNT: Text corruption at chunk boundaries.
         """
         # Create text with important data at chunk boundaries
         chunk_size = 4000  # Approximate chunk size
@@ -715,8 +695,7 @@ class TestGradeABusinessLogicBugs:
                     pass
 
     def test_model_fallback_security(self, client):
-        """
-        BUG HUNT: Security issues in model fallback mechanisms.
+        """BUG HUNT: Security issues in model fallback mechanisms.
         """
         # Test what happens when primary model fails
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
@@ -740,8 +719,7 @@ class TestGradeABusinessLogicBugs:
             assert "sk-ant-secret-67890" not in response_text
 
     def test_parallel_request_resource_leak(self, client):
-        """
-        BUG HUNT: Resource leaks under parallel load.
+        """BUG HUNT: Resource leaks under parallel load.
         """
         import gc
         import tracemalloc
@@ -782,8 +760,7 @@ class TestGradeABusinessLogicBugs:
 
 
 def test_document_found_bugs():
-    """
-    Document all bugs found by these Grade A tests.
+    """Document all bugs found by these Grade A tests.
     """
     bugs_found = []
 

@@ -8,8 +8,7 @@ import pytest
 
 
 class TestWorkflowDataAttributeBug:
-    """
-    Regression test for workflow builder data attribute mismatch bug.
+    """Regression test for workflow builder data attribute mismatch bug.
 
     BUG DESCRIPTION:
     - HTML used: data-node-type="input"

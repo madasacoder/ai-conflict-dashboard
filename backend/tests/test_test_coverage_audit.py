@@ -6,15 +6,13 @@ import pytest
 
 
 class TestCoverageAudit:
-    """
-    Tests for BUG-040: Test Coverage Claims vs Reality Gap
+    """Tests for BUG-040: Test Coverage Claims vs Reality Gap
 
     This exposes the gap between claimed test coverage and actual functionality testing.
     """
 
     def test_critical_user_workflows_have_tests(self):
         """Test that critical user workflows are actually tested."""
-
         # Critical workflows that MUST have tests
         critical_workflows = [
             {
@@ -74,7 +72,6 @@ class TestCoverageAudit:
 
     def test_frontend_testing_coverage(self):
         """Test that frontend functionality has adequate test coverage."""
-
         # Frontend files that should have tests
 
         # Look for corresponding test files
@@ -92,7 +89,6 @@ class TestCoverageAudit:
 
     def test_integration_vs_unit_test_ratio(self):
         """Test that we have adequate integration tests, not just unit tests."""
-
         test_dir = Path("tests")
         test_files = list(test_dir.glob("test_*.py"))
 
@@ -122,7 +118,6 @@ class TestCoverageAudit:
 
     def test_user_reported_bugs_have_regression_tests(self):
         """Test that user-reported bugs from today have regression tests."""
-
         bugs_found_today = [
             {
                 "bug": "workflow_drag_drop_failure",
@@ -151,7 +146,6 @@ class TestCoverageAudit:
 
     def test_claimed_vs_actual_coverage_gap(self):
         """Expose the gap between claimed coverage and actual functionality coverage."""
-
         # This test documents the problem
         claimed_coverage = {
             "backend": "92.23%",
@@ -186,7 +180,6 @@ class TestCoverageAudit:
 
     def test_manual_testing_requirements(self):
         """Document what requires manual testing until automation exists."""
-
         manual_test_requirements = [
             {
                 "feature": "Workflow Builder Drag and Drop",
@@ -225,7 +218,6 @@ class TestCoverageAudit:
 
     def test_test_file_naming_conventions(self):
         """Test that test files follow proper naming conventions."""
-
         test_dir = Path("tests")
         test_files = list(test_dir.glob("*.py"))
 
@@ -252,7 +244,6 @@ class TestCoverageAudit:
 
     def test_bug_tracking_completeness(self):
         """Test that all bugs found today are tracked in BUGS.md."""
-
         bugs_md_path = Path("../docs/BUGS.md")
 
         if bugs_md_path.exists():

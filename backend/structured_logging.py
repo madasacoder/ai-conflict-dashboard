@@ -1,5 +1,4 @@
-"""
-Fixed structured logging configuration with API key sanitization.
+"""Fixed structured logging configuration with API key sanitization.
 
 This module provides structured logging with automatic detection and
 masking of sensitive information like API keys in log messages.
@@ -41,6 +40,7 @@ def sanitize_value(value: Any) -> Any:
 
     Returns:
         Sanitized value with sensitive data masked
+
     """
     if isinstance(value, str):
         # Apply all sensitive patterns
@@ -87,6 +87,7 @@ def sanitize_sensitive_data(text: str) -> str:
 
     Returns:
         Text with sensitive data replaced with ***
+
     """
     return sanitize_value(text)
 
@@ -101,6 +102,7 @@ def sanitize_event_dict(_: WrappedLogger, __: str, event_dict: EventDict) -> Eve
 
     Returns:
         Sanitized event dictionary
+
     """
     # Sanitize the entire event dict
     return sanitize_value(event_dict)
@@ -113,8 +115,7 @@ def add_timestamp(_: WrappedLogger, __: str, event_dict: EventDict) -> EventDict
 
 
 def setup_structured_logging(level: str = "INFO", log_file: str = "app.log") -> WrappedLogger:
-    """
-    Configure structlog for structured logging.
+    """Configure structlog for structured logging.
 
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR)
@@ -122,6 +123,7 @@ def setup_structured_logging(level: str = "INFO", log_file: str = "app.log") -> 
 
     Returns:
         Configured structlog logger
+
     """
     # Configure standard library logging
     logging.basicConfig(
@@ -212,8 +214,7 @@ def setup_structured_logging(level: str = "INFO", log_file: str = "app.log") -> 
 
 
 def get_logger(name: str | None = None, **context: Any) -> WrappedLogger:
-    """
-    Get a structured logger with optional context.
+    """Get a structured logger with optional context.
 
     Args:
         name: Logger name (module name)
@@ -221,6 +222,7 @@ def get_logger(name: str | None = None, **context: Any) -> WrappedLogger:
 
     Returns:
         Bound structlog logger
+
     """
     logger = structlog.get_logger(name)
 

@@ -1,5 +1,4 @@
-"""
-Comprehensive regression test suite for all documented bugs.
+"""Comprehensive regression test suite for all documented bugs.
 This ensures that none of the 35 bugs we've found and fixed reappear.
 
 Each test is mapped to a specific bug in docs/BUGS.md

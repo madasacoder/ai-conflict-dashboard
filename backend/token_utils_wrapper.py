@@ -1,5 +1,4 @@
-"""
-Wrapper to adapt chunk_text_smart to the expected test interface.
+"""Wrapper to adapt chunk_text_smart to the expected test interface.
 """
 
 from typing import Any
@@ -14,8 +13,7 @@ def chunk_text(
     overlap: int = 100,
     overlap_tokens: int | None = None,
 ) -> list[dict[str, Any]]:
-    """
-    Chunk text and return in the format expected by tests.
+    """Chunk text and return in the format expected by tests.
 
     Args:
         text: Text to chunk
@@ -26,6 +24,7 @@ def chunk_text(
 
     Returns:
         List of dictionaries with chunk information
+
     """
     # Use chunk_size if provided, otherwise use max_tokens
     size = chunk_size if chunk_size is not None else max_tokens

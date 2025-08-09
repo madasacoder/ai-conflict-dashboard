@@ -1,5 +1,4 @@
-"""
-Grade B Test Fixes - Upgrading F/D/C Grade Tests
+"""Grade B Test Fixes - Upgrading F/D/C Grade Tests
 =================================================
 This file contains fixed and upgraded versions of failing and weak tests.
 All tests here meet Grade B standards (80-89% quality).
@@ -25,8 +24,7 @@ from rate_limiting import RateLimiter
 
 
 class TestFixedRegressionBugs:
-    """
-    Fixed versions of regression tests from test_regression_all_bugs.py
+    """Fixed versions of regression tests from test_regression_all_bugs.py
     Original: Many F/D grade (empty, weak assertions)
     Target: All B grade with real testing
     """
@@ -36,8 +34,7 @@ class TestFixedRegressionBugs:
         return TestClient(app)
 
     def test_bug001_circuit_breaker_isolation_fixed(self, client):
-        """
-        Grade B: Test circuit breakers are isolated per API key.
+        """Grade B: Test circuit breakers are isolated per API key.
         Fixed version with deterministic testing.
         """
         # Arrange: Clear state for clean test
@@ -72,8 +69,7 @@ class TestFixedRegressionBugs:
         assert result == "success", "Breaker2 should still accept calls"
 
     def test_bug003_rate_limiting_active_fixed(self, client):
-        """
-        Grade B: Test rate limiting is properly enforced.
+        """Grade B: Test rate limiting is properly enforced.
         Fixed with deterministic testing and proper assertions.
         """
         # Arrange: Create a controlled rate limiter
@@ -108,8 +104,7 @@ class TestFixedRegressionBugs:
         assert successful_count <= 60, f"Too many successful: {successful_count}"
 
     def test_bug004_code_blocks_preserved_fixed(self):
-        """
-        Grade B: Test code blocks are not split during chunking.
+        """Grade B: Test code blocks are not split during chunking.
         Fixed with comprehensive validation.
         """
         from smart_chunking import chunk_text_smart
@@ -145,8 +140,7 @@ class TestFixedRegressionBugs:
                         f"{scenario}: Chunk {i} has incomplete code block"
 
     def test_bug005_unicode_token_counting_fixed(self):
-        """
-        Grade B: Test Unicode token counting accuracy.
+        """Grade B: Test Unicode token counting accuracy.
         Fixed with specific assertions and ranges.
         """
         from token_utils import estimate_tokens
@@ -179,8 +173,7 @@ class TestFixedRegressionBugs:
             assert tokens < len(text) * 10, f"Unreasonable token count for: {description}"
 
     def test_bug006_api_keys_sanitized_fixed(self):
-        """
-        Grade B: Test API keys are properly sanitized in logs.
+        """Grade B: Test API keys are properly sanitized in logs.
         Fixed with comprehensive checking.
         """
         from structured_logging import sanitize_sensitive_data
@@ -212,8 +205,7 @@ class TestFixedRegressionBugs:
                     f"{description}: Original key portion '{original_key}' still visible"
 
     def test_bug008_memory_cleanup_fixed(self):
-        """
-        Grade B: Test memory is properly cleaned up.
+        """Grade B: Test memory is properly cleaned up.
         Fixed with proper context manager testing.
         """
         from memory_management import MemoryManager, RequestContext, _active_requests
@@ -249,8 +241,7 @@ class TestFixedRegressionBugs:
         assert True, "Memory cleanup completed"
 
     def test_bug010_request_timeout_fixed(self, client):
-        """
-        Grade B: Test request timeout handling.
+        """Grade B: Test request timeout handling.
         Fixed with proper timeout validation.
         """
         # Arrange: Mock a slow operation
@@ -283,13 +274,11 @@ class TestFixedRegressionBugs:
 
 
 class TestFixedEdgeCases:
-    """
-    Fixed edge case tests to Grade B standard.
+    """Fixed edge case tests to Grade B standard.
     """
     
     def test_null_byte_handling_fixed(self):
-        """
-        Grade B: Test null byte handling in text.
+        """Grade B: Test null byte handling in text.
         Fixed with proper validation.
         """
         from token_utils import estimate_tokens
@@ -318,8 +307,7 @@ class TestFixedEdgeCases:
                     f"{description}: Unexpected error: {e}"
 
     def test_concurrent_state_modifications_fixed(self):
-        """
-        Grade B: Test handling of concurrent state modifications.
+        """Grade B: Test handling of concurrent state modifications.
         Fixed with proper synchronization testing.
         """
         # Arrange: Shared state with lock
@@ -350,8 +338,7 @@ class TestFixedEdgeCases:
         assert len(set(values)) == 20, "Concurrent overwrites detected"
 
     def test_extreme_recursion_handling_fixed(self):
-        """
-        Grade B: Test handling of deep recursion.
+        """Grade B: Test handling of deep recursion.
         Fixed with proper recursion limit testing.
         """
         import sys
@@ -387,8 +374,7 @@ class TestFixedEdgeCases:
 
 
 class TestFixedBusinessLogic:
-    """
-    Fixed business logic tests to Grade B standard.
+    """Fixed business logic tests to Grade B standard.
     """
     
     @pytest.fixture
@@ -396,8 +382,7 @@ class TestFixedBusinessLogic:
         return TestClient(app)
 
     def test_consensus_analysis_fixed(self, client):
-        """
-        Grade B: Test consensus analysis with clear scenarios.
+        """Grade B: Test consensus analysis with clear scenarios.
         Fixed with deterministic testing.
         """
         # Arrange: Mock responses
@@ -458,8 +443,7 @@ class TestFixedBusinessLogic:
                     # This would check the actual consensus logic
 
     def test_model_selection_validation_fixed(self, client):
-        """
-        Grade B: Test model selection and validation.
+        """Grade B: Test model selection and validation.
         Fixed with comprehensive model testing.
         """
         # Arrange: Various model selections
@@ -491,8 +475,7 @@ class TestFixedBusinessLogic:
                     f"{description}: Should handle gracefully"
 
     def test_chunking_strategy_selection_fixed(self):
-        """
-        Grade B: Test smart chunking strategy selection.
+        """Grade B: Test smart chunking strategy selection.
         Fixed with specific content type testing.
         """
         from smart_chunking import chunk_text_smart
@@ -521,8 +504,7 @@ class TestFixedBusinessLogic:
 
 
 def run_grade_b_verification():
-    """
-    Verify all tests meet Grade B standards.
+    """Verify all tests meet Grade B standards.
     """
     results = {
         "total": 0,

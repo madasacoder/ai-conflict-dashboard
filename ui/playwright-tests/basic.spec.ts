@@ -11,6 +11,10 @@ test.describe('Basic E2E Tests', () => {
   test('should have workflow builder visible', async ({ page }) => {
     await page.goto('/')
     
+    // Click the launch button to show workflow builder
+    const launchButton = page.locator('button:has-text("Launch Workflow Builder")')
+    await launchButton.click()
+    
     // Look for workflow builder elements
     const workflowContainer = page.locator('[data-testid="workflow-builder"], .workflow-builder, #workflow-builder')
     await expect(workflowContainer.first()).toBeVisible({ timeout: 10000 })
@@ -27,6 +31,10 @@ test.describe('Basic E2E Tests', () => {
 
   test('should have node palette available', async ({ page }) => {
     await page.goto('/')
+    
+    // Click the launch button to show workflow builder
+    const launchButton = page.locator('button:has-text("Launch Workflow Builder")')
+    await launchButton.click()
     
     // Check for node palette or sidebar
     const palette = page.locator('[data-testid="node-palette"], .node-palette, .sidebar')

@@ -127,7 +127,10 @@ export const NodePaletteEnhanced: React.FC<NodePaletteEnhancedProps> = ({ classN
   }
 
   return (
-    <div className={`node-palette enhanced ${className || ''}`}>
+    <div 
+      className={`node-palette enhanced ${className || ''}`}
+      data-testid="node-palette"
+    >
       {/* Header */}
       <div className="palette-header">
         <h3 className="palette-title">Node Library</h3>

@@ -28,7 +28,7 @@ MODEL_LIMITS = {
         "name": "Claude 3 Haiku",
     },
     "gemini-1.5-flash": {
-        "max_tokens": 1048576,  # 1M token context
+        "max_tokens": 1000000,  # 1M token context (use safe value to prevent overflow)
         "max_response_tokens": 8192,
         "name": "Gemini 1.5 Flash",
     },
@@ -60,9 +60,24 @@ def estimate_tokens(text: str) -> int:
     """
     if not text:
         return 0
+        
+    # Guard against extremely large inputs that could cause overflow
+    max_text_length = 10_000_000  # 10MB character limit
+    if len(text) > max_text_length:
+        # Process in chunks to avoid overflow
+        chunk_size = 1_000_000
+        total_tokens = 0
+        for i in range(0, len(text), chunk_size):
+            chunk = text[i:i + chunk_size]
+            total_tokens += estimate_tokens(chunk)
+        return min(total_tokens, 2_000_000)  # Cap at 2M tokens to prevent overflow
 
     # Normalize Unicode to handle composite characters
-    text = unicodedata.normalize("NFC", text)
+    try:
+        text = unicodedata.normalize("NFC", text)
+    except Exception:
+        # If normalization fails, continue with original text
+        pass
 
     token_count = 0
     i = 0

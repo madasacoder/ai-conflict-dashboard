@@ -3,7 +3,8 @@
  * Handles the execution of workflows with real backend integration
  */
 
-import { CustomNode, Edge } from '@/state/workflowStore'
+import { CustomNode } from '@/state/workflowStore'
+import type { Edge } from 'reactflow'
 import toast from 'react-hot-toast'
 import { ollamaService } from './ollamaService'
 import { fetchWithRetry, networkMonitor } from '@/utils/networkUtils'
@@ -90,7 +91,7 @@ export class WorkflowExecutor {
       errors
     }
   }
-  
+
   /**
    * Check for circular dependencies using DFS
    */
@@ -99,14 +100,17 @@ export class WorkflowExecutor {
     
     // Build adjacency list
     nodes.forEach(node => {
-      adjacencyList[node.id] = []
+      if (!adjacencyList[node.id]) {
+        adjacencyList[node.id] = []
+      }
     })
     
     edges.forEach(edge => {
       if (!adjacencyList[edge.source]) {
         adjacencyList[edge.source] = []
       }
-      adjacencyList[edge.source].push(edge.target)
+      const list = adjacencyList[edge.source] || (adjacencyList[edge.source] = [])
+      list.push(edge.target)
     })
     
     // DFS to detect cycles
@@ -117,7 +121,8 @@ export class WorkflowExecutor {
       visited.add(nodeId)
       recursionStack.add(nodeId)
       
-      for (const neighbor of adjacencyList[nodeId] || []) {
+      const neighbors = adjacencyList[nodeId] || []
+      for (const neighbor of neighbors) {
         if (!visited.has(neighbor)) {
           if (hasCycle(neighbor)) return true
         } else if (recursionStack.has(neighbor)) {
@@ -211,72 +216,77 @@ export class WorkflowExecutor {
         }
       }
       
-      return {
+      const exec: ExecutionResult = {
         workflowId: `workflow-${Date.now()}`,
         status: errors.length > 0 ? 'partial' : 'success',
         results,
-        errors: errors.length > 0 ? errors : undefined,
+        errors: errors.length > 0 ? errors : [],
         executionTime: Date.now() - startTime
       }
+      return exec
     } catch (error) {
-      return {
+      const exec: ExecutionResult = {
         workflowId: 'unknown',
         status: 'error',
         results,
-        errors: [...errors, error instanceof Error ? error.message : 'Unknown error'],
+        errors: [...errors, (error as any)?.message ?? 'Unknown error'],
         executionTime: Date.now() - startTime
       }
+      return exec
     } finally {
       this.abortController = null
     }
   }
-  
+
   /**
    * Get execution order using topological sort
    */
   private getExecutionOrder(nodes: CustomNode[], edges: Edge[]): string[] {
     const inDegree: Record<string, number> = {}
     const adjacencyList: Record<string, string[]> = {}
-    
+
     // Initialize
     nodes.forEach(node => {
-      inDegree[node.id] = 0
-      adjacencyList[node.id] = []
+      if (typeof inDegree[node.id] === 'undefined') inDegree[node.id] = 0
+      if (!adjacencyList[node.id]) adjacencyList[node.id] = []
     })
-    
+
     // Build graph
-    edges.forEach(edge => {
-      adjacencyList[edge.source].push(edge.target)
-      inDegree[edge.target]++
-    })
+      edges.forEach(edge => {
+        if (!adjacencyList[edge.source]) adjacencyList[edge.source] = []
+        const list = adjacencyList[edge.source] || (adjacencyList[edge.source] = [])
+        list.push(edge.target)
+        inDegree[edge.target] = (inDegree[edge.target] ?? 0) + 1
+      })
     
     // Topological sort using Kahn's algorithm
     const queue: string[] = []
     const result: string[] = []
-    
+
     // Find nodes with no dependencies
     Object.keys(inDegree).forEach(nodeId => {
-      if (inDegree[nodeId] === 0) {
+      if ((inDegree[nodeId] ?? 0) === 0) {
         queue.push(nodeId)
       }
     })
-    
+
     while (queue.length > 0) {
       const nodeId = queue.shift()!
       result.push(nodeId)
-      
+
       // Process neighbors
-      adjacencyList[nodeId].forEach(neighbor => {
-        inDegree[neighbor]--
-        if (inDegree[neighbor] === 0) {
+      const neighbors = adjacencyList[nodeId] || []
+      neighbors.forEach((neighbor: string) => {
+        inDegree[neighbor] = (inDegree[neighbor] ?? 0) - 1
+        if ((inDegree[neighbor] ?? 0) === 0) {
           queue.push(neighbor)
         }
       })
     }
-    
+
     return result
   }
-  
+
   /**
    * Execute a single node
    */
@@ -318,7 +328,7 @@ export class WorkflowExecutor {
     edges: Edge[]
   ): any[] {
     const inputEdges = edges.filter(e => e.target === nodeId)
-    return inputEdges.map(edge => results[edge.source]).filter(Boolean)
+    return inputEdges.map(edge => results[edge.source]).filter((v): v is any => Boolean(v))
   }
   
   /**
@@ -334,16 +344,16 @@ export class WorkflowExecutor {
     } else if (data.inputType === 'url') {
       // Fetch URL content
       try {
-        const response = await fetch(`${this.baseUrl}/api/fetch-url`, {
+      const response = await fetch(`${this.baseUrl}/api/fetch-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: data.url }),
-          signal: this.abortController?.signal
+        signal: (this.abortController?.signal ?? null) as any
         })
         const result = await response.json()
         return { type: 'url', url: data.url, content: result.content }
       } catch (error) {
-        return { type: 'url', url: data.url, content: '', error: error.message }
+        return { type: 'url', url: data.url, content: '', error: (error as any)?.message }
       }
     }
     
@@ -384,7 +394,7 @@ export class WorkflowExecutor {
               timestamp: new Date().toISOString()
             }
           }
-        })
+        }) as any[]
         
         return {
           type: 'multi-model',
@@ -472,13 +482,13 @@ export class WorkflowExecutor {
             max_tokens: config.maxTokens || 2000,
             api_key: apiKey
           }),
-          signal: this.abortController?.signal
+          signal: (this.abortController?.signal ?? null) as any
         },
         {
           timeout,
           retries: 3,
           onSlowNetwork: () => toast.loading(`Slow network detected. Processing ${model}...`),
-          onRetry: (attempt) => toast.warning(`Retrying ${model} (attempt ${attempt}/3)`)
+          onRetry: (attempt) => toast(`Retrying ${model} (attempt ${attempt}/3)`) 
         }
       )
       
@@ -496,7 +506,7 @@ export class WorkflowExecutor {
       }
     }
   }
-  
+
   /**
    * Execute compare node
    */
@@ -526,7 +536,7 @@ export class WorkflowExecutor {
     })
     
     // Perform comparison
-    const comparison = {
+    const comparison: { type: string; inputs: { model: string; response: string }[]; conflicts: any[]; consensus: any[]; differences: any[]; conflictSummary?: any } = {
       type: comparisonType,
       inputs: responses,
       conflicts: [],
@@ -542,7 +552,7 @@ export class WorkflowExecutor {
       
       // Add severity scoring
       if (conflicts.length > 0) {
-        const uniqueResponses = new Set(responses.map(r => r.response.toLowerCase().trim()))
+        const uniqueResponses = new Set(responses.map(r => (r.response || '').toLowerCase().trim()))
         const divergenceRatio = uniqueResponses.size / responses.length
         
         comparison.conflictSummary = {
@@ -557,7 +567,7 @@ export class WorkflowExecutor {
     // Find consensus
     if (comparisonType === 'consensus') {
       // Find common themes (simplified)
-      const commonWords = this.findCommonWords(responses.map(r => r.response))
+    const commonWords = this.findCommonWords(responses.map((r) => r.response))
       comparison.consensus = commonWords.slice(0, 5).map(word => ({
         theme: word,
         frequency: 'high',
@@ -577,10 +587,10 @@ export class WorkflowExecutor {
     const style = data.style || 'paragraph'
     
     // Combine all input data
-    const combinedContent = inputData.map(d => {
+      const combinedContent = inputData.map((d: any) => {
       if (d.response) return d.response
       if (d.content) return d.content
-      if (d.inputs) return d.inputs.map(i => i.response).join('\n')
+        if (d.inputs) return d.inputs.map((i: any) => i.response).join('\n')
       return JSON.stringify(d)
     }).join('\n\n')
     
@@ -588,22 +598,22 @@ export class WorkflowExecutor {
     let summary = ''
     
     if (style === 'bullets') {
-      const points = combinedContent.split('.').filter(s => s.trim().length > 20)
+      const points = combinedContent.split('.').filter((s: string) => s.trim().length > 20)
       const numPoints = length === 'short' ? 3 : length === 'long' ? 10 : 5
       summary = points.slice(0, numPoints).map(p => `• ${p.trim()}`).join('\n')
-    } else {
-      const words = combinedContent.split(' ')
-      const wordCount = length === 'short' ? 50 : length === 'long' ? 200 : 100
-      summary = words.slice(0, wordCount).join(' ') + '...'
-    }
-    
-    return {
-      summary,
-      length,
-      style,
-      originalLength: combinedContent.length,
-      summaryLength: summary.length
-    }
+      } else {
+        const words = combinedContent.split(' ')
+        const wordCount = length === 'short' ? 50 : length === 'long' ? 200 : 100
+        summary = words.slice(0, wordCount).join(' ') + '...'
+      }
+
+      return {
+        summary,
+        length,
+        style,
+        originalLength: combinedContent.length,
+        summaryLength: summary.length
+      }
   }
   
   /**
@@ -668,6 +678,9 @@ export class WorkflowExecutor {
       for (let j = i + 1; j < responses.length; j++) {
         const r1 = responses[i]
         const r2 = responses[j]
+        if (!r1 || !r2) {
+          continue
+        }
         
         // Check for direct contradictions
         const contradictions = this.findContradictions(r1.response, r2.response)
@@ -789,7 +802,7 @@ export class WorkflowExecutor {
     
     const sentiment1 = positive1 > negative1 ? 'positive' : negative1 > positive1 ? 'negative' : 'neutral'
     const sentiment2 = positive2 > negative2 ? 'positive' : negative2 > positive2 ? 'negative' : 'neutral'
-    
+
     return {
       sentiment1,
       sentiment2,
@@ -797,7 +810,7 @@ export class WorkflowExecutor {
                   (sentiment1 === 'negative' && sentiment2 === 'positive')
     }
   }
-  
+
   /**
    * Helper: Find common words in responses
    */

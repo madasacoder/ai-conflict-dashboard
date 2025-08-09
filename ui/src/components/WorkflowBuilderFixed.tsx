@@ -78,8 +78,21 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
     onConnect,
     addNode,
     selectNode,
-    removeEdge
+    removeEdge,
+    togglePalette
   } = useWorkflowStore()
+
+  // Ensure palette is open on first load
+  useEffect(() => {
+    // If palette is closed and this is the first time, open it
+    if (!isPaletteOpen) {
+      const hasSeenPalette = localStorage.getItem('workflow-palette-seen')
+      if (!hasSeenPalette) {
+        togglePalette()
+        localStorage.setItem('workflow-palette-seen', 'true')
+      }
+    }
+  }, [])
 
   // Initialize React Flow
   const onInit = useCallback((instance: ReactFlowInstance) => {

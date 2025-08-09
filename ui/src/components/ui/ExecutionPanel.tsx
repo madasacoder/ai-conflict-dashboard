@@ -18,7 +18,7 @@ interface ExecutionPanelProps {
 }
 
 export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose }) => {
-  const { nodes, edges, execution, setExecution, setExecutionProgress } = useWorkflowStore()
+  const { nodes, execution, setExecutionProgress } = useWorkflowStore()
   const [isExecuting, setIsExecuting] = useState(false)
   const [progress, setProgress] = useState<ExecutionProgress | null>(null)
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, 'pending' | 'running' | 'completed' | 'error'>>({})
@@ -51,34 +51,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
     setNodeStatuses(resetStatuses)
 
     try {
-      const result = await workflowExecutor.executeWorkflow(nodes as any, edges as any, {
-        apiKeys: {}, // TODO: Get API keys from settings
-        onProgress: (progressData) => {
-          setProgress(progressData)
-          setExecutionProgress(progressData)
-        },
-        onNodeStart: (nodeId) => {
-          setNodeStatuses(prev => ({
-            ...prev,
-            [nodeId]: 'running'
-          }))
-        },
-        onNodeComplete: (nodeId, result) => {
-          setNodeStatuses(prev => ({
-            ...prev,
-            [nodeId]: result.success ? 'completed' : 'error'
-          }))
-        },
-        onNodeError: (nodeId, error) => {
-          setNodeStatuses(prev => ({
-            ...prev,
-            [nodeId]: 'error'
-          }))
-          setErrorDetails(prev => `${prev  }Node ${nodeId}: ${error}\n`)
-        }
-      })
-
-      setExecution(result)
+      // Delegate to the store's executor which manages progress and execution state
+      await useWorkflowStore.getState().executeWorkflow()
     } catch (error) {
       setErrorDetails(`Execution failed: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
@@ -228,21 +202,21 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
           <div className="execution-progress">
             <div className="progress-header">
               <span className="progress-text">
-                {progress.current ? `Executing: ${progress.current}` : 'Preparing...'}
+                {(progress as any).current ? `Executing: ${(progress as any).current}` : 'Preparing...'}
               </span>
               <span className="progress-stats">
-                {progress.completed} / {progress.total} ({progress.percentage}%)
+                {(progress as any).completed} / {(progress as any).total} ({(progress as any).percentage}%)
               </span>
             </div>
             <div className="progress-bar">
               <div 
                 className="progress-fill"
-                style={{ width: `${progress.percentage}%` }}
+                style={{ width: `${(progress as any).percentage || 0}%` }}
               />
             </div>
-            {progress.estimatedTimeRemaining && (
+            {(progress as any).estimatedTimeRemaining && (
               <div className="progress-eta">
-                Est. {progress.estimatedTimeRemaining}s remaining
+                Est. {(progress as any).estimatedTimeRemaining}s remaining
               </div>
             )}
           </div>
@@ -266,9 +240,9 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
                     </div>
                     <div 
                       className="node-status"
-                      style={{ color: getStatusColor(nodeStatuses[node.id]) }}
+                      style={{ color: getStatusColor(nodeStatuses[node.id] || 'pending') }}
                     >
-                      {nodeStatuses[node.id]}
+                      {nodeStatuses[node.id] || 'pending'}
                       {nodeStatuses[node.id] === 'running' && (
                         <RefreshCw size={12} className="spinning" />
                       )}
@@ -295,14 +269,14 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
                     {execution.totalDuration ? formatDuration(execution.totalDuration) : ''}
                   </span>
                   <span className="execution-time">
-                    {execution.startTime.toLocaleString()}
+                    {execution.startTime ? new Date(execution.startTime).toLocaleString() : ''}
                   </span>
                 </div>
               </div>
 
               <div className="results-content">
                 <div className="results-list">
-                  {execution.results.map((result, index) => {
+                  {execution.results.map((result) => {
                    const node = nodes.find(n => n.id === result.nodeId)
                     return (
                       <div
@@ -320,7 +294,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
                             </span>
                           </div>
                           <div className="result-meta">
-                            <span 
+                    <span 
                               className="result-status"
                               style={{ color: getStatusColor(result.success ? 'completed' : 'error') }}
                             >

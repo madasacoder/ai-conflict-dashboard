@@ -14,6 +14,7 @@ import openai
 from pybreaker import CircuitBreaker
 
 from structured_logging import get_logger, sanitize_sensitive_data
+from utils.security import APIKeySanitizer, RequestIsolator
 
 logger = get_logger(__name__)
 

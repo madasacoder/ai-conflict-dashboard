@@ -17,7 +17,7 @@ class TestAdversarialInputs:
 
     @pytest.fixture
     def client(self):
-        return TestClient(app)
+        """Fixture for FastAPI test client."""
 
     def test_extremely_long_single_word(self, client):
         """Test with no spaces - breaks token counting assumptions."""
@@ -81,7 +81,7 @@ class TestRaceConditions:
 
     @pytest.mark.asyncio
     async def test_same_request_multiple_times(self):
-        """What if the same request is sent multiple times simultaneously?"""
+        """What if the same request is sent multiple times simultaneously?."""
         client = TestClient(app)
 
         async def make_request():
@@ -99,7 +99,7 @@ class TestRaceConditions:
         assert len(set(request_ids)) == 50  # All unique?
 
     def test_rapidly_changing_api_keys(self, client):
-        """Test changing API keys between requests - session confusion?"""
+        """Test changing API keys between requests - session confusion?."""
         responses = []
 
         for i in range(20):
@@ -121,7 +121,7 @@ class TestResourceExhaustion:
     """Test resource limits and exhaustion."""
 
     def test_memory_exhaustion_via_large_response(self):
-        """What if an API returns a HUGE response?"""
+        """What if an API returns a HUGE response?. """
         with patch("llm_providers._call_openai_with_breaker") as mock:
             # Simulate 100MB response
             huge_response = "x" * (100 * 1024 * 1024)
@@ -148,7 +148,7 @@ class TestStateCorruption:
     """Test for state corruption and data leakage."""
 
     def test_request_data_leakage_between_users(self, client):
-        """Can one user's data leak to another?"""
+        """Can one user's data leak to another?. """
         # First request with sensitive data
         client.post(
             "/api/analyze",
@@ -167,7 +167,7 @@ class TestStateCorruption:
         assert "user1-key" not in str(data2)
 
     def test_circuit_breaker_state_pollution(self):
-        """Can one user's failures affect another user?"""
+        """Can one user's failures affect another user?. """
         # This is actually a real concern with global circuit breakers!
         # If user A causes circuit to open, does it affect user B?
         pass
@@ -177,7 +177,7 @@ class TestChunkingEdgeCases:
     """Test token chunking with adversarial inputs."""
 
     def test_chunk_boundary_code_blocks(self):
-        """What if chunk boundary falls in middle of code block?"""
+        """What if chunk boundary falls in middle of code block?. """
         # Create text where chunk boundary will split a code block
         pre_code = "a" * 3000  # Just under chunk size
         code_block = "```python\ndef important_function():\n    return 42\n```"
@@ -190,7 +190,7 @@ class TestChunkingEdgeCases:
         # This could cause display issues
 
     def test_chunk_with_no_good_split_points(self):
-        """What if there are no spaces or newlines to split on?"""
+        """What if there are no spaces or newlines to split on?. """
         # URL or base64 data with no spaces
         long_url = "https://example.com/?" + "param=" + "x" * 10000
 
@@ -205,7 +205,7 @@ class TestTimingAttacks:
     """Test for timing-based vulnerabilities."""
 
     def test_api_key_timing_attack(self, client):
-        """Can you determine valid key format via timing?"""
+        """Can you determine valid key format via timing?. """
         import time
 
         keys_to_test = [
@@ -229,7 +229,7 @@ class TestFrontendAssumptions:
     """Test assumptions the frontend makes about responses."""
 
     def test_response_without_expected_fields(self, client):
-        """What if backend returns unexpected structure?"""
+        """What if backend returns unexpected structure?. """
         with patch("llm_providers.analyze_with_models") as mock:
             # Return structure missing expected fields
             mock.return_value = [
@@ -251,7 +251,7 @@ class TestSecurityAssumptions:
     """Test security-related edge cases."""
 
     def test_path_traversal_in_model_names(self, client):
-        """What if model name contains path traversal?"""
+        """What if model name contains path traversal?. """
         response = client.post(
             "/api/analyze",
             json={

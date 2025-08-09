@@ -4,52 +4,56 @@ import { ReactFlowProvider } from 'reactflow';
 import { WorkflowBuilderFixed } from './components/WorkflowBuilderFixed';
 import { InputSection } from './components/features/InputSection';
 import { ResultsSection } from './components/features/ResultsSection';
+import { APIKeySection } from './components/features/APIKeySection';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 import './styles/App.css';
 import 'reactflow/dist/style.css';
 
 function App(): JSX.Element {
-  const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
+  const [currentView, setCurrentView] = useState<'workflow' | 'dashboard' | 'settings'>('workflow');
+
+  const renderContent = () => {
+    switch (currentView) {
+      case 'workflow':
+        return (
+          <ReactFlowProvider>
+            <div 
+              id="workflow-builder" 
+              data-testid="workflow-builder" 
+              className="workflow-builder-container"
+              style={{ height: 'calc(100vh - 120px)', border: '1px solid #ddd', borderRadius: '8px' }}
+            >
+              <WorkflowBuilderFixed />
+            </div>
+          </ReactFlowProvider>
+        );
+      
+      case 'dashboard':
+        return (
+          <>
+            <InputSection />
+            <ResultsSection />
+          </>
+        );
+      
+      case 'settings':
+        return <APIKeySection />;
+      
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="container-fluid py-4">
+    <>
       <Toaster position="top-right" />
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div className="flex-grow-1">
-          <h1 className="text-center mb-2">AI Conflict Dashboard</h1>
-          <p className="text-center text-muted mb-0">
-            Compare responses from multiple AI models side-by-side
-          </p>
-        </div>
-      </div>
-      
-      {/* Launch button for workflow builder */}
-      <div className="text-center mb-4">
-        <button 
-          className="btn btn-primary btn-lg"
-          onClick={() => setShowWorkflowBuilder(!showWorkflowBuilder)}
-        >
-          {showWorkflowBuilder ? 'Hide' : 'Launch'} Workflow Builder
-        </button>
-      </div>
-
-      {showWorkflowBuilder ? (
-        <ReactFlowProvider>
-          <div 
-            id="workflow-builder" 
-            data-testid="workflow-builder" 
-            className="workflow-builder-container"
-            style={{ height: '80vh', border: '1px solid #ddd', borderRadius: '8px' }}
-          >
-            <WorkflowBuilderFixed />
-          </div>
-        </ReactFlowProvider>
-      ) : (
-        <>
-          <InputSection />
-          <ResultsSection />
-        </>
-      )}
-    </div>
+      <DashboardLayout 
+        currentView={currentView}
+        onViewChange={setCurrentView}
+      >
+        {renderContent()}
+      </DashboardLayout>
+    </>
   );
 }
 

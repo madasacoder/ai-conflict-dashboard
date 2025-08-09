@@ -769,16 +769,24 @@ export const useWorkflowStore = create<WorkflowState>()(
           }
         )
         
-        // Store results for display
+        // Store results for display (map record to array)
+        const resultsArray = Object.entries(result.results || {}).map(([nodeId, data]) => ({
+          nodeId,
+          success: !(data && (data as any).error),
+          data,
+          error: (data as any)?.error as string | undefined,
+          timestamp: new Date(),
+          duration: 0
+        })) as any
+
         set({ 
           executionProgress: null,
           execution: {
             workflowId: state.workflow?.id || result.workflowId,
             status: result.status === 'success' ? 'completed' : 'failed',
-            results: result.results,
+            results: resultsArray,
             startTime: new Date(Date.now() - result.executionTime),
-            endTime: new Date(),
-            errors: result.errors
+            endTime: new Date()
           },
           isExecutionPanelOpen: true
         })
@@ -787,7 +795,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         if (result.status === 'success') {
           toast.success('Workflow executed successfully!')
         } else if (result.status === 'partial') {
-          toast((t) => 'Workflow completed with some errors')
+          toast('Workflow completed with some errors')
         } else {
           toast.error('Workflow execution failed')
         }
@@ -803,8 +811,7 @@ export const useWorkflowStore = create<WorkflowState>()(
             status: 'failed',
             results: [],
             startTime: new Date(),
-            endTime: new Date(),
-            errors: [error instanceof Error ? error.message : 'Unknown error']
+            endTime: new Date()
           }
         })
         

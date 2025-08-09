@@ -29,6 +29,8 @@ from structured_logging import (
     log_api_response,
     setup_structured_logging,
 )
+# Import security utilities
+from utils.security import PayloadValidator, RequestIsolator
 
 # Import timeout handling
 from timeout_handler import (
@@ -267,6 +269,7 @@ class AnalyzeResponse(BaseModel):
     responses: list[ModelResponse]
     chunked: bool = False
     chunk_info: dict | None = None
+    consensus: dict | None = None
 
 
 @app.get("/")
@@ -558,14 +561,25 @@ async def analyze_text(request: AnalyzeRequest):
         HTTPException: If text is empty (400) or analysis fails (500).
 
     """
-    # Basic validation
+    # Enhanced validation with security checks
     if not request.text or len(request.text.strip()) == 0:
         raise HTTPException(status_code=400, detail="Text cannot be empty")
+    
+    # Validate payload size
+    is_valid, error_msg = PayloadValidator.validate_text_input(request.text)
+    if not is_valid:
+        raise HTTPException(status_code=413, detail=error_msg)
+    
+    # Validate total JSON size
+    is_valid, error_msg = PayloadValidator.validate_json_size(request.model_dump())
+    if not is_valid:
+        raise HTTPException(status_code=413, detail=error_msg)
 
     # Import here to avoid circular imports
     from llm_providers import analyze_with_models
     from smart_chunking import chunk_text_smart
     from token_utils import check_token_limits
+    from consensus_analyzer import ConsensusAnalyzer
 
     # Check token limits
     token_check = check_token_limits(request.text)
@@ -680,6 +694,9 @@ async def analyze_text(request: AnalyzeRequest):
             from structured_logging import sanitize_sensitive_data
 
             sanitized_text = sanitize_sensitive_data(original_text[:500])
+            
+            # Analyze consensus
+            consensus = ConsensusAnalyzer.analyze_consensus(model_responses)
 
             return AnalyzeResponse(
                 request_id=request_id,
@@ -687,6 +704,7 @@ async def analyze_text(request: AnalyzeRequest):
                 responses=model_responses,
                 chunked=needs_chunking,
                 chunk_info=chunk_info,
+                consensus=consensus,
             )
 
         except AppTimeoutError as e:

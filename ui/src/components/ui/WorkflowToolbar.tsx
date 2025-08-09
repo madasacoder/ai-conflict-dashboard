@@ -9,6 +9,7 @@ import { Play, Save, FileText, Settings, Moon, Sun, Pause, Plus, FolderOpen, Spa
 import { useWorkflowStore } from '@/state/workflowStore'
 import { WorkflowModal } from './WorkflowModal'
 import toast from 'react-hot-toast'
+import '@/styles/WorkflowToolbar.css'
 
 export const WorkflowToolbar: React.FC = () => {
   const {

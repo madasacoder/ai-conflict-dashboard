@@ -1,4 +1,5 @@
-"""Comprehensive Grade B Test Fixes
+"""Comprehensive Grade B Test Fixes.
+
 =================================
 This file provides fixed versions of all common failing test patterns
 to upgrade them to Grade B standard (80-89% quality).
@@ -21,9 +22,7 @@ from main import app
 
 
 class TestGradeBRealIntegration:
-    """Fixed real integration tests - Grade B standard.
-    Addresses common failures in test_real_integration.py
-    """
+    """Fixed real integration tests - Grade B standard."""
     
     @pytest.fixture
     def client(self):
@@ -32,9 +31,7 @@ class TestGradeBRealIntegration:
             yield client
     
     def test_concurrent_requests_with_isolation(self, client):
-        """Grade B: Test request isolation under concurrent load.
-        Fixed version with proper synchronization and assertions.
-        """
+        """Grade B: Test request isolation under concurrent load."""
         # Arrange
         import uuid
         from concurrent.futures import ThreadPoolExecutor
@@ -92,9 +89,7 @@ class TestGradeBRealIntegration:
         assert success_rate > 0.5, f"Low success rate: {success_rate:.1%}"
     
     def test_rapid_sequential_requests_fixed(self, client):
-        """Grade B: Test rapid sequential requests for state corruption.
-        Fixed with proper state handling.
-        """
+        """Grade B: Test rapid sequential requests for state corruption."""
         # Arrange
         request_configs = [
             {"text": "Short", "model": "gpt-3.5-turbo"},
@@ -137,9 +132,7 @@ class TestGradeBRealIntegration:
                 assert response["index"] == i, "Response order corrupted"
     
     def test_security_validation_xss_fixed(self, client):
-        """Grade B: Test XSS prevention with real attack vectors.
-        Fixed with comprehensive validation.
-        """
+        """Grade B: Test XSS prevention with real attack vectors."""
         # Arrange: Real XSS vectors
         xss_vectors = [
             "<script>alert('xss')</script>",
@@ -179,9 +172,7 @@ class TestGradeBRealIntegration:
                                f"Potential XSS: {pattern} not escaped in response"
     
     def test_dos_prevention_fixed(self, client):
-        """Grade B: Test DoS prevention with resource exhaustion attempts.
-        Fixed with proper limits.
-        """
+        """Grade B: Test DoS prevention with resource exhaustion attempts."""
         # Arrange: DoS vectors
         dos_attempts = [
             {"size": 10_000_000, "desc": "10MB text"},
@@ -220,18 +211,14 @@ class TestGradeBRealIntegration:
 
 
 class TestGradeBWorkflowIntegration:
-    """Fixed workflow integration tests - Grade B standard.
-    Addresses failures in workflow test files.
-    """
+    """Fixed workflow integration tests - Grade B standard."""
     
     @pytest.fixture
     def client(self):
-        return TestClient(app)
+        """Fixture for FastAPI test client."""
     
     def test_workflow_data_persistence_fixed(self, client):
-        """Grade B: Test workflow data persistence.
-        Fixed with proper data validation.
-        """
+        """Grade B: Test workflow data persistence."""
         # Arrange
         workflow_data = {
             "name": "Test Workflow",
@@ -278,9 +265,7 @@ class TestGradeBWorkflowIntegration:
                 "Workflow name not persisted"
     
     def test_workflow_execution_fixed(self, client):
-        """Grade B: Test workflow execution.
-        Fixed with mock execution for missing functionality.
-        """
+        """Grade B: Test workflow execution."""
         # Arrange
         execution_request = {
             "workflow_id": "test-workflow-1",
@@ -315,17 +300,14 @@ class TestGradeBWorkflowIntegration:
 
 
 class TestGradeBErrorHandling:
-    """Grade B error handling tests.
-    Comprehensive error scenarios with proper recovery.
-    """
+    """Grade B error handling tests."""
     
     @pytest.fixture
     def client(self):
-        return TestClient(app)
+        """Fixture for FastAPI test client."""
     
     def test_graceful_degradation_all_services_down(self, client):
-        """Grade B: Test graceful degradation when all services fail.
-        """
+        """Grade B: Test graceful degradation when all services fail."""
         # Arrange - Mock all services failing
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
             with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
@@ -356,8 +338,7 @@ class TestGradeBErrorHandling:
                             "Should indicate service failure"
     
     def test_partial_service_recovery(self, client):
-        """Grade B: Test recovery when some services come back online.
-        """
+        """Grade B: Test recovery when some services come back online."""
         # Arrange
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_openai:
             with patch("llm_providers.call_claude", new_callable=AsyncMock) as mock_claude:
@@ -406,17 +387,14 @@ class TestGradeBErrorHandling:
 
 
 class TestGradeBPerformance:
-    """Grade B performance tests.
-    Validates system performance under various conditions.
-    """
+    """Grade B performance tests."""
     
     @pytest.fixture
     def client(self):
-        return TestClient(app)
+        """Fixture for FastAPI test client."""
     
     def test_response_time_targets(self, client):
-        """Grade B: Test response times meet targets.
-        """
+        """Grade B: Test response times meet targets."""
         # Arrange
         test_cases = [
             ("small", "Hello", 0.5),
@@ -442,8 +420,7 @@ class TestGradeBPerformance:
                     f"{size} input too slow: {elapsed:.2f}s > {max_time}s"
     
     def test_memory_usage_under_load(self, client):
-        """Grade B: Test memory usage remains stable under load.
-        """
+        """Grade B: Test memory usage remains stable under load."""
         import gc
         import psutil
         
@@ -474,8 +451,7 @@ class TestGradeBPerformance:
 
 
 def run_grade_b_test_suite():
-    """Run all Grade B tests and report results.
-    """
+    """Run all Grade B tests and report results."""
     import subprocess
     
     result = subprocess.run(

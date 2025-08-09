@@ -8,6 +8,7 @@
 import React, { useState } from 'react'
 import { Brain, Type, Download, GitCompare, FileText, X, Plus, Move } from 'lucide-react'
 import { useWorkflowStore } from '@/state/workflowStore'
+import '@/styles/NodePalette.css'
 
 interface NodePaletteEnhancedProps {
   className?: string

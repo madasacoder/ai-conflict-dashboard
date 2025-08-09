@@ -16,7 +16,7 @@ class TestExtremeParallel:
 
     @pytest.fixture
     def client(self):
-        return TestClient(app)
+        """Fixture for FastAPI test client."""
 
     def test_parallel_api_calls_50x(self, client):
         """Make 50 concurrent API calls to stress test the system."""

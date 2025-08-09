@@ -22,10 +22,10 @@ class RateLimiter:
 
     def __init__(
         self,
-        requests_per_minute: int = 10,
-        requests_per_hour: int = 100,
-        requests_per_day: int = 1000,
-        burst_size: int = 20,
+        requests_per_minute: int = 30,
+        requests_per_hour: int = 300,
+        requests_per_day: int = 3000,
+        burst_size: int = 50,
     ):
         """Initialize rate limiter with configurable limits.
 
@@ -164,7 +164,7 @@ def get_identifier(request: Request) -> str:
 
     Uses a combination of:
     1. API key (if provided in headers)
-    2. IP address
+    2. Real IP address (checking multiple headers)
     3. User agent hash
 
     Args:
@@ -180,14 +180,37 @@ def get_identifier(request: Request) -> str:
         # Hash the API key for privacy
         return hashlib.sha256(api_key.encode()).hexdigest()[:16]
 
-    # Fall back to IP address
-    client_ip = request.client.host if request.client else "unknown"
-
+    # Get real IP address, checking for proxy headers
+    # Check headers in order of preference (to prevent spoofing)
+    real_ip = None
+    
+    # Only trust these headers if we're behind a known proxy
+    # In production, configure this based on your infrastructure
+    trusted_proxy_headers = [
+        "X-Real-IP",
+        "X-Forwarded-For",
+    ]
+    
+    for header in trusted_proxy_headers:
+        ip_value = request.headers.get(header)
+        if ip_value:
+            # Take the first IP if multiple (X-Forwarded-For can have multiple)
+            real_ip = ip_value.split(",")[0].strip()
+            break
+    
+    # Fall back to direct client IP
+    if not real_ip:
+        real_ip = request.client.host if request.client else "unknown"
+    
     # Add user agent for better identification
     user_agent = request.headers.get("User-Agent", "")
     ua_hash = hashlib.sha256(user_agent.encode()).hexdigest()[:8]
-
-    return f"{client_ip}_{ua_hash}"
+    
+    # Combine IP and UA hash for unique identifier
+    combined = f"{real_ip}_{ua_hash}"
+    
+    # Hash the combined identifier for consistency
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
 
 
 def rate_limit_middleware(

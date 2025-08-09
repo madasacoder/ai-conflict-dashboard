@@ -1,41 +1,52 @@
-#!/bin/bash
+#\!/bin/bash
 
-# Script to stop the AI Conflict Dashboard
+# AI Conflict Dashboard - Stop Script
+# This script stops all running services
 
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-echo -e "${YELLOW}Stopping AI Conflict Dashboard...${NC}"
+# Ports used by services
+BACKEND_PORT=8000
+FRONTEND_PORT=3001
 
-# Kill uvicorn (backend)
-echo -n "Stopping backend... "
-pkill -f "uvicorn main:app" 2>/dev/null
-lsof -ti:8000 | xargs kill -9 2>/dev/null
-echo -e "${GREEN}Done${NC}"
+echo -e "${BLUE}Stopping AI Conflict Dashboard services...${NC}"
+echo ""
 
-# Kill frontend
-echo -n "Stopping frontend... "
-pkill -f "http.server 3000" 2>/dev/null
-lsof -ti:3000 | xargs kill -9 2>/dev/null
-echo -e "${GREEN}Done${NC}"
+# Function to kill process on port
+kill_port() {
+    local port=$1
+    local service=$2
+    local pids=$(lsof -ti:$port 2>/dev/null || true)
+    
+    if [ \! -z "$pids" ]; then
+        echo -e "${YELLOW}Stopping $service on port $port (PID: $pids)...${NC}"
+        kill -TERM $pids 2>/dev/null || true
+        sleep 1
+        
+        # Force kill if still running
+        if lsof -ti:$port >/dev/null 2>&1; then
+            kill -9 $pids 2>/dev/null || true
+        fi
+        echo -e "${GREEN}✓ $service stopped${NC}"
+    else
+        echo -e "${BLUE}$service not running on port $port${NC}"
+    fi
+}
 
-# Optional: Kill any python processes in backend directory
-echo -n "Cleaning up any remaining processes... "
-pkill -f "backend.*python" 2>/dev/null
-echo -e "${GREEN}Done${NC}"
+# Stop Backend
+kill_port $BACKEND_PORT "Backend"
+
+# Stop Frontend
+kill_port $FRONTEND_PORT "Frontend"
 
 echo ""
-echo -e "${GREEN}All services stopped${NC}"
-
-# Show any remaining processes on our ports
-if lsof -i:8000 >/dev/null 2>&1; then
-    echo -e "${RED}Warning: Port 8000 still in use:${NC}"
-    lsof -i:8000
-fi
-
-if lsof -i:3000 >/dev/null 2>&1; then
-    echo -e "${RED}Warning: Port 3000 still in use:${NC}"
-    lsof -i:3000
-fi
+echo -e "${GREEN}✓ All services stopped${NC}"
+echo ""
+echo -e "${BLUE}To restart the application, run:${NC}"
+echo -e "  ${YELLOW}./start_app.sh${NC}"
+EOF < /dev/null

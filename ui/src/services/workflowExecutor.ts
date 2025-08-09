@@ -88,6 +88,7 @@ export class WorkflowExecutor {
         }
 
         const node = executionOrder[i]
+        if (!node) continue
         progress.current = node.id
         progress.completed = i
         progress.percentage = Math.round((i / executionOrder.length) * 100)
@@ -101,26 +102,26 @@ export class WorkflowExecutor {
         }
 
         options.onProgress?.(progress)
-        options.onNodeStart?.(node.id)
+        options.onNodeStart?.(node!.id)
 
         try {
           // Get inputs for this node
-          const inputs = this.getNodeInputs(node, edges, nodeResults)
+          const inputs = this.getNodeInputs(node!, edges, nodeResults)
           
           // Execute the node
           const result = await this.executeNode({
-            node,
+            node: node!,
             inputs,
             previousResults: nodeResults
           }, options)
 
           results.push(result)
-          nodeResults[node.id] = result
+          nodeResults[node!.id] = result
           
-          options.onNodeComplete?.(node.id, result)
+          options.onNodeComplete?.(node!.id, result)
         } catch (error) {
           const errorResult: ExecutionResult = {
-            nodeId: node.id,
+            nodeId: node!.id,
             success: false,
             error: error instanceof Error ? error.message : String(error),
             timestamp: new Date(),
@@ -128,16 +129,16 @@ export class WorkflowExecutor {
           }
           
           results.push(errorResult)
-          nodeResults[node.id] = errorResult
+          nodeResults[node!.id] = errorResult
           
-          options.onNodeError?.(node.id, errorResult.error!)
+          options.onNodeError?.(node!.id, errorResult.error!)
         }
       }
 
       // Final progress update
       progress.completed = executionOrder.length
       progress.percentage = 100
-      progress.current = undefined
+      delete progress.current
       options.onProgress?.(progress)
 
       // Complete execution
@@ -157,7 +158,7 @@ export class WorkflowExecutor {
       throw error
     } finally {
       this.isExecuting = false
-      this.abortController = undefined
+      delete this.abortController
     }
   }
 
@@ -312,25 +313,25 @@ export class WorkflowExecutor {
   private validateNodeConfiguration(node: Node): void {
     switch (node.type) {
       case 'input':
-        if (!node.data.inputType) {
+        if (!node.data['inputType']) {
           throw new Error(`Input node ${node.id} missing input type`)
         }
         break
       case 'llm':
-        if (!node.data.models || node.data.models.length === 0) {
+        if (!node.data['models'] || node.data['models'].length === 0) {
           throw new Error(`LLM node ${node.id} missing model configuration`)
         }
-        if (!node.data.prompt) {
+        if (!node.data['prompt']) {
           throw new Error(`LLM node ${node.id} missing prompt`)
         }
         break
       case 'compare':
-        if (!node.data.comparisonType) {
+        if (!node.data['comparisonType']) {
           throw new Error(`Compare node ${node.id} missing comparison type`)
         }
         break
       case 'output':
-        if (!node.data.outputFormat) {
+        if (!node.data['outputFormat']) {
           throw new Error(`Output node ${node.id} missing output format`)
         }
         break
@@ -352,10 +353,11 @@ export class WorkflowExecutor {
 
     for (let i = 0; i < incomingEdges.length; i++) {
       const edge = incomingEdges[i]
+      if (!edge) continue
       const sourceResult = previousResults[edge.source]
       if (sourceResult && sourceResult.success && sourceResult.data) {
         // Use edge target handle as input key, fallback to indexed input
-        const inputKey = edge.targetHandle || `input${i + 1}`
+        const inputKey = edge!.targetHandle || `input${i + 1}`
         inputs[inputKey] = sourceResult.data
       }
     }
@@ -417,14 +419,14 @@ export class WorkflowExecutor {
   /**
    * Execute an input node
    */
-  private async executeInputNode(node: Node, inputs: Record<string, any>): Promise<any> {
+  private async executeInputNode(node: Node, _inputs: Record<string, any>): Promise<any> {
     // Input nodes provide their configured data
-    if (node.data.defaultContent) {
-      return node.data.defaultContent
+    if (node.data['defaultContent']) {
+      return node.data['defaultContent']
     }
     
     // If no default content, return placeholder or empty
-    return node.data.placeholder || ''
+    return node.data['placeholder'] || ''
   }
 
   /**
@@ -433,10 +435,10 @@ export class WorkflowExecutor {
   private async executeLLMNode(
     node: Node,
     inputs: Record<string, any>,
-    apiKeys?: Record<string, string>
+    _apiKeys?: Record<string, string>
   ): Promise<any> {
-    const models = node.data.models || []
-    const prompt = node.data.prompt || ''
+    const models = node.data['models'] || []
+    const prompt = node.data['prompt'] || ''
     
     if (models.length === 0) {
       throw new Error('No models configured for LLM node')
@@ -460,8 +462,8 @@ export class WorkflowExecutor {
       prompt: processedPrompt,
       response: `Simulated response from ${models[0]} for prompt: ${processedPrompt.substring(0, 100)}...`,
       metadata: {
-        temperature: node.data.temperature || 0.7,
-        maxTokens: node.data.maxTokens || 1000
+        temperature: node.data['temperature'] || 0.7,
+        maxTokens: node.data['maxTokens'] || 1000
       }
     }
   }
@@ -470,7 +472,7 @@ export class WorkflowExecutor {
    * Execute a compare node
    */
   private async executeCompareNode(node: Node, inputs: Record<string, any>): Promise<any> {
-    const comparisonType = node.data.comparisonType || 'differences'
+    const comparisonType = node.data['comparisonType'] || 'differences'
     const inputValues = Object.values(inputs)
     
     if (inputValues.length < 2) {
@@ -494,7 +496,7 @@ export class WorkflowExecutor {
    * Execute an output node
    */
   private async executeOutputNode(node: Node, inputs: Record<string, any>): Promise<any> {
-    const outputFormat = node.data.outputFormat || 'text'
+    const outputFormat = node.data['outputFormat'] || 'text'
     const inputData = Object.values(inputs)[0] // Take first input
 
     // Format output based on configuration
@@ -532,10 +534,10 @@ export class WorkflowExecutor {
   private async executeSummarizeNode(
     node: Node,
     inputs: Record<string, any>,
-    apiKeys?: Record<string, string>
+    _apiKeys?: Record<string, string>
   ): Promise<any> {
-    const length = node.data.length || 'medium'
-    const style = node.data.style || 'paragraph'
+    const length = node.data['length'] || 'medium'
+    const style = node.data['style'] || 'paragraph'
     const inputText = String(Object.values(inputs)[0] || '')
 
     // Simulate summarization processing

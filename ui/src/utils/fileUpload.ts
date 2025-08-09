@@ -115,6 +115,7 @@ export async function processFileList(fileList: FileList, options: FileUploadOpt
   // Second pass: process files
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i]
+    if (!file) continue
     
     try {
       // Validate file
@@ -125,30 +126,30 @@ export async function processFileList(fileList: FileList, options: FileUploadOpt
       }
       
       // Generate display name with number if duplicate
-      let displayName = file.name
-      if (filenameCount[file.name] > 1) {
-        currentCount[file.name] = (currentCount[file.name] || 0) + 1
-        displayName = `${file.name} (${currentCount[file.name]})`
+      let displayName = file!.name
+      if (filenameCount[file!.name] && filenameCount[file!.name]! > 1) {
+        currentCount[file!.name] = (currentCount[file!.name] || 0) + 1
+        displayName = `${file!.name} (${currentCount[file!.name]})`
       }
       
       // Read file content
-      const content = await readFileAsText(file)
+      const content = await readFileAsText(file!)
       
       // Create uploaded file object
       const uploadedFile: UploadedFile = {
         id: `file-${i}-${Date.now()}`,
-        originalName: file.name,
+        originalName: file!.name,
         displayName,
-        size: file.size,
-        type: file.type || 'text/plain',
-        lastModified: file.lastModified,
+        size: file!.size,
+        type: file!.type || 'text/plain',
+        lastModified: file!.lastModified,
         content
       }
       
       files.push(uploadedFile)
       
     } catch (error) {
-      errors.push(`${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      errors.push(`${file!.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
   

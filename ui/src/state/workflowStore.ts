@@ -18,8 +18,8 @@ import {
   Connection
 } from 'reactflow'
 import { LocalStorage, STORAGE_KEYS, WorkflowStorage, UIStorage } from '@/utils/localStorage'
-import { sanitizeNodeData, sanitizeWorkflowImport } from '@/utils/sanitize'
-import { WorkflowExecution, ExecutionResult } from '@/types/workflow'
+import { sanitizeWorkflowImport } from '@/utils/sanitize'
+import { WorkflowExecution } from '@/types/workflow'
 import { ExecutionProgress } from '@/services/workflowExecutor'
 import toast from 'react-hot-toast'
 
@@ -238,7 +238,8 @@ const getDefaultTemplates = (): WorkflowMetadata[] => {
   const savedTemplates = LocalStorage.get(STORAGE_KEYS.WORKFLOW_TEMPLATES, { defaultValue: [] })
   
   // Check if we already have the Multi-Model Comparison template
-  const hasMultiModelTemplate = savedTemplates.some((t: WorkflowMetadata) => 
+  const templates = Array.isArray(savedTemplates) ? savedTemplates : []
+  const hasMultiModelTemplate = templates.some((t: any) => 
     t.name === 'Multi-Model Comparison'
   )
   
@@ -254,11 +255,11 @@ const getDefaultTemplates = (): WorkflowMetadata[] => {
       modified: new Date(),
       isTemplate: true
     }
-    savedTemplates.push(multiModelTemplate)
-    LocalStorage.set(STORAGE_KEYS.WORKFLOW_TEMPLATES, savedTemplates)
+    templates.push(multiModelTemplate)
+    LocalStorage.set(STORAGE_KEYS.WORKFLOW_TEMPLATES, templates)
   }
   
-  return savedTemplates
+  return templates as WorkflowMetadata[]
 }
 
 // Create the store
@@ -274,7 +275,7 @@ export const useWorkflowStore = create<WorkflowState>()(
     isExecutionPanelOpen: false,
     nodeExecutionStatus: {},
     templates: getDefaultTemplates(),
-    recentWorkflows: LocalStorage.get(STORAGE_KEYS.RECENT_WORKFLOWS, { defaultValue: [] }),
+    recentWorkflows: LocalStorage.get(STORAGE_KEYS.RECENT_WORKFLOWS, { defaultValue: [] }) || [],
     
     // React Flow handlers
     onNodesChange: (changes: NodeChange[]) => {
@@ -688,10 +689,11 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({ 
           executionProgress: null,
           execution: {
-            id: state.workflow.id,
+            workflowId: state.workflow?.id || 'unknown',
             status: 'completed',
             results: result.results,
-            completed_at: new Date()
+            startTime: new Date(),
+            endTime: new Date()
           }
         })
         

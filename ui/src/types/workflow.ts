@@ -5,7 +5,7 @@
  * for nodes, edges, and workflow metadata.
  */
 
-import { Node as ReactFlowNode, Edge as ReactFlowEdge } from 'reactflow'
+import type { Node as ReactFlowNode, Edge as ReactFlowEdge } from 'reactflow'
 
 // Node types
 export type NodeType = 'llm' | 'compare' | 'output' | 'input' | 'summarize'
@@ -19,14 +19,13 @@ export interface BaseNodeData {
   color?: string
 }
 
-// Extended node interface compatible with React Flow
-export interface Node extends ReactFlowNode {
+// Extended node type compatible with React Flow - using intersection type instead of extends
+export type Node = ReactFlowNode<BaseNodeData & Record<string, any>> & {
   type: NodeType
-  data: BaseNodeData & Record<string, any>
 }
 
-// Edge interface
-export interface Edge extends ReactFlowEdge {
+// Edge type - using type alias instead of interface
+export type Edge = ReactFlowEdge & {
   animated?: boolean
   style?: Record<string, any>
 }

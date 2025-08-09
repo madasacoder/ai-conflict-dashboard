@@ -6,6 +6,7 @@
  */
 
 import { fireEvent } from '@testing-library/react'
+import { vi } from 'vitest'
 
 /**
  * Mock DataTransfer for drag and drop testing
@@ -37,7 +38,7 @@ export class MockDataTransfer implements DataTransfer {
     this.types = Object.keys(this.data)
   }
 
-  setDragImage(image: Element, x: number, y: number): void {
+  setDragImage(_image: Element, _x: number, _y: number): void {
     // Mock implementation
   }
 }
@@ -173,7 +174,7 @@ export function createMockFileList(files: File[]): FileList {
 
   // Add numeric indexing
   files.forEach((file, index) => {
-    fileList[index] = file
+    (fileList as any)[index] = file
   })
 
   return fileList as unknown as FileList
@@ -255,8 +256,8 @@ export function mockFetch(responses: Array<{
   status?: number
   delay?: number
 }>): void {
-  global.fetch = vi.fn(async (url: string, options?: any) => {
-    const urlString = typeof url === 'string' ? url : url.toString()
+  global.fetch = vi.fn(async (url: string, _options?: any) => {
+    const urlString = url
     
     for (const mock of responses) {
       const matches = typeof mock.url === 'string'

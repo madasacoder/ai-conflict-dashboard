@@ -129,7 +129,9 @@ export async function getNodeCount(page: Page): Promise<number> {
  */
 export async function verifyNodeWithText(page: Page, nodeText: string) {
   const node = page.locator('.react-flow__node').filter({ hasText: nodeText })
-  return node.isVisible()
+  // Use count() to check if at least one exists, avoiding strict mode issues
+  const count = await node.count()
+  return count > 0
 }
 
 /**

@@ -86,16 +86,16 @@ test.describe('Drag and Drop Tests (Working)', () => {
     await dragNodeToCanvas(page, 'llm', { x: 300, y: 200 })
     await waitForNode(page)
     
-    // Check if config panel opens
+    // Config panel should open automatically when node is created
     const configPanel = page.locator('[data-testid="node-config-panel"]')
-    const isVisible = await configPanel.isVisible()
     
-    // Config panel might open on selection, so click the node if not visible
-    if (!isVisible) {
-      const node = page.locator('.react-flow__node').first()
-      await node.click()
-      await expect(configPanel).toBeVisible({ timeout: 2000 })
-    }
+    // Wait for config panel with proper timeout
+    await expect(configPanel).toBeVisible({ timeout: 5000 })
+    
+    // Verify the config panel shows the correct node type
+    const configContent = await configPanel.textContent()
+    expect(configContent).toContain('Configure Node')
+    expect(configContent).toContain('llm')
   })
 
   test('should handle different node types', async ({ page }) => {
@@ -127,23 +127,25 @@ test.describe('Drag and Drop Tests (Working)', () => {
     await dragNodeToCanvas(page, 'input', { x: 200, y: 200 })
     await waitForNode(page)
     
+    // Wait for selection state to settle
+    await page.waitForTimeout(100)
+    
     // First node should be selected
     let selectedNodes = await page.locator('.react-flow__node.selected').count()
     expect(selectedNodes).toBe(1)
     
     // Add second node
     await dragNodeToCanvas(page, 'llm', { x: 400, y: 200 })
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(300) // Give more time for selection update
     
-    // Only the new node should be selected
+    // Only one node should be selected at a time
     selectedNodes = await page.locator('.react-flow__node.selected').count()
     expect(selectedNodes).toBe(1)
     
-    // The second node should be the selected one
-    const secondNodeSelected = await page.locator('.react-flow__node').nth(1).evaluate(el => 
-      el.classList.contains('selected')
-    )
-    expect(secondNodeSelected).toBe(true)
+    // The second (most recently added) node should be selected
+    const allNodes = await page.locator('.react-flow__node').all()
+    const secondNodeClasses = await allNodes[1].getAttribute('class')
+    expect(secondNodeClasses).toContain('selected')
   })
 })
 
@@ -165,9 +167,19 @@ test.describe('Workflow Validation', () => {
     // The exact error display mechanism may vary
     await page.waitForTimeout(500)
     
-    // Check for any error indicators
+    // Should show validation error
     const toastError = page.locator('.Toastify__toast--error')
-    const hasToast = await toastError.count() > 0
+    const errorVisible = await toastError.isVisible().catch(() => false)
+    
+    // Either show toast error OR some other error indication
+    if (!errorVisible) {
+      // Check for inline error message or other error display
+      const inlineError = page.locator('[data-testid="validation-error"]')
+      const hasInlineError = await inlineError.isVisible().catch(() => false)
+      
+      // At least one error indication should be present
+      expect(errorVisible || hasInlineError).toBe(true)
+    }
     
     // Execute button should still be enabled (per our fix)
     await expect(executeButton).toBeEnabled()

@@ -123,14 +123,14 @@ export function sanitizeWorkflowImport(workflowData: any): any {
       name: sanitizePlainText(workflowData.workflow.name || 'Untitled'),
       description: sanitizePlainText(workflowData.workflow.description || ''),
       tags: Array.isArray(workflowData.workflow.tags) 
-        ? workflowData.workflow.tags.map(tag => sanitizePlainText(tag))
+        ? workflowData.workflow.tags.map((tag: string) => sanitizePlainText(tag))
         : []
     }
   }
   
   // Sanitize nodes
   if (Array.isArray(workflowData.nodes)) {
-    sanitized.nodes = workflowData.nodes.map(node => ({
+    sanitized.nodes = workflowData.nodes.map((node: any) => ({
       ...node,
       id: sanitizePlainText(node.id || ''),
       type: sanitizePlainText(node.type || ''),
@@ -140,7 +140,7 @@ export function sanitizeWorkflowImport(workflowData: any): any {
   
   // Sanitize edges
   if (Array.isArray(workflowData.edges)) {
-    sanitized.edges = workflowData.edges.map(edge => ({
+    sanitized.edges = workflowData.edges.map((edge: any) => ({
       ...edge,
       id: sanitizePlainText(edge.id || ''),
       source: sanitizePlainText(edge.source || ''),

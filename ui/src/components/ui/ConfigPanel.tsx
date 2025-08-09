@@ -21,7 +21,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ className, nodeId }) =
   if (!node) return null
 
   return (
-    <div className={`config-panel ${className || ''}`}>
+    <div className={`config-panel ${className || ''}`} data-testid="node-config-panel">
       <div className="config-header">
         <h3>Configure Node</h3>
         <button

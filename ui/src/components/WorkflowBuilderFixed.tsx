@@ -266,7 +266,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
       {/* UI Components */}
       <WorkflowToolbar />
       {isPaletteOpen && <NodePaletteEnhanced />}
-      {isConfigPanelOpen && selectedNode && <ConfigPanel nodeId={selectedNode} />}
+      {isConfigPanelOpen && selectedNode && <ConfigPanel nodeId={selectedNode.id} />}
       
       {/* Debug component - remove in production */}
       <DragDropDebug />

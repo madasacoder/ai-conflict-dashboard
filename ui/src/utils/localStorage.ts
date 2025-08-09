@@ -124,7 +124,8 @@ export const UIStorage = {
   },
   
   loadTheme: (): 'light' | 'dark' => {
-    return LocalStorage.get(STORAGE_KEYS.UI_THEME, { defaultValue: 'dark' })
+    const theme = LocalStorage.get<string | null>(STORAGE_KEYS.UI_THEME, { defaultValue: 'dark' })
+    return (theme === 'light' || theme === 'dark') ? theme : 'dark'
   },
   
   savePaletteState: (isOpen: boolean) => {
@@ -132,6 +133,7 @@ export const UIStorage = {
   },
   
   loadPaletteState: (): boolean => {
-    return LocalStorage.get(STORAGE_KEYS.UI_PALETTE_OPEN, { defaultValue: true })
+    const value = LocalStorage.get<boolean | null>(STORAGE_KEYS.UI_PALETTE_OPEN, { defaultValue: true })
+    return typeof value === 'boolean' ? value : true
   }
 }

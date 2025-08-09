@@ -19,39 +19,7 @@ export interface BaseNodeData {
   color?: string
 }
 
-// Extended node type compatible with React Flow - using intersection type instead of extends
-export type Node = ReactFlowNode<BaseNodeData & Record<string, any>> & {
-  type: NodeType
-}
-
-// Edge type - using type alias instead of interface
-export type Edge = ReactFlowEdge & {
-  animated?: boolean
-  style?: Record<string, any>
-}
-
-// Workflow metadata
-export interface WorkflowMetadata {
-  id: string
-  name: string
-  description: string
-  icon: string
-  color: string
-  tags: string[]
-  created: Date
-  modified: Date
-  isTemplate: boolean
-}
-
-// Workflow data structure
-export interface WorkflowData {
-  workflow: WorkflowMetadata
-  nodes: Node[]
-  edges: Edge[]
-  version: string
-}
-
-// Node configuration interfaces
+// Specific node data types
 export interface LLMNodeData extends BaseNodeData {
   models?: string[]
   prompt?: string
@@ -112,13 +80,47 @@ export interface SummarizeNodeData extends BaseNodeData {
   maintainTone?: boolean
 }
 
-// Union type for all node data types
-export type NodeData = 
-  | LLMNodeData 
-  | InputNodeData 
-  | CompareNodeData 
-  | OutputNodeData 
+// Union of all specific node data
+export type SpecificNodeData =
+  | LLMNodeData
+  | InputNodeData
+  | CompareNodeData
+  | OutputNodeData
   | SummarizeNodeData
+
+// Practical superset for UI convenience to avoid index-signature property access errors
+export type NodeData = BaseNodeData & Partial<LLMNodeData & InputNodeData & CompareNodeData & OutputNodeData & SummarizeNodeData>
+
+// Extended node type compatible with React Flow using the convenient superset data type
+export type Node = ReactFlowNode<NodeData> & { type: NodeType }
+
+// Edge type - allow optional style fields
+export type Edge = ReactFlowEdge & {
+  animated?: boolean
+  style?: Record<string, any>
+}
+
+// Workflow metadata
+export interface WorkflowMetadata {
+  id: string
+  name: string
+  description: string
+  icon: string
+  color: string
+  tags: string[]
+  created: Date
+  modified: Date
+  isTemplate: boolean
+}
+
+// Workflow data structure
+export interface WorkflowData {
+  workflow: WorkflowMetadata
+  nodes: Node[]
+  edges: Edge[]
+  version: string
+}
+
 
 // Execution result interfaces
 export interface ExecutionResult {

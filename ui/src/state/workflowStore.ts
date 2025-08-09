@@ -31,28 +31,30 @@ export interface BaseNodeData {
   label: string
   description?: string
   isConfigured: boolean
+  icon?: string
+  color?: string
 }
 
 export interface LLMNodeData extends BaseNodeData {
-  models: string[]
-  prompt: string
-  temperature: number
-  maxTokens: number
+  models?: string[]
+  prompt?: string
+  temperature?: number
+  maxTokens?: number
 }
 
 export interface CompareNodeData extends BaseNodeData {
-  comparisonType: 'conflicts' | 'consensus' | 'differences'
-  highlightLevel: 'basic' | 'detailed'
+  comparisonType?: 'conflicts' | 'consensus' | 'differences'
+  highlightLevel?: 'basic' | 'detailed'
 }
 
 export interface OutputNodeData extends BaseNodeData {
-  format: 'json' | 'markdown' | 'text'
-  includeMetadata: boolean
+  format?: 'json' | 'markdown' | 'text'
+  includeMetadata?: boolean
 }
 
 export interface InputNodeData extends BaseNodeData {
-  inputType: 'text' | 'file' | 'url'
-  placeholder: string
+  inputType?: string
+  placeholder?: string
 }
 
 export interface SummarizeNodeData extends BaseNodeData {
@@ -116,7 +118,7 @@ interface WorkflowState {
   
   // Node management
   addNode: (type: NodeType, position: { x: number; y: number }) => void
-  updateNodeData: (nodeId: string, key: string, value: any) => void
+  updateNodeData: (nodeId: string, patch: Record<string, any>) => void
   updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void
   removeNode: (nodeId: string) => void
   duplicateNode: (nodeId: string) => void
@@ -225,9 +227,9 @@ const loadInitialState = () => {
   const paletteOpen = UIStorage.loadPaletteState()
   
   return {
-    nodes: savedState.nodes || [],
-    edges: savedState.edges || [],
-    workflow: savedState.workflow || null,
+    nodes: (savedState.nodes || []) as CustomNode[],
+    edges: (savedState.edges || []) as Edge[],
+    workflow: (savedState.workflow ?? null) as WorkflowMetadata | null,
     currentTheme: theme,
     isPaletteOpen: paletteOpen
   }
@@ -280,7 +282,21 @@ export const useWorkflowStore = create<WorkflowState>()(
     // React Flow handlers
     onNodesChange: (changes: NodeChange[]) => {
       set(state => {
-        const newNodes = applyNodeChanges(changes, state.nodes)
+        let newNodes = applyNodeChanges(changes, state.nodes)
+        
+        // Handle selection changes - ensure only one node is selected
+        const hasSelectionChange = changes.some(change => change.type === 'select')
+        if (hasSelectionChange) {
+          const selectedChange = changes.find(change => change.type === 'select' && (change as any).selected)
+          if (selectedChange) {
+            // Deselect all nodes except the newly selected one
+            newNodes = newNodes.map(node => ({
+              ...node,
+              selected: node.id === (selectedChange as any).id
+            }))
+          }
+        }
+        
         // Save to localStorage
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
         return { nodes: newNodes }
@@ -328,30 +344,26 @@ export const useWorkflowStore = create<WorkflowState>()(
           id: generateId(),
           type,
           position,
+          selected: true,  // Mark as selected for React Flow
           data: createDefaultNodeData(type, `${String(type).charAt(0).toUpperCase() + String(type).slice(1)} Node`)
         }
         
         console.log('Created newNode:', newNode)
         
-        // Use React Flow's change mechanism instead of direct state update
-        const addNodeChange: NodeChange = {
-          type: 'add',
-          item: newNode as Node
-        }
-        
-        // Call onNodesChange to properly add the node through React Flow
-        try {
-          get().onNodesChange([addNodeChange])
-        } catch (error) {
-          console.error('addNode: Failed to add node through React Flow:', error)
-          // Fallback to direct state update if React Flow fails
-          set(state => ({
-            nodes: [...state.nodes, newNode],
-            selectedNode: newNode,
-            isConfigPanelOpen: true
+        // Deselect all existing nodes first
+        set(state => ({
+          nodes: state.nodes.map(node => ({
+            ...node,
+            selected: false
           }))
-          return
-        }
+        }))
+        
+        // Add the new node with selection
+        set(state => ({
+          nodes: [...state.nodes, newNode],
+          selectedNode: newNode,
+          isConfigPanelOpen: true
+        }))
         
         // Update other state that doesn't go through React Flow
         set(state => {
@@ -402,11 +414,11 @@ export const useWorkflowStore = create<WorkflowState>()(
       }
     },
     
-    updateNodeData: (nodeId: string, key: string, value: any) => {
+    updateNodeData: (nodeId: string, patch: Record<string, any>) => {
       set(state => {
         const newNodes = state.nodes.map(node =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, [key]: value, isConfigured: true } }
+            ? { ...node, data: { ...node.data, ...patch, isConfigured: true } }
             : node
         )
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)

@@ -21,7 +21,7 @@ describe('🚨 CRITICAL BUG REGRESSION TESTS - GRADE A', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset workflow store to clean state
-    useWorkflowStore.getState().reset()
+  useWorkflowStore.getState().reset()
   })
 
   afterEach(() => {
@@ -533,7 +533,7 @@ describe('🚨 CRITICAL BUG REGRESSION TESTS - GRADE A', () => {
 
       // Test 4: Verify request isolation in store
       const store = useWorkflowStore.getState()
-      const workflows = store.workflows
+  const workflows = store.workflows || []
       
       workflows.forEach(workflow => {
         // Each workflow should be independent

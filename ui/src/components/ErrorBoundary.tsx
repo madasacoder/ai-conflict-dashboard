@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
     })
     
     // In production, you could send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // logErrorToService(error, errorInfo)
     }
   }
@@ -80,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
 
-            {process.env.NODE_ENV === 'development' && (
+            {process.env['NODE_ENV'] === 'development' && (
               <details className="error-details">
                 <summary>Error Details</summary>
                 <pre className="error-stack">

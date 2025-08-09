@@ -25,6 +25,7 @@ import { ConfigPanel } from './ui/ConfigPanel'
 import { WorkflowToolbar } from './ui/WorkflowToolbar'
 import { ConnectionLine } from './ui/ConnectionLine'
 import { DragDropDebug } from './DragDropDebug'
+import { ExecutionPanel } from './ui/ExecutionPanel'
 
 // Custom node components
 import { LLMNode } from './nodes/LLMNode'
@@ -69,6 +70,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
     currentTheme,
     isPaletteOpen,
     isConfigPanelOpen,
+    isExecutionPanelOpen,
     selectedNode,
     onNodesChange,
     onEdgesChange,
@@ -267,6 +269,10 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({ className }) =
       <WorkflowToolbar />
       {isPaletteOpen && <NodePaletteEnhanced />}
       {isConfigPanelOpen && selectedNode && <ConfigPanel nodeId={selectedNode.id} />}
+      <ExecutionPanel 
+        isOpen={isExecutionPanelOpen} 
+        onClose={() => useWorkflowStore.getState().setExecutionPanelOpen(false)}
+      />
       
       {/* Debug component - remove in production */}
       <DragDropDebug />

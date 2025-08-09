@@ -181,8 +181,9 @@ export const InputNode = memo<InputNodeProps>(({ data, selected, id }) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="workflow-handle output-handle"
+        className="workflow-handle output-handle source"
         isConnectable={true}
+        id="output"
       />
     </div>
   )

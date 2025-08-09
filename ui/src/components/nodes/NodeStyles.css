@@ -326,6 +326,121 @@
   color: var(--text-muted);
 }
 
+/* Node Configuration */
+.node-config {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-light);
+  animation: slideDown 0.2s ease-out;
+}
+
+.node-config label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.node-config input,
+.node-config select,
+.node-config textarea {
+  width: 100%;
+  padding: 8px;
+  font-size: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.node-config input:focus,
+.node-config select:focus,
+.node-config textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.node-config textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.model-config,
+.prompt-config,
+.text-input-config,
+.url-input-config {
+  margin-bottom: 12px;
+}
+
+.advanced-config {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.config-row label {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.config-row input[type="range"] {
+  flex: 1;
+}
+
+.config-row span {
+  flex: 0 0 40px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.expand-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  margin-top: 8px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.workflow-node:hover .expand-hint {
+  opacity: 1;
+}
+
+.workflow-node.expanded {
+  max-width: 320px;
+  width: auto;
+}
+
+.workflow-node.expanded .node-header {
+  cursor: pointer;
+  background: var(--bg-tertiary);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
 /* Node Settings Button */
 .node-settings-btn {
   position: absolute;

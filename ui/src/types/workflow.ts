@@ -33,7 +33,7 @@ export interface LLMNodeData extends BaseNodeData {
 }
 
 export interface InputNodeData extends BaseNodeData {
-  inputType?: 'text' | 'file' | 'url'
+  inputType?: 'text' | 'file' | 'url' | string
   placeholder?: string
   acceptedTypes?: string
   multiple?: boolean
@@ -57,7 +57,7 @@ export interface CompareNodeData extends BaseNodeData {
 }
 
 export interface OutputNodeData extends BaseNodeData {
-  outputFormat?: 'markdown' | 'json' | 'text' | 'html' | 'csv'
+  outputFormat?: 'markdown' | 'json' | 'text' | 'html' | 'csv' | string
   displayMode?: 'full' | 'preview' | 'summary'
   includeMetadata?: boolean
   showTimestamps?: boolean
@@ -92,7 +92,7 @@ export type SpecificNodeData =
 export type NodeData = BaseNodeData & Partial<LLMNodeData & InputNodeData & CompareNodeData & OutputNodeData & SummarizeNodeData>
 
 // Extended node type compatible with React Flow using the convenient superset data type
-export type Node = ReactFlowNode<NodeData> & { type: NodeType }
+export type Node = ReactFlowNode<NodeData | Record<string, any>> & { type: NodeType }
 
 // Edge type - allow optional style fields
 export type Edge = ReactFlowEdge & {

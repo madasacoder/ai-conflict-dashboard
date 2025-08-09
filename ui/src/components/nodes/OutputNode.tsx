@@ -39,8 +39,9 @@ export const OutputNode = memo<OutputNodeProps>(({ data, selected, id }) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="workflow-handle input-handle"
+        className="workflow-handle input-handle target"
         isConnectable={true}
+        id="input"
       />
       
       {/* Node Header */}

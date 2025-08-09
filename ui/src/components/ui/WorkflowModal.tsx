@@ -150,8 +150,8 @@ export const WorkflowModal: React.FC<WorkflowModalProps> = ({ isOpen, onClose, m
   if (!isOpen) return null
 
   return (
-    <div className="workflow-modal-overlay" onClick={onClose}>
-      <div className="workflow-modal" onClick={e => e.stopPropagation()}>
+    <div className="workflow-modal-overlay" onClick={onClose} data-testid="workflow-modal-overlay">
+      <div className="workflow-modal" onClick={e => e.stopPropagation()} data-testid="workflow-modal">
         <div className="workflow-modal-header">
           <h2>
             {mode === 'create' && 'Create New Workflow'}
@@ -196,6 +196,7 @@ export const WorkflowModal: React.FC<WorkflowModalProps> = ({ isOpen, onClose, m
                 <label htmlFor="workflow-name">Workflow Name *</label>
                 <input
                   id="workflow-name"
+                  name="workflowName"
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -209,6 +210,7 @@ export const WorkflowModal: React.FC<WorkflowModalProps> = ({ isOpen, onClose, m
                 <label htmlFor="workflow-description">Description</label>
                 <textarea
                   id="workflow-description"
+                  name="workflowDescription"
                   value={formData.description}
                   onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Describe what this workflow does..."

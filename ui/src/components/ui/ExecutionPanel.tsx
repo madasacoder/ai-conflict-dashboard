@@ -51,7 +51,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
     setNodeStatuses(resetStatuses)
 
     try {
-      const result = await workflowExecutor.executeWorkflow(nodes, edges, {
+      const result = await workflowExecutor.executeWorkflow(nodes as any, edges as any, {
         apiKeys: {}, // TODO: Get API keys from settings
         onProgress: (progressData) => {
           setProgress(progressData)
@@ -174,8 +174,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
   if (!isOpen) return null
 
   return (
-    <div className="execution-panel-overlay">
-      <div className="execution-panel">
+    <div className="execution-panel-overlay" data-testid="execution-panel-overlay">
+      <div className="execution-panel" data-testid="execution-panel">
         {/* Header */}
         <div className="execution-header">
           <div className="header-title">
@@ -303,7 +303,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
               <div className="results-content">
                 <div className="results-list">
                   {execution.results.map((result, index) => {
-                    const node = nodes.find(n => n.id === result.nodeId)
+                   const node = nodes.find(n => n.id === result.nodeId)
                     return (
                       <div
                         key={result.nodeId}

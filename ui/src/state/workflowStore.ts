@@ -118,7 +118,12 @@ interface WorkflowState {
   
   // Node management
   addNode: (type: NodeType, position: { x: number; y: number }) => void
-  updateNodeData: (nodeId: string, patch: Record<string, any>) => void
+  // Support both signatures for backward-compatibility with tests
+  updateNodeData: {
+    (nodeId: string, patch: Record<string, any>): void
+    (nodeId: string, key: string, value: any): void
+  }
+  updateNode: (nodeId: string, patch: Record<string, any>) => void
   updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void
   removeNode: (nodeId: string) => void
   duplicateNode: (nodeId: string) => void
@@ -138,7 +143,8 @@ interface WorkflowState {
   loadTemplate: (templateId: string) => void
   
   // Execution
-  executeWorkflow: () => Promise<void>
+  executeWorkflow: () => Promise<any>
+  reset: () => void
   stopExecution: () => void
   
   // UI state management
@@ -163,6 +169,10 @@ interface WorkflowState {
   // Auto-save
   enableAutoSave: () => void
   disableAutoSave: () => void
+  autoSave?: boolean
+  autoSaveInterval?: number
+  isAutoSaving?: boolean
+  workflows?: WorkflowMetadata[]
 }
 
 // Generate unique IDs
@@ -276,13 +286,17 @@ export const useWorkflowStore = create<WorkflowState>()(
     execution: null,
     isExecutionPanelOpen: false,
     nodeExecutionStatus: {},
+    autoSave: false,
+    autoSaveInterval: 30000,
+    isAutoSaving: false,
+    workflows: [],
     templates: getDefaultTemplates(),
     recentWorkflows: LocalStorage.get(STORAGE_KEYS.RECENT_WORKFLOWS, { defaultValue: [] }) || [],
     
     // React Flow handlers
     onNodesChange: (changes: NodeChange[]) => {
       set(state => {
-        let newNodes = applyNodeChanges(changes, state.nodes)
+        let newNodes = applyNodeChanges(changes, state.nodes as any) as any as CustomNode[]
         
         // Handle selection changes - ensure only one node is selected
         const hasSelectionChange = changes.some(change => change.type === 'select')
@@ -313,9 +327,14 @@ export const useWorkflowStore = create<WorkflowState>()(
     },
     
     onConnect: (connection: Connection) => {
-      set(state => ({
-        edges: addEdge(connection, state.edges)
-      }))
+      console.log('onConnect called with:', connection)
+      set(state => {
+        const newEdges = addEdge(connection, state.edges)
+        console.log('New edges:', newEdges)
+        // Save to localStorage
+        LocalStorage.set(STORAGE_KEYS.WORKFLOW_EDGES, newEdges)
+        return { edges: newEdges }
+      })
     },
     
     // Node management
@@ -414,24 +433,31 @@ export const useWorkflowStore = create<WorkflowState>()(
       }
     },
     
-    updateNodeData: (nodeId: string, patch: Record<string, any>) => {
+    updateNodeData: ((nodeId: string, arg2: any, arg3?: any) => {
       set(state => {
+        const patch: Record<string, any> = typeof arg2 === 'string' ? { [arg2]: arg3 } : (arg2 || {})
         const newNodes = state.nodes.map(node =>
           node.id === nodeId
             ? { ...node, data: { ...node.data, ...patch, isConfigured: true } }
             : node
         )
         LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
-        
-        // Update selected node if it's the one being updated
         const updatedSelectedNode = state.selectedNode?.id === nodeId 
           ? newNodes.find(n => n.id === nodeId) || null
           : state.selectedNode
-        
-        return { 
-          nodes: newNodes,
-          selectedNode: updatedSelectedNode
-        }
+        return { nodes: newNodes, selectedNode: updatedSelectedNode }
+      })
+    }) as any,
+
+    updateNode: (nodeId: string, patch: Record<string, any>) => {
+      set(state => {
+        const newNodes = state.nodes.map(node =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, ...patch } }
+            : node
+        )
+        LocalStorage.set(STORAGE_KEYS.WORKFLOW_NODES, newNodes)
+        return { nodes: newNodes }
       })
     },
     
@@ -721,6 +747,19 @@ export const useWorkflowStore = create<WorkflowState>()(
     stopExecution: () => {
       set({ isExecuting: false, executionProgress: null })
     },
+
+    reset: () => {
+      set({
+        nodes: [],
+        edges: [],
+        selectedNode: null,
+        isConfigPanelOpen: false,
+        isExecuting: false,
+        executionProgress: null,
+        execution: null,
+        nodeExecutionStatus: {}
+      })
+    },
     
     // UI state management
     selectNode: (nodeId: string | null) => {
@@ -876,12 +915,11 @@ export const useWorkflowStore = create<WorkflowState>()(
     
     // Auto-save (placeholder implementations)
     enableAutoSave: () => {
-      // TODO: Implement auto-save with debouncing
-      console.log('Auto-save enabled')
+      set({ autoSave: true, autoSaveInterval: 30000, isAutoSaving: false })
     },
     
     disableAutoSave: () => {
-      console.log('Auto-save disabled')
+      set({ autoSave: false, isAutoSaving: false })
     }
   }))
 )

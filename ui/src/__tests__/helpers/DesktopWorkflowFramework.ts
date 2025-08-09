@@ -6,7 +6,8 @@
  */
 
 import { Page, Locator } from '@playwright/test'
-import { ReactWrapper } from '@playwright/experimental-ct-react'
+// ReactWrapper no longer exported in current @playwright/experimental-ct-react; use any to keep tests compiling
+type ReactWrapper = any
 
 export interface NodeConfig {
   position?: { x: number; y: number }

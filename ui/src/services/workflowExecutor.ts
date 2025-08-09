@@ -496,7 +496,7 @@ export class WorkflowExecutor {
    * Execute an output node
    */
   private async executeOutputNode(node: Node, inputs: Record<string, any>): Promise<any> {
-    const outputFormat = node.data['outputFormat'] || 'text'
+    const outputFormat = (node.data['outputFormat'] as 'text' | 'json' | 'markdown' | 'html' | undefined) || 'text'
     const inputData = Object.values(inputs)[0] // Take first input
 
     // Format output based on configuration

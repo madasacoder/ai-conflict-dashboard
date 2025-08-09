@@ -1,4 +1,4 @@
-import { UIState } from '../state/uiStore';
+// Removed unused UIState import to satisfy strict type-check
 
 export interface AnalyzeRequest {
   text: string;

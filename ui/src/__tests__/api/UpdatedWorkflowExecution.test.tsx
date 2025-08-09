@@ -75,7 +75,7 @@ describe('Updated Workflow Execution', () => {
         setTimeout(() => reject(new Error('Execution timeout after 60 seconds')), timeoutMs)
       )
       
-      const result = await Promise.race([executionPromise, timeoutPromise])
+      const result: any = await Promise.race([executionPromise, timeoutPromise])
       
       const elapsed = Date.now() - startTime
       console.log(`Workflow execution completed in ${elapsed}ms`)
@@ -139,7 +139,7 @@ describe('Updated Workflow Execution', () => {
       try {
         await Promise.race([executionPromise, timeoutPromise])
         throw new Error('Expected execution to fail but it succeeded')
-      } catch (error) {
+      } catch (error: any) {
         const elapsed = Date.now() - startTime
         console.log(`Invalid workflow correctly rejected in ${elapsed}ms`)
         

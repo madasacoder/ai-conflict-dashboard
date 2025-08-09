@@ -58,18 +58,18 @@ export function assertValidNode(node: WorkflowNode): void {
   
   // Data validation based on node type
   if (node.type === 'input' && node.data) {
-    expect(node.data.text || node.data.file).toBeDefined()
-    if (node.data.text) {
-      expect(typeof node.data.text).toBe('string')
-      expect(node.data.text.length).toBeGreaterThan(0)
+    expect(node.data['text'] || node.data['file']).toBeDefined()
+    if (node.data['text']) {
+      expect(typeof node.data['text']).toBe('string')
+      expect((node.data['text'] as string).length).toBeGreaterThan(0)
     }
   }
   
   if (node.type === 'llm' && node.data) {
-    expect(node.data.model).toBeDefined()
-    expect(VALID_MODELS).toContain(node.data.model)
-    expect(node.data.apiKey).toBeDefined()
-    expect(node.data.apiKey.length).toBeGreaterThan(10)
+    expect(node.data['model']).toBeDefined()
+    expect(VALID_MODELS).toContain(node.data['model'] as string)
+    expect(node.data['apiKey']).toBeDefined()
+    expect((node.data['apiKey'] as string).length).toBeGreaterThan(10)
   }
 }
 

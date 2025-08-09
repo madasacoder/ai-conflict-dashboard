@@ -121,11 +121,10 @@ describe('fileUpload utilities', () => {
 
   describe('processFileList', () => {
     it('should process multiple files successfully', async () => {
-      const files = [
-        createMockFile('file1.txt', 100, 'text/plain'),
-        createMockFile('file2.txt', 200, 'text/plain')
-      ]
-      const fileList = { length: 2, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('file1.txt', 100, 'text/plain'))
+      dt.items.add(createMockFile('file2.txt', 200, 'text/plain'))
+      const fileList = dt.files
 
       const result = await processFileList(fileList)
 
@@ -136,12 +135,11 @@ describe('fileUpload utilities', () => {
     })
 
     it('should handle duplicate filenames', async () => {
-      const files = [
-        createMockFile('test.txt', 100, 'text/plain'),
-        createMockFile('test.txt', 200, 'text/plain'),
-        createMockFile('test.txt', 300, 'text/plain')
-      ]
-      const fileList = { length: 3, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('test.txt', 100, 'text/plain'))
+      dt.items.add(createMockFile('test.txt', 200, 'text/plain'))
+      dt.items.add(createMockFile('test.txt', 300, 'text/plain'))
+      const fileList = dt.files
 
       const result = await processFileList(fileList)
 
@@ -152,10 +150,9 @@ describe('fileUpload utilities', () => {
     })
 
     it('should respect max files limit', async () => {
-      const files = Array.from({ length: 5 }, (_, i) => 
-        createMockFile(`file${i}.txt`, 100, 'text/plain')
-      )
-      const fileList = { length: 5, ...files } as FileList
+      const dt = new DataTransfer()
+      Array.from({ length: 5 }, (_, i) => dt.items.add(createMockFile(`file${i}.txt`, 100, 'text/plain')))
+      const fileList = dt.files
       const options: FileUploadOptions = { maxFiles: 3 }
 
       const result = await processFileList(fileList, options)
@@ -166,11 +163,10 @@ describe('fileUpload utilities', () => {
     })
 
     it('should validate individual files', async () => {
-      const files = [
-        createMockFile('valid.txt', 100, 'text/plain'),
-        createMockFile('invalid.pdf', 100, 'application/pdf')
-      ]
-      const fileList = { length: 2, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('valid.txt', 100, 'text/plain'))
+      dt.items.add(createMockFile('invalid.pdf', 100, 'application/pdf'))
+      const fileList = dt.files
       const options: FileUploadOptions = { allowedTypes: ['.txt'] }
 
       const result = await processFileList(fileList, options)
@@ -182,11 +178,10 @@ describe('fileUpload utilities', () => {
     })
 
     it('should handle file reading errors', async () => {
-      const files = [
-        createMockFile('good.txt', 100, 'text/plain'),
-        createMockFile('error.txt', 100, 'text/plain')
-      ]
-      const fileList = { length: 2, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('good.txt', 100, 'text/plain'))
+      dt.items.add(createMockFile('error.txt', 100, 'text/plain'))
+      const fileList = dt.files
 
       const result = await processFileList(fileList)
 
@@ -255,8 +250,9 @@ describe('fileUpload utilities', () => {
       
       const handler = createFileUploadHandler(onFilesUploaded, onError)
       
-      const files = [createMockFile('test.txt', 100, 'text/plain')]
-      const fileList = { length: 1, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('test.txt', 100, 'text/plain'))
+      const fileList = dt.files
       const event = { target: { files: fileList } } as React.ChangeEvent<HTMLInputElement>
 
       await handler(event)
@@ -294,8 +290,9 @@ describe('fileUpload utilities', () => {
       
       const handler = createFileUploadHandler(onFilesUploaded, onError)
       
-      const files = [createMockFile('error.txt', 100, 'text/plain')]
-      const fileList = { length: 1, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('error.txt', 100, 'text/plain'))
+      const fileList = dt.files
       const event = { target: { files: fileList } } as React.ChangeEvent<HTMLInputElement>
 
       await handler(event)
@@ -317,8 +314,9 @@ describe('fileUpload utilities', () => {
       
       const handler = createFileUploadHandler(onFilesUploaded, onError, options)
       
-      const files = [createMockFile('test.txt', 100, 'text/plain')]
-      const fileList = { length: 1, ...files } as FileList
+      const dt = new DataTransfer()
+      dt.items.add(createMockFile('test.txt', 100, 'text/plain'))
+      const fileList = dt.files
       const event = { target: { files: fileList } } as React.ChangeEvent<HTMLInputElement>
 
       await handler(event)

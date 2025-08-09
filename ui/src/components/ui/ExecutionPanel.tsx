@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Play, Square, Download, Copy, RefreshCw } from 'lucide-react'
 import { useWorkflowStore } from '@/state/workflowStore'
 import { workflowExecutor, ExecutionProgress } from '@/services/workflowExecutor'
-import { WorkflowExecution, ExecutionResult } from '@/types/workflow'
+import { ExecutionResult } from '@/types/workflow'
 import './ExecutionPanel.css'
 
 interface ExecutionPanelProps {
@@ -259,12 +259,10 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
                   key={node.id}
                   className={`node-status-card ${nodeStatuses[node.id]}`}
                 >
-                  <div className="node-icon">
-                    {node.data.icon || '⚙️'}
-                  </div>
+                  <div className="node-icon">{(node.data as any)?.icon || '⚙️'}</div>
                   <div className="node-info">
                     <div className="node-label">
-                      {node.data.label || node.type}
+                      {node.data?.label || node.type}
                     </div>
                     <div 
                       className="node-status"
@@ -316,11 +314,9 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ isOpen, onClose 
                       >
                         <div className="result-header">
                           <div className="result-node">
-                            <span className="result-icon">
-                              {node?.data.icon || '⚙️'}
-                            </span>
+                            <span className="result-icon">{(node?.data as any)?.icon || '⚙️'}</span>
                             <span className="result-label">
-                              {node?.data.label || result.nodeId}
+                               {node?.data?.label || result.nodeId}
                             </span>
                           </div>
                           <div className="result-meta">

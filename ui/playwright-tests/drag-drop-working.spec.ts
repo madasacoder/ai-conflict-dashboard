@@ -12,7 +12,7 @@ test.describe('Drag and Drop Tests (Working)', () => {
     await page.waitForLoadState('networkidle')
     
     // Launch workflow builder
-    const launchButton = page.locator('button:has-text("Launch Workflow Builder")')
+    const launchButton = page.locator('button').filter({ hasText: /Launch Workflow Builder/i })
     await expect(launchButton).toBeEnabled({ timeout: 10000 })
     await launchButton.click()
     
@@ -152,7 +152,7 @@ test.describe('Drag and Drop Tests (Working)', () => {
 test.describe('Workflow Validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    const launchButton = page.locator('button:has-text("Launch Workflow Builder")')
+    const launchButton = page.locator('button').filter({ hasText: /Launch Workflow Builder/i })
     await launchButton.click()
     await page.waitForSelector('[data-testid="workflow-builder"]')
     await page.waitForSelector('.node-palette')
@@ -167,19 +167,18 @@ test.describe('Workflow Validation', () => {
     // The exact error display mechanism may vary
     await page.waitForTimeout(500)
     
-    // Should show validation error
-    const toastError = page.locator('.Toastify__toast--error')
-    const errorVisible = await toastError.isVisible().catch(() => false)
+    // Should show validation errors via react-hot-toast
+    // React-hot-toast creates divs with role="status" and aria-live="polite"
+    const toastErrors = page.locator('[aria-live="polite"]')
     
-    // Either show toast error OR some other error indication
-    if (!errorVisible) {
-      // Check for inline error message or other error display
-      const inlineError = page.locator('[data-testid="validation-error"]')
-      const hasInlineError = await inlineError.isVisible().catch(() => false)
-      
-      // At least one error indication should be present
-      expect(errorVisible || hasInlineError).toBe(true)
-    }
+    // Wait for at least one error toast to appear
+    await expect(toastErrors).toHaveCount(3, { timeout: 2000 })
+    
+    // Check that we have the expected validation errors
+    const errorTexts = await toastErrors.allTextContents()
+    expect(errorTexts.some(text => text.includes('Workflow must contain at least one node'))).toBe(true)
+    expect(errorTexts.some(text => text.includes('Workflow must have at least one input node'))).toBe(true)
+    expect(errorTexts.some(text => text.includes('Workflow must have at least one output node'))).toBe(true)
     
     // Execute button should still be enabled (per our fix)
     await expect(executeButton).toBeEnabled()

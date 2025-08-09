@@ -1,17 +1,15 @@
 # Test Suite Status Report - AI Conflict Dashboard
 
 ## Overview
-Date: 2025-08-02
-Total Tests: 195 (backend) + frontend tests
-Coverage: 71% (backend)
+Date: 2025-08-09
+Total Tests (backend run): 364 passed, 50 failed, 26 skipped, 23 errors (server running, TESTING=1)
+Coverage: ~51% (backend)
 
 ## Test Results Summary
 
 ### Backend Tests
-- **Total**: 195 tests
-- **Passed**: 110 (56.4%)
-- **Failed**: 85 (43.6%)
-- **Coverage**: 71%
+- See header for latest aggregated results with server running
+- Coverage: ~51%
 
 ### Regression Tests for All Bugs
 Created comprehensive regression test suite covering all 35 documented bugs:
@@ -116,11 +114,11 @@ Created comprehensive regression test suite covering all 35 documented bugs:
 
 ## Recommendations
 
-1. **Disable rate limiting in test environment** - Add TESTING env check
-2. **Reset circuit breakers between tests** - Add to conftest.py fixtures
-3. **Implement missing functions** - sanitize_sensitive_data, chunk_text_smart
-4. **Setup frontend test runner** - Configure Jest/Vitest
-5. **Fix mock issues** - Proper AsyncMock setup for Ollama
+1. Disable rate limiting in test environment (TESTING env) — done for /api/analyze
+2. Reset circuit breakers between tests — ensure fixtures clear provider maps
+3. Implement missing functions — sanitize_sensitive_data, chunk_text_smart
+4. UI: fix Playwright E2E blockers (canvas height, selector uniqueness, Execute gating, labels)
+5. Unblock UI TypeScript to enable Vitest suites
 
 ## Test Commands
 

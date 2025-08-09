@@ -6,15 +6,14 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 
 ---
 
-## 📈 Overall Test Metrics
+## 📈 Overall Test Metrics (current)
 
 ### Total Test Inventory
 - **Total Test Files Found**: 76
   - Backend Python tests: 28 files
   - Frontend UI tests: 33 files  
   - E2E Playwright tests: 15 files
-- **Total Individual Tests**: 344+ backend tests
-- **Test Formats**: pytest, Vitest, Playwright
+- Backend pytest actively executed; UI Vitest blocked by TypeScript; Playwright E2E active
 
 ---
 
@@ -23,10 +22,8 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 ### Backend Tests (Python/pytest)
 
 #### Files Analyzed
-- **Total Backend Test Files**: 28
-- **Total Backend Tests**: 344 tests (324 original + 20 new Grade A tests)
-- **Failing Tests Before**: 56
-- **New Tests Created**: 20 (in test_grade_a_security.py)
+- Latest aggregate (server running, TESTING=1): 364 passed, 50 failed, 26 skipped, 23 errors
+- Coverage: ~51% overall
 
 #### Tests Created
 1. **test_grade_a_security.py** - 20 new tests:
@@ -61,13 +58,7 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 ### Frontend Tests (TypeScript/Vitest)
 
 #### Files Analyzed
-- **Total Frontend Test Files**: 33
-- **Test Categories**:
-  - Critical tests: MVP.critical.test.tsx
-  - Integration tests: WorkflowBuilder.integration.test.tsx
-  - E2E tests: RealE2ETests.test.tsx, WorkflowExecutionE2E.test.tsx
-  - Regression tests: Multiple regression test files
-  - Component tests: Various component-specific tests
+- Present under `ui/src/**/__tests__/`, currently blocked by TypeScript errors across many files
 
 #### Key Test Improvements Identified
 - Need React Testing Library migration from vanilla JS
@@ -77,27 +68,17 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 ### E2E Tests (Playwright)
 
 #### Files Analyzed
-- **Total Playwright Test Files**: 15
-- **Key Test Suites**:
-  - drag-drop.spec.ts
-  - workflow.spec.ts
-  - ollama-integration.spec.ts
-  - mvp-critical.spec.ts
-  - edge-cases.spec.ts
+- Total Playwright test files: 15
+- Latest run: 10 passed, 46 failed (primarily drag/visibility/selector issues)
 
 ---
 
 ## 🎯 Test Execution Summary
 
-### Tests Run During Analysis
+### Tests Run During Analysis (latest)
 
-#### Backend Test Execution
-```
-✅ Ran: test_api_analyze.py - 15 tests (ALL PASSING)
-✅ Ran: Sample of test_security_comprehensive.py
-✅ Ran: Sample of test_grade_a_security.py
-⚠️ Identified: 56 failing tests needing fixes
-```
+#### Backend
+Full pytest run with server active; results above.
 
 #### Test Categories Executed
 1. **API Tests**: 15 tests run successfully
@@ -106,7 +87,7 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 4. **Integration Tests**: Reviewed but not all executed
 
 ### Bugs Found Through Testing
-- **19 new bugs discovered** through Grade A testing
+- Newly documented: E2E UI layout/selector issues; circuit-breaker map init (fixed)
 - **Bug detection rate**: 0.95 bugs per Grade A test
 - **Critical bugs found**: 1
 - **High severity bugs**: 6
@@ -116,27 +97,21 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 
 ## 📊 Test Quality Transformation
 
-### Before Grade A Implementation
-- **Total Tests**: 324 backend + ~40 frontend
-- **Passing Rate**: 82.7% (56 of 324 failing)
-- **Test Quality**: Grade C+ (75%)
-- **Bug Discovery**: Minimal
-- **Test Philosophy**: Make tests pass
+### Current Baseline
+- Backend coverage ~51%; several concurrency/security suites still failing
+- UI E2E running but majority failing due to UI issues; Vitest blocked by TS
 
-### After Grade A Implementation
-- **Total Tests**: 344 backend + ~40 frontend
-- **New Tests Created**: 20 Grade A tests
-- **Test Quality**: Grade A- (92%)
-- **Bugs Discovered**: 19 new bugs
-- **Test Philosophy**: Break the system
+### Target State (Grade A path)
+- Backend: ≥85% coverage, critical security tests green
+- UI: Type-check green, majority of E2E passing; robust selectors/layout
 
 ---
 
 ## 📈 Test Coverage Analysis
 
 ### Backend Coverage
-- **Before**: 81% (with 56 failing tests)
-- **After**: Target 95% with all tests passing
+- Current: ~51%
+- Target: ≥85%
 - **New Coverage Areas**:
   - Advanced security vectors
   - Race conditions
@@ -145,9 +120,8 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
   - Concurrent request isolation
 
 ### Frontend Coverage
-- **Current**: ~60% (needs migration)
-- **Target**: 85%
-- **Gap**: Requires React Testing Library migration
+- Current: blocked by TS errors
+- Target: 85%
 
 ---
 
@@ -193,13 +167,9 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 
 ## 💡 Key Achievements
 
-### Quantitative Metrics
-- **Tests Analyzed**: 400+ across all categories
-- **New Tests Created**: 20 Grade A security tests
-- **Tests Upgraded**: 50+ tests enhanced with Grade A principles
-- **Tests Run**: 100+ tests executed during analysis
-- **Bugs Found**: 19 new bugs discovered
-- **Files Created**: 6 new documentation/test files
+### Quantitative Metrics (updated)
+- Playwright suites executed: 56 tests → 10 passing
+- Backend: full suite executed with server
 
 ### Qualitative Improvements
 - **Philosophy Change**: From "pass tests" to "find bugs"
@@ -252,15 +222,7 @@ During the Grade A test implementation initiative, we analyzed, upgraded, and cr
 ---
 
 ## 🚀 Conclusion
-
-Through systematic analysis and upgrade of the test suite:
-- **Analyzed**: 400+ tests across 76 files
-- **Created**: 20 new Grade A security tests
-- **Upgraded**: 50+ tests to Grade A standards
-- **Executed**: 100+ tests to validate improvements
-- **Discovered**: 19 critical bugs worth $200K+ in prevented issues
-
-The transformation from Grade C+ to Grade A- testing represents a fundamental shift in quality assurance, moving from superficial coverage to deep, adversarial testing that actively hunts for bugs.
+Current results reflect honest status: backend ~51% coverage with many tests still failing under stricter scenarios; UI E2E active with majority failing due to layout/selector mismatches. Next steps to Grade A: fix UI E2E blockers (canvas height, selector uniqueness, execute gating, labels) and unblock TS to restore unit/integration coverage.
 
 ---
 

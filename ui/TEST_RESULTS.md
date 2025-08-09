@@ -1,125 +1,43 @@
 # Test Results Summary
 
-## Date: 2025-08-03
-## Desktop App Test Suite Status
+## Date: 2025-08-09
+## UI/Web App Test Suite Status
 
-### Overall Statistics
-- **Total Tests**: 283
-- **Passing Tests**: 220 (~78%)
-- **Failing Tests**: 63 (~22%)
-- **Test Files**: 23 total (12 passing, 11 with failures)
+### Overall Statistics (latest Playwright run)
+- **Total Playwright tests executed**: 56
+- **Passing**: 10
+- **Failing**: 46
+- **Notes**: Many failures are due to UI layout/selector issues (see Known Issues)
 
 ### Test Categories
 
-#### ✅ Fully Passing Categories
+#### Current Passing Highlights
+- A subset of E2E checks pass (navigation, some visibility assertions)
 
-1. **State Management Tests** (14/14) ✅
-   - `src/state/__tests__/workflowStore.test.ts`
-   - All workflow state management functions working correctly
-   - Node/edge management, UI state, workflow persistence
-
-2. **Service Tests** (20/20) ✅
-   - `src/services/__tests__/workflowExecutor.test.ts`
-   - Workflow execution logic, validation, DAG detection
-
-3. **Utility Tests** (22/22) ✅
-   - `src/utils/__tests__/fileUpload.test.ts`
-   - File processing, validation, text reading utilities
-
-4. **Node Component Tests** (21/21) ✅
-   - `src/components/nodes/__tests__/InputNode.test.tsx`
-   - All node types render and function correctly
-
-5. **UI Component Tests** (101/102, 1 skipped) ✅
-   - NodeConfigPanel, WorkflowToolbar, NodePalette
-   - FileUpload, ExecutionPanel components
-   - 1 test skipped (non-critical)
-
-6. **App Component Tests** (2/2) ✅
-   - `src/App.test.jsx`
-   - Loading states and welcome screen
-
-7. **Regression Tests** (2/2) ✅
-   - Desktop app specific bug fixes verified
-
-### ❌ Failing Categories (Known Issues)
-
-1. **Critical MVP Tests** (4/18 passing)
-   - **Issue**: Integration tests requiring full React Flow functionality
-   - **Root Cause**: jsdom limitations with drag-drop and React Flow rendering
-   - **Solution**: These tests should be run with Playwright in a real browser
-
-2. **Drag-Drop Tests** (0/10 passing)
-   - **Issue**: DataTransfer API not properly supported in jsdom
-   - **Root Cause**: jsdom doesn't fully implement drag-drop events
-   - **Solution**: Created Playwright tests for browser-based testing
-
-3. **Ollama Integration Tests** (0/29 passing)
-   - **Issue**: Tests expect backend server to be running
-   - **Root Cause**: Tests designed for integration environment
-   - **Solution**: Run with backend server or mock API calls
-
-4. **Edge Case Tests** (partial failures)
-   - **Issue**: Complex interaction tests failing
-   - **Root Cause**: jsdom limitations with complex DOM operations
+### ❌ Failing Areas (Known Issues)
+1. Hidden canvas: `.workflow-canvas` height resolves to 0 (inner wrapper lacks height) → drag timeouts
+2. Duplicate `.workflow-builder` selectors (outer/inner) → strict selector conflicts
+3. Execute button disabled when tests expect validation on click
+4. Label mismatches: tests expect “Workflow”/“Create New”; UI uses icon dropdown/“New Workflow”
 
 ### Test Stability
+- Playwright stability acceptable; failures are deterministic due to layout/selector issues
 
-Ran core test suites 5 times consecutively:
-- **State Tests**: 5/5 runs passed ✅
-- **Service Tests**: 5/5 runs passed ✅
-- **Utility Tests**: 5/5 runs passed ✅
-- **Component Tests**: 5/5 runs passed ✅
-
-### Improvements Made
-
-1. **Fixed Memory Issues**
-   - Increased Node.js heap size to 8GB
-   - Disabled test isolation to reduce memory overhead
-   - Limited worker threads to prevent memory exhaustion
-
-2. **Fixed Test Issues**
-   - Removed debug console.log statements causing errors
-   - Fixed fetch mocking in App tests
-   - Added act() wrappers to prevent React warnings
-   - Updated test expectations to match actual UI text
-
-3. **Created Browser Tests**
-   - Added Playwright configuration for e2e tests
-   - Created comprehensive drag-drop test suite
-   - Configured for headless and headed testing
+### Recent Improvements
+- Playwright configured with dev server reuse; backend server healthy during runs
 
 ### Recommendations
-
-1. **For Development**:
-   - Run unit tests: `npm test -- --run src/{state,services,utils,components}/**/*.test.*`
-   - These are fast and reliable
-
-2. **For CI/CD**:
-   - Focus on passing test suites
-   - Run Playwright tests separately for integration testing
-
-3. **Future Improvements**:
-   - Migrate critical integration tests to Playwright
-   - Add MSW for better API mocking in unit tests
-   - Consider using React Testing Library's user-event for better interaction testing
+1. Fix UI layout/selector issues (canvas height, unique builder selector, Execute gating, labels)
+2. Unblock TypeScript type-check to re-enable Vitest suites
+3. Use data-testid consistently in UI for E2E stability
 
 ### Test Commands
 
 ```bash
-# Run all stable unit tests
-npm test -- --run src/{state,services,utils,components}/**/*.test.*
-
-# Run Playwright tests (requires dev server)
-npm run dev & npx playwright test
-
-# Run specific test category
-npm test -- --run src/state/__tests__/*.test.ts
-
-# Run with coverage
-npm run test:coverage
+# Playwright tests (real browser)
+npx playwright install --with-deps
+npx playwright test --reporter=line
 ```
 
 ### Conclusion
-
-The desktop app has solid test coverage for all core functionality. The failing tests are primarily integration and browser-specific tests that require a real browser environment. The codebase is stable and production-ready with 78% of tests passing and all critical business logic thoroughly tested.
+E2E runs are active; 10 passing, 46 failing. Failures are primarily UI layout/selector mismatches, not backend instability. Addressing those will unlock broader E2E coverage.

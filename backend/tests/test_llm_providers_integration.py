@@ -32,6 +32,12 @@ pytestmark = pytest.mark.skipif(
 @pytest.mark.integration
 @pytest.mark.real_api
 class TestOpenAIIntegration:
+    @pytest.fixture
+    def client(self):
+        """Test client fixture."""
+        from main import app
+        return TestClient(app)
+
     """Test real OpenAI API integration."""
 
     @pytest.fixture
@@ -56,7 +62,7 @@ class TestOpenAIIntegration:
         )
 
         # Verify response structure
-        assert result is not None
+        assert result is not None, "result should not be None"
         assert "response" in result
         assert "model" in result
         assert result["model"] == "gpt-3.5-turbo"
@@ -66,7 +72,7 @@ class TestOpenAIIntegration:
 
         # Verify response content (should contain "test" or similar)
         response_text = result["response"].lower()
-        assert len(response_text) > 0
+        assert len(response_text) > 0, "response_text should not be empty"
         assert "test" in response_text or "Test" in result["response"]
 
     @pytest.mark.asyncio
@@ -80,7 +86,7 @@ class TestOpenAIIntegration:
         )
 
         # Should return error structure, not raise exception
-        assert result is not None
+        assert result is not None, "result should not be None"
         assert "error" in result
         assert "invalid" in result["error"].lower() or "not found" in result["error"].lower()
 
@@ -129,7 +135,7 @@ class TestClaudeIntegration:
             max_tokens=5,
         )
 
-        assert result is not None
+        assert result is not None, "result should not be None"
         assert "response" in result
         assert "model" in result
         assert "error" not in result
@@ -158,7 +164,7 @@ class TestGeminiIntegration:
             prompt="Say 'test'", api_key=api_key, model="gemini-pro", max_tokens=5
         )
 
-        assert result is not None
+        assert result is not None, "result should not be None"
         assert "response" in result
         assert "error" not in result
 
@@ -174,15 +180,17 @@ class TestOllamaIntegration:
         import aiohttp
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get("http://localhost:11434/api/tags") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        assert "models" in data
-                        print(f"Ollama models available: {[m['name'] for m in data['models']]}")
-                    else:
-                        pytest.skip("Ollama not running")
-        except:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get("http://localhost:11434/api/tags") as response,
+            ):
+                if response.status == 200:
+                    data = await response.json()
+                    assert "models" in data
+                    print(f"Ollama models available: {[m['name'] for m in data['models']]}")
+                else:
+                    pytest.skip("Ollama not running")
+        except Exception:
             pytest.skip("Ollama not accessible at localhost:11434")
 
     @pytest.mark.asyncio
@@ -194,11 +202,13 @@ class TestOllamaIntegration:
         from llm_providers import query_ollama
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get("http://localhost:11434/api/tags") as response:
-                    if response.status != 200:
-                        pytest.skip("Ollama not running")
-        except:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get("http://localhost:11434/api/tags") as response,
+            ):
+                if response.status != 200:
+                    pytest.skip("Ollama not running")
+        except Exception:
             pytest.skip("Ollama not accessible")
 
         # Try completion with a small model
@@ -241,7 +251,7 @@ class TestEndToEndIntegration:
             "/api/analyze", json={"text": "Say hello", "models": models, "max_tokens": 10}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         data = response.json()
 
         # Verify we got responses

@@ -10,7 +10,7 @@ import re
 import sys
 from datetime import UTC, datetime
 from re import Pattern
-from typing import Any, Dict, List, MutableMapping, Optional, Tuple
+from typing import Any
 
 import structlog
 from structlog.processors import CallsiteParameter
@@ -211,7 +211,7 @@ def setup_structured_logging(level: str = "INFO", log_file: str = "app.log") -> 
     return structlog.get_logger()
 
 
-def get_logger(name: Optional[str] = None, **context: Any) -> WrappedLogger:
+def get_logger(name: str | None = None, **context: Any) -> WrappedLogger:
     """
     Get a structured logger with optional context.
 
@@ -238,7 +238,7 @@ class RequestContext:
 
     def __init__(self, request_id: str):
         self.request_id = request_id
-        self.token: Optional[structlog.contextvars.Token] = None
+        self.token: structlog.contextvars.Token | None = None
 
     def __enter__(self) -> "RequestContext":
         self.token = structlog.contextvars.bind_contextvars(request_id=self.request_id)

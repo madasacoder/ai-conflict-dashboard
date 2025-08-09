@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import asyncio
-import os
 import sys
+from pathlib import Path
 
 # Add the current directory to the Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, Path(__file__).parent)
 
 from workflow_executor import WorkflowExecutor
 

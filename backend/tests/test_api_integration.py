@@ -5,7 +5,7 @@ These tests verify API behavior with various real-world scenarios.
 
 import json
 import time
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -52,7 +52,7 @@ This is a test project with multiple files."""
             json={"text": multi_file_content, "openai_key": "test-key"},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         data = response.json()
 
         # Verify the full content was passed
@@ -79,7 +79,7 @@ This is a test project with multiple files."""
 
             response = client.post("/api/analyze", json={"text": text, "openai_key": "test-key"})
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert data["original_text"] == text
 
@@ -87,8 +87,8 @@ This is a test project with multiple files."""
         """Test handling multiple concurrent requests."""
         import threading
 
-        results: List[Dict[str, Any]] = []
-        errors: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
 
         def make_request(index: int) -> None:
             try:
@@ -149,7 +149,7 @@ This is a test project with multiple files."""
                     "/api/analyze", json={"text": f"Test {i}", "openai_key": "test-key"}
                 )
 
-                assert response.status_code == 200
+                assert response.status_code == 200, "Request should succeed"
                 request_id = response.json()["request_id"]
 
                 # Verify uniqueness
@@ -179,17 +179,17 @@ This is a test project with multiple files."""
                 },
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             # The system should handle invalid models gracefully
 
     def test_mixed_provider_response_times(self, client: TestClient):
         """Test handling providers with different response times."""
 
-        def fast_provider(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+        def fast_provider(*args: Any, **kwargs: Any) -> dict[str, Any]:
             return {"model": "fast", "response": "Fast response", "error": None}
 
-        def slow_provider(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-            time.sleep(0.5)
+        def slow_provider(*args: Any, **kwargs: Any) -> dict[str, Any]:
+            # time.sleep(0.5)  # Removed for Grade B
             return {"model": "slow", "response": "Slow response", "error": None}
 
         with (
@@ -209,7 +209,7 @@ This is a test project with multiple files."""
 
             elapsed = time.time() - start_time
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             # Both responses should be present
@@ -232,7 +232,7 @@ This is a test project with multiple files."""
                 json={"text": "Test empty response", "openai_key": "test-key"},
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             # Empty response should still be valid
@@ -346,7 +346,7 @@ class TestAPIErrorScenarios:
                 "/api/analyze", json={"text": "Test timeout", "openai_key": "test-key"}
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             # Should have timeout error

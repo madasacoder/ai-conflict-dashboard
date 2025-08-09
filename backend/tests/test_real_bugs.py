@@ -1,3 +1,4 @@
+from fastapi.testclient import TestClient
 """Tests designed to find actual bugs, not just verify happy paths."""
 
 from token_utils import estimate_tokens

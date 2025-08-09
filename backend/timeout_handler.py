@@ -14,7 +14,7 @@ import time
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from statistics import mean, stdev
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 import structlog
 
@@ -124,7 +124,7 @@ async def with_timeout(
     timeout: float,
     operation: str = "unknown",
     raise_on_timeout: bool = True,
-) -> Optional[T]:
+) -> T | None:
     """Execute a coroutine with timeout.
 
     Args:
@@ -181,11 +181,11 @@ async def with_timeout(
 async def with_retry(
     coro_func: Callable[[], Coroutine[Any, Any, T]],
     operation: str = "unknown",
-    timeout: Optional[float] = None,
-    max_attempts: Optional[int] = None,
-    base_delay: Optional[float] = None,
-    max_delay: Optional[float] = None,
-    exponential_backoff: Optional[bool] = None,
+    timeout: float | None = None,
+    max_attempts: int | None = None,
+    base_delay: float | None = None,
+    max_delay: float | None = None,
+    exponential_backoff: bool | None = None,
 ) -> T:
     """Execute a coroutine with timeout and retry logic.
 
@@ -218,7 +218,7 @@ async def with_retry(
     # Use adaptive timeout if not specified
     _timeout = timeout or response_tracker.get_recommended_timeout(operation)
 
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
     total_elapsed = 0.0
     start_time = time.time()
 
@@ -307,8 +307,8 @@ async def with_retry(
 
 
 def timeout_handler(
-    operation: Optional[str] = None,
-    timeout: Optional[float] = None,
+    operation: str | None = None,
+    timeout: float | None = None,
     retry: bool = True,
     **retry_kwargs: Any,
 ) -> Callable[[Callable[..., Coroutine[Any, Any, T]]], Callable[..., Coroutine[Any, Any, T]]]:
@@ -360,7 +360,7 @@ def timeout_handler(
 # Monitoring functions
 def get_timeout_stats() -> dict[str, Any]:
     """Get timeout statistics for monitoring."""
-    stats: Dict[str, Any] = {}
+    stats: dict[str, Any] = {}
 
     for operation, times in response_tracker.response_times.items():
         if times:

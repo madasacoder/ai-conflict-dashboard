@@ -103,3 +103,9 @@ reports/
 
 # Secrets baseline
 .secrets.baseline
+# Python virtual environments
+venv/
+backend/venv/
+ui/venv/
+venv311/
+ui/venv311/

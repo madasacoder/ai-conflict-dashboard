@@ -1,5 +1,6 @@
 """Test to reproduce and diagnose HTTPS redirect issues."""
 
+import asyncio
 import logging
 
 import pytest
@@ -78,7 +79,7 @@ def test_simulate_https_to_http_connection():
         request_line = ssl_handshake.split(b" ", 2)
         assert len(request_line) < 3  # Can't parse as HTTP
     except Exception:
-        pass  # Expected to fail
+        pass  # Expected to fail - noqa: S110
 
 
 def test_browser_cache_and_redirects():

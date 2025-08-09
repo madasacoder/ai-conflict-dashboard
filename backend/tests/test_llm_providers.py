@@ -1,5 +1,6 @@
 """Tests for LLM provider integrations."""
 
+import asyncio
 import builtins
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -76,7 +77,7 @@ class TestOpenAIIntegration:
             # Correct assertion method
             mock_call.assert_called_once()
             call_args = mock_call.call_args
-            assert call_args is not None
+            assert call_args is not None, "call_args should not be None"
             assert len(call_args[0]) >= 2
             assert call_args[0][0] == "Test text"
             assert call_args[0][1] == "test-key"

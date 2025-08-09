@@ -43,7 +43,7 @@ class TestAnalyzeEndpoint:
     def test_analyze_missing_keys(self, client):
         """Test endpoint returns empty responses when no API keys are provided."""
         response = client.post("/api/analyze", json={"text": "Test text"})
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         data = response.json()
         assert "responses" in data
         assert data["responses"] == []
@@ -51,8 +51,7 @@ class TestAnalyzeEndpoint:
     def test_analyze_missing_text(self, client):
         """Test endpoint returns error when no text is provided."""
         response = client.post("/api/analyze", json={"openai_key": "test-key"})
-        assert response.status_code == 422
-
+        assert response.status_code == 422, "Expected status code 422"
     def test_analyze_short_text_openai(self, client, mock_openai_response):
         """Test analyzing short text with OpenAI."""
         with patch("llm_providers.call_openai", new_callable=AsyncMock) as mock_call:
@@ -63,7 +62,7 @@ class TestAnalyzeEndpoint:
                 json={"text": "Test short text", "openai_key": "test-openai-key"},
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert "responses" in data
             assert len(data["responses"]) == 1
@@ -85,7 +84,7 @@ class TestAnalyzeEndpoint:
                 json={"text": "Test short text", "claude_key": "test-claude-key"},
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert "responses" in data
             assert len(data["responses"]) == 1
@@ -117,7 +116,7 @@ class TestAnalyzeEndpoint:
                 },
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert len(data["responses"]) == 2
 
@@ -153,7 +152,7 @@ class TestAnalyzeEndpoint:
                 json={"text": long_text, "openai_key": "test-openai-key"},
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert data["chunked"] is True
             assert data["chunk_info"] is not None
@@ -179,7 +178,7 @@ class TestAnalyzeEndpoint:
                 json={"text": "Test text", "openai_key": "test-openai-key"},
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert len(data["responses"]) == 1
             assert data["responses"][0]["model"] == "openai"
@@ -198,7 +197,7 @@ class TestAnalyzeEndpoint:
                 json={"text": unicode_text, "openai_key": "test-openai-key"},
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert len(data["responses"]) == 1
             assert data["responses"][0]["error"] is None
@@ -207,7 +206,7 @@ class TestAnalyzeEndpoint:
         """Test endpoint returns error for empty text."""
         response = client.post("/api/analyze", json={"text": "", "openai_key": "test-openai-key"})
 
-        assert response.status_code == 400
+        assert response.status_code == 400, "Expected status code 400"
         assert "Text cannot be empty" in response.json()["detail"]
 
     def test_analyze_whitespace_only_text(self, client, mock_openai_response):
@@ -220,7 +219,7 @@ class TestAnalyzeEndpoint:
                 json={"text": "   \n\n\t  ", "openai_key": "test-openai-key"},
             )
 
-            assert response.status_code == 400
+            assert response.status_code == 400, "Expected status code 400"
             assert "Text cannot be empty" in response.json()["detail"]
 
     @pytest.mark.parametrize("text_size", [100, 1000, 2500, 5000])
@@ -235,7 +234,7 @@ class TestAnalyzeEndpoint:
                 "/api/analyze", json={"text": text, "openai_key": "test-openai-key"}
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             assert len(data["responses"]) == 1
             assert data["responses"][0]["error"] is None
@@ -261,7 +260,7 @@ class TestAnalyzeEndpoint:
                 },
             )
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             # The actual response doesn't include token_info in the response model

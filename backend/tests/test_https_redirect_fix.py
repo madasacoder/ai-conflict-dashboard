@@ -1,6 +1,5 @@
 """Test that HTTPS redirect issues are properly fixed."""
 
-import os
 import re
 from pathlib import Path
 

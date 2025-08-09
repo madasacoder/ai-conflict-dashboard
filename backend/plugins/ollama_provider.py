@@ -109,31 +109,33 @@ class OllamaProvider:
             Dict with health status and available models
         """
         try:
-            async with aiohttp.ClientSession() as session:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(f"{self.base_url}/api/tags") as response,
+            ):
                 # Check if Ollama is running
-                async with session.get(f"{self.base_url}/api/tags") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        models = [model["name"] for model in data.get("models", [])]
+                if response.status == 200:
+                    data = await response.json()
+                    models = [model["name"] for model in data.get("models", [])]
 
-                        logger.info(
-                            "Ollama health check passed",
-                            available_models=len(models),
-                            models=models[:5],  # Log first 5 models
-                        )
+                    logger.info(
+                        "Ollama health check passed",
+                        available_models=len(models),
+                        models=models[:5],  # Log first 5 models
+                    )
 
-                        return {
-                            "status": "healthy",
-                            "available": True,
-                            "models": models,
-                            "base_url": self.base_url,
-                        }
-                    else:
-                        return {
-                            "status": "unhealthy",
-                            "available": False,
-                            "error": f"HTTP {response.status}",
-                        }
+                    return {
+                        "status": "healthy",
+                        "available": True,
+                        "models": models,
+                        "base_url": self.base_url,
+                    }
+                else:
+                    return {
+                        "status": "unhealthy",
+                        "available": False,
+                        "error": f"HTTP {response.status}",
+                    }
         except aiohttp.ClientConnectorError:
             logger.warning("Ollama not reachable", base_url=self.base_url)
             return {
@@ -157,34 +159,36 @@ class OllamaProvider:
             List of model information dictionaries
         """
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"{self.base_url}/api/tags") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        models = data.get("models", [])
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(f"{self.base_url}/api/tags") as response,
+            ):
+                if response.status == 200:
+                    data = await response.json()
+                    models = data.get("models", [])
 
-                        # Enhance with our metadata if available
-                        enhanced_models = []
-                        for model in models:
-                            model_name = model["name"]
-                            base_name = model_name.split(":")[0]
+                    # Enhance with our metadata if available
+                    enhanced_models = []
+                    for model in models:
+                        model_name = model["name"]
+                        base_name = model_name.split(":")[0]
 
-                            enhanced = {
-                                "name": model_name,
-                                "size": model.get("size", 0),
-                                "modified": model.get("modified_at", ""),
-                            }
+                        enhanced = {
+                            "name": model_name,
+                            "size": model.get("size", 0),
+                            "modified": model.get("modified_at", ""),
+                        }
 
-                            # Add our metadata if available
-                            if base_name in OLLAMA_MODELS:
-                                enhanced.update(OLLAMA_MODELS[base_name])
+                        # Add our metadata if available
+                        if base_name in OLLAMA_MODELS:
+                            enhanced.update(OLLAMA_MODELS[base_name])
 
-                            enhanced_models.append(enhanced)
+                        enhanced_models.append(enhanced)
 
-                        return enhanced_models
-                    else:
-                        logger.error(f"Failed to list models: HTTP {response.status}")
-                        return []
+                    return enhanced_models
+                else:
+                    logger.error(f"Failed to list models: HTTP {response.status}")
+                    return []
         except Exception as e:
             logger.error("Failed to list Ollama models", error=str(e))
             return []
@@ -316,7 +320,7 @@ class OllamaProvider:
                     }
 
         except TimeoutError:
-            duration = (datetime.now() - start_time).total_seconds()
+            duration = (datetime.now(datetime.timezone.utc) - start_time).total_seconds()
             logger.error(
                 "Ollama request timed out",
                 model=model,

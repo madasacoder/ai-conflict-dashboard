@@ -27,7 +27,7 @@ class TestAdversarialInputs:
         response = client.post("/api/analyze", json={"text": long_word, "openai_key": "test-key"})
 
         # This might break chunking logic that relies on spaces
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         # But does it chunk properly?
 
     def test_malicious_json_injection(self, client):
@@ -50,7 +50,7 @@ class TestAdversarialInputs:
 
         response = client.post("/api/analyze", json={"text": tricky_text, "openai_key": "test-key"})
 
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         # But is it displayed correctly in the UI?
 
     def test_null_bytes_in_input(self, client):
@@ -75,9 +75,7 @@ class TestAdversarialInputs:
         response = client.post("/api/analyze", json={"text": nested_md, "openai_key": "test-key"})
 
         # This might break markdown parsing or cause performance issues
-        assert response.status_code == 200
-
-
+        assert response.status_code == 200, "Request should succeed"
 class TestRaceConditions:
     """Test for race conditions and concurrency issues."""
 
@@ -145,9 +143,7 @@ class TestResourceExhaustion:
         )
 
         # Should handle without stack overflow
-        assert response.status_code == 200
-
-
+        assert response.status_code == 200, "Request should succeed"
 class TestStateCorruption:
     """Test for state corruption and data leakage."""
 
@@ -290,7 +286,7 @@ class TestSecurityAssumptions:
 
             # Should not process XML entities - the file path should not appear in AI responses
             data = response.json()
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             # Check only the AI responses, not the original text which contains the test payload
             responses_str = json.dumps(data["responses"])
             assert "/etc/passwd" not in responses_str
@@ -310,7 +306,7 @@ class TestBrowserQuirks:
 
         for text in texts:
             response = client.post("/api/analyze", json={"text": text, "openai_key": "key"})
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             # But do they display correctly?
 
     def test_emoji_skin_tone_modifiers(self, client):
@@ -321,9 +317,7 @@ class TestBrowserQuirks:
         response = client.post("/api/analyze", json={"text": emoji_text, "openai_key": "key"})
 
         # Token counting might be way off
-        assert response.status_code == 200
-
-
+        assert response.status_code == 200, "Request should succeed"
 # More test ideas:
 # - What happens during provider API outages?
 # - Can you DOS the service with specific inputs?

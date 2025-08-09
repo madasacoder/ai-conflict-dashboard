@@ -1,12 +1,12 @@
+import json
 """Test workflow builder access and HTTPS redirect issues."""
 
 import re
-from typing import Any
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 import requests
-from pathlib import Path
 
 
 class TestWorkflowBuilderAccess:

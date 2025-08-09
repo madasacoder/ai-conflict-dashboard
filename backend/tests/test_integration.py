@@ -1,3 +1,4 @@
+from unittest.mock import patch, AsyncMock
 """Integration tests for the AI Conflict Dashboard.
 
 These tests verify the integration between different components
@@ -79,7 +80,7 @@ class TestFullWorkflowIntegration:
         response = client.post("/api/analyze", json=request_data)
 
         # Verify response
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         data = response.json()
 
         # Check structure
@@ -114,7 +115,7 @@ class TestFullWorkflowIntegration:
 
         response = client.post("/api/analyze", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         data = response.json()
 
         # Only 2 providers should respond
@@ -150,7 +151,7 @@ class TestFullWorkflowIntegration:
 
             response = client.post("/api/analyze", json=request_data)
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             # Both providers should be in response
@@ -180,7 +181,7 @@ class TestFullWorkflowIntegration:
 
         response = client.post("/api/analyze", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         data = response.json()
 
         # Verify chunking occurred
@@ -234,8 +235,7 @@ class TestFullWorkflowIntegration:
         }
 
         response = client.post("/api/analyze", json=request_data)
-        assert response.status_code == 200
-
+        assert response.status_code == 200, "Request should succeed"
         # Verify models were passed to providers
         # Check the call arguments for each provider
         call_args = mock_all_providers["openai"].call_args
@@ -274,7 +274,7 @@ class TestCircuitBreakerIntegration:
                 response = client.post(
                     "/api/analyze", json={"text": f"Test {i}", "openai_key": test_key}
                 )
-                assert response.status_code == 200
+                assert response.status_code == 200, "Request should succeed"
                 data = response.json()
                 # These should show the error from the exception
                 error_msg = data["responses"][0].get("error")
@@ -285,7 +285,7 @@ class TestCircuitBreakerIntegration:
 
             # The 6th request should definitely show circuit breaker is open
             response = client.post("/api/analyze", json={"text": "Test 6", "openai_key": test_key})
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
             openai_resp = data["responses"][0]
 
@@ -368,8 +368,7 @@ class TestLoggingIntegration:
                 )
 
                 # Check response includes request ID
-                assert response.status_code == 200
-
+                assert response.status_code == 200, "Request should succeed"
                 # Check for header (case-insensitive)
                 request_id_header = None
                 for header, value in response.headers.items():
@@ -402,8 +401,7 @@ class TestLoggingIntegration:
         )
 
         # FastAPI validation should return 422
-        assert response.status_code == 422
-
+        assert response.status_code == 422, "Expected status code 422"
         # Check that error response has proper structure
         error_data = response.json()
         assert "detail" in error_data
@@ -427,7 +425,7 @@ class TestHealthCheckIntegration:
     def test_health_check_when_healthy(self, client):
         """Test health check returns healthy status."""
         response = client.get("/api/health")
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         assert response.json() == {"status": "healthy"}
 
     def test_health_check_with_degraded_service(self, client):
@@ -438,7 +436,7 @@ class TestHealthCheckIntegration:
         # Current implementation always returns healthy
         # This is where you'd implement actual health checks
         response = client.get("/api/health")
-        assert response.status_code == 200
+        assert response.status_code == 200, "Request should succeed"
         assert response.json() == {"status": "healthy"}
 
         # In a more sophisticated implementation:

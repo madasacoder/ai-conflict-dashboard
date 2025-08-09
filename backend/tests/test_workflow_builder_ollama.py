@@ -1,9 +1,12 @@
+from pathlib import Path
+import re
+import json
 """
 Test suite for Ollama integration in workflow builder.
 Ensures the API returns the correct format that the frontend expects.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -11,10 +14,16 @@ from fastapi.testclient import TestClient
 
 
 class TestWorkflowBuilderOllamaIntegration:
+    @pytest.fixture
+    def client(self):
+        """Test client fixture."""
+        from main import app
+        return TestClient(app)
+
     """Test Ollama model dropdown functionality in workflow builder."""
 
     @pytest.fixture
-    def mock_ollama_response(self) -> Dict[str, List[Dict[str, Any]]]:
+    def mock_ollama_response(self) -> dict[str, list[dict[str, Any]]]:
         """Mock Ollama API response with model objects."""
         return {
             "models": [
@@ -52,7 +61,7 @@ class TestWorkflowBuilderOllamaIntegration:
         }
 
     def test_ollama_models_endpoint_returns_correct_format(
-        self, client: TestClient, mock_ollama_response: Dict[str, List[Dict[str, Any]]]
+        self, client: TestClient, mock_ollama_response: dict[str, list[dict[str, Any]]]
     ):
         """Test that /api/ollama/models returns the format expected by frontend."""
         # Mock the OllamaProvider instance
@@ -79,7 +88,7 @@ class TestWorkflowBuilderOllamaIntegration:
         with patch("plugins.ollama_provider.OllamaProvider", return_value=mock_provider):
             response = client.get("/api/ollama/models")
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             # Verify response structure
@@ -123,7 +132,7 @@ class TestWorkflowBuilderOllamaIntegration:
         with patch("plugins.ollama_provider.OllamaProvider", return_value=mock_provider):
             response = client.get("/api/ollama/models")
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             assert data["available"] is True
@@ -146,7 +155,7 @@ class TestWorkflowBuilderOllamaIntegration:
         with patch("plugins.ollama_provider.OllamaProvider", return_value=mock_provider):
             response = client.get("/api/ollama/models")
 
-            assert response.status_code == 200
+            assert response.status_code == 200, "Request should succeed"
             data = response.json()
 
             assert data["available"] is False
@@ -154,7 +163,7 @@ class TestWorkflowBuilderOllamaIntegration:
             assert "help" in data
 
     def test_frontend_can_parse_model_response(
-        self, mock_ollama_response: Dict[str, List[Dict[str, Any]]]
+        self, mock_ollama_response: dict[str, list[dict[str, Any]]]
     ):
         """Simulate frontend parsing logic to ensure compatibility."""
         # This test simulates what the frontend JavaScript does

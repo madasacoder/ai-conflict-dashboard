@@ -1,169 +1,225 @@
-# AI Conflict Dashboard - Desktop App
+# AI Conflict Dashboard - Frontend
 
-A powerful desktop application for orchestrating multiple AI models with a beautiful visual workflow builder.
+A React-based frontend for the AI Conflict Dashboard with testing in development.
 
-## 🚀 Quick Start
+## 🚧 Test Suite Status (latest local run)
+
+- Type-check (strict): failing with numerous errors across services/state/tests
+- Vitest: blocked by type errors and strict constraints
+- Playwright: tests start but fail early (cannot find "Launch Workflow Builder" button)
+- Integration with backend requires live API or MSW alignment
+
+### Running Tests (May Have Issues)
+```bash
+npm ci --no-audit --no-fund
+npm run type-check
+npm test -- --run
+npx playwright install
+npx playwright test --reporter=line
+```
+
+### Frontend Bugs Being Addressed
+- **BUG-081**: Desktop App Missing React Flow Instance 🚧 (test exists, needs verification)
+- **BUG-082**: Drag and Drop Completely Broken 🚧 (test exists, needs verification)
+
+## Features
+
+### Core Functionality
+- **Visual Workflow Builder**: Drag-and-drop interface using React Flow
+- **Multi-Model Comparison**: Side-by-side comparison of AI model responses
+- **Real-time Execution**: Live monitoring of workflow execution
+- **Result Visualization**: Syntax highlighting and structured display
+- **State Management**: Centralized state with Zustand
+
+### Security & Reliability
+- **Error Boundaries**: Graceful error handling and recovery
+- **XSS Protection**: DOMPurify integration for safe content rendering
+- **Input Sanitization**: Comprehensive input validation and sanitization
+- **Memory Management**: Automatic cleanup and memory leak detection
+
+### Testing & Quality (In Development)
+- **Regression Tests**: Test suite in progress
+- **Unit Tests**: Some component-level testing with React Testing Library
+- **Integration Tests**: Basic component interaction testing
+- **E2E Tests**: Some user scenario testing with Playwright
+- **Goal**: Working towards comprehensive test coverage
+
+## Technology Stack
+
+- **React 18**: Modern React with hooks and concurrent features
+- **TypeScript**: Type safety and better developer experience
+- **Vite**: Fast build tool and development server
+- **React Flow**: Visual workflow builder
+- **Zustand**: Lightweight state management
+- **Vitest**: Fast unit testing framework
+- **React Testing Library**: Component testing utilities
+- **Playwright**: E2E testing framework
+
+## Quick Start
 
 ### Prerequisites
-- Node.js 18+ (LTS recommended)
-- Python 3.11+
-- Git
+- Node.js 18+
+- npm or yarn
 
-### Setup in 3 Steps
-
-1. **Clone and enter directory**
-   ```bash
-   cd desktop-app
-   ```
-
-2. **Copy environment file and add API keys**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add at least one API key
-   ```
-
-3. **Start the app**
-   ```bash
-   ./start.sh      # Mac/Linux
-   start.bat       # Windows
-   ```
-
-The app will automatically install dependencies on first run and open in a new window!
-
-## 🛠️ Development
-
-### Available Commands
-
+### Installation
 ```bash
-make help        # Show all available commands
-make setup       # Complete initial setup
-make dev         # Run in development mode
-make test        # Run all tests
-make build       # Build for production
-make lint        # Run linters
-make format      # Format code
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-### Development Toolchain
+## Testing
 
-#### **Rust/Tauri Toolchain**
-| **Tool** | **Purpose** | **Configuration** |
-|----------|-------------|------------------|
-| **rustfmt** | Code formatting | `src-tauri/rustfmt.toml` |
-| **clippy** | Linting + suggestions | `src-tauri/clippy.toml` |
-| **cargo-audit** | Security scanning | Checks RustSec database |
-
-**Quick Commands:**
+### GRADE A Critical Bug Regression Tests
 ```bash
-# Format Rust code
-cd src-tauri && cargo fmt
-
-# Lint with Clippy
-cd src-tauri && cargo clippy -- -D warnings
-
-# Security audit
-cargo install cargo-audit  # One-time install
-cd src-tauri && cargo audit
-
-# Run tests
-cd src-tauri && cargo test
+# Use Playwright suites under playwright-tests/ (expect failures until app flow is aligned)
+npx playwright test
 ```
 
-#### **Frontend Toolchain**
-Inherits all tools from main frontend:
-- **ESLint** for linting
-- **Prettier** for formatting
-- **Vitest** for testing
-- **npm audit** for security
-
-#### **Quality Checks**
-```bash
-# Run all quality checks
-cd .. && make desktop-lint    # Lint only
-cd .. && make desktop-format  # Format only
-cd .. && make desktop-test    # Tests only
-cd .. && make desktop-security # Security only
-
-# Or run everything
-cd .. && make quality
-```
-
-### Project Structure
-
-```
-desktop-app/
-├── src/                    # React frontend code
-│   ├── components/         # React components
-│   ├── state/             # Zustand stores
-│   ├── hooks/             # Custom React hooks
-│   └── utils/             # Utility functions
-├── src-tauri/             # Tauri backend (Rust)
-├── backend/               # FastAPI Python backend
-│   ├── main.py           # API entry point
-│   ├── models/           # Database models
-│   ├── api/              # API endpoints
-│   └── tests/            # Backend tests
-├── public/                # Static assets
-└── data/                  # Local SQLite database
-```
-
-### Technology Stack
-
-- **Frontend**: React 18, React Flow, Zustand, Tailwind CSS
-- **Desktop**: Tauri (Rust-based, uses OS webview)
-- **Backend**: FastAPI (Python), SQLite
-- **Testing**: Vitest (frontend), Pytest (backend)
-- **Tooling**: rustfmt, clippy, cargo-audit (Rust), ESLint, Prettier (JS)
-
-## 🎯 Features
-
-- **Visual Workflow Builder**: Drag-and-drop interface for creating AI workflows
-- **Multi-Model Support**: OpenAI, Claude, Gemini, Grok, and Ollama (local)
-- **Offline Mode**: Works without internet using Ollama
-- **Cost Tracking**: Real-time cost monitoring and optimization
-- **Beautiful UI**: Modern, responsive design with dark mode
-- **Fast & Lightweight**: <30MB download, native performance
-
-## 🧪 Testing
-
+### Regular Test Suites
 ```bash
 # Run all tests
-make test
-
-# Frontend tests only
 npm test
 
-# Backend tests only
-./venv/bin/pytest
+# Run tests in watch mode
+npm test -- --watch
 
-# Test coverage
-npm run test:coverage
+# Run tests with coverage
+npm test -- --coverage
+
+# Run E2E tests
+npm run test:e2e
 ```
 
-## 🏗️ Building for Production
+### Test Categories
 
-```bash
-# Build the desktop app
-make build
+#### 1. Unit Tests
+- Component behavior testing
+- Hook testing
+- Utility function testing
+- State management testing
 
-# Output will be in:
-# - src-tauri/target/release/bundle/
+#### 2. Integration Tests
+- Component interaction testing
+- API integration testing
+- Workflow execution testing
+- Error handling testing
+
+#### 3. E2E Tests
+- Real user scenario testing
+- Cross-browser testing
+- Performance testing
+- Accessibility testing
+
+#### 4. GRADE A Regression Tests
+- Critical bug prevention testing
+- Edge case testing
+- Security vulnerability testing
+- Memory leak detection
+
+## Project Structure
+
+```
+src/
+├── components/          # React components
+│   ├── common/         # Shared components
+│   ├── features/       # Feature-specific components
+│   ├── nodes/          # Workflow node components
+│   └── ui/             # UI components
+├── hooks/              # Custom React hooks
+├── services/           # API services
+├── state/              # State management
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions
+└── __tests__/          # Test files
+    ├── e2e/            # E2E tests
+    │   └── CriticalBugRegressionTests.test.tsx  # GRADE A tests
+    ├── integration/    # Integration tests
+    └── unit/           # Unit tests
 ```
 
-## 📚 Documentation
+## Development
 
-- [Architecture Overview](docs/architecture.md)
-- [API Documentation](docs/api.md)
-- [Contributing Guide](docs/contributing.md)
+### Code Quality
+- **ESLint**: JavaScript/TypeScript linting
+- **Prettier**: Code formatting
+- **TypeScript**: Type safety
+- **Husky**: Git hooks for quality checks
 
-## 🤝 Contributing
+### Testing Strategy
+- **TDD Approach**: Write tests first
+- **Comprehensive Coverage**: 100% critical path coverage
+- **Edge Case Testing**: All boundary conditions tested
+- **Security Testing**: All inputs validated
+- **Performance Testing**: Memory and speed monitored
 
+### Contributing
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+3. Write tests first (TDD approach)
+4. Implement the feature
+5. Run all test suites
+6. Submit a pull request
 
-## 📄 License
+## Critical Bug Prevention
 
-MIT License - see LICENSE file for details
+### BUG-081: React Flow Instance
+- **Tests**: React Flow initialization and functionality
+- **Coverage**: Component lifecycle, error boundaries, viewport management
+- **Prevention**: Comprehensive initialization testing and error recovery
+
+### BUG-082: Drag and Drop
+- **Tests**: Drag and drop operations with edge cases
+- **Coverage**: Event handling, data transfer, drop zone detection
+- **Prevention**: Fallback mechanisms and comprehensive edge case testing
+
+## Performance Monitoring
+
+### Memory Management
+- Automatic memory usage monitoring
+- Memory leak detection in tests
+- Component cleanup verification
+- Resource disposal testing
+
+### Performance Testing
+- Response time monitoring
+- Component rendering performance
+- Workflow execution speed
+- User interaction responsiveness
+
+## Security Features
+
+### Input Sanitization
+- XSS prevention with DOMPurify
+- Input validation and sanitization
+- Safe content rendering
+- Malicious input detection
+
+### Error Handling
+- Graceful error boundaries
+- User-friendly error messages
+- Error recovery mechanisms
+- Security-conscious error reporting
+
+## Documentation
+
+- [GRADE A Regression Test Documentation](../GRADE_A_REGRESSION_TEST_DOCUMENTATION.md)
+- [Testing Guide](../docs/TESTING_GUIDE.md)
+- [Bug Database](../docs/BUGS.md)
+- [API Documentation](../docs/API_DOCUMENTATION.md)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+
+---
+
+**Mission**: Every bug that reaches production is a failure of our test suite.

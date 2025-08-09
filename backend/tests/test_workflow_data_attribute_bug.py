@@ -1,3 +1,4 @@
+import json
 """Test for workflow builder data attribute bug regression."""
 
 import re

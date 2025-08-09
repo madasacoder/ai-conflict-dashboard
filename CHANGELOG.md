@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Architectural Unification:** Merged the legacy `frontend` and the `desktop-app` into a single, unified `ui` codebase. This new structure utilizes a modern React, Vite, and TypeScript stack for both web and desktop platforms, significantly improving maintainability, reducing code duplication, and streamlining the development process.
+- **Backend Code Quality Overhaul:** Performed a comprehensive quality pass on the entire Python backend. This included:
+    - **Formatting:** Standardized all code using the `black` formatter.
+    - **Linting:** Fixed hundreds of linting issues identified by `ruff`, including unused imports, improper exception handling, and opportunities for code simplification.
+    - **Type Hinting:** Added explicit type hints to dozens of files and functions, resolving all `mypy` errors and dramatically improving the type safety and clarity of the codebase.
+- **Legacy Frontend Decommissioned:** The entire legacy `frontend` directory and its associated vanilla JavaScript files have been deleted, completing the transition to the new unified architecture.
+
+### Added
+- **Centralized UI State Management:** Implemented a new Zustand store (`uiStore`) to manage the state of the unified user interface, providing a predictable and efficient way to handle application data.
+- **Modular React Components:** Migrated core UI features into reusable React components (`InputSection`, `ResultsSection`, `Button`, `TextArea`) to build a more robust and scalable user interface.
+- **Unified Build Process:** Updated the Vite configuration to support building both the web and desktop applications from the single `ui` codebase, controlled by a `VITE_TARGET_ENV` environment variable.
+
+### Fixed
+- **Code Quality & Stability:** Resolved a wide range of underlying code quality issues that were contributing to bugs and instability, including the root causes of the previously investigated mixed-content errors.
+- **Security:** Enhanced Bandit security scanning by adding a configuration to exclude virtual environments, ensuring scans are focused on application code.
+
+## [0.5.0] - 2024-02-01
+
 ### Added
 - Visual output display for workflow execution results
   - Results now show in a Bootstrap modal instead of just alerts

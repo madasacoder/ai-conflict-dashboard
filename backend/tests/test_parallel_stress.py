@@ -175,3 +175,35 @@ class TestParallelStress:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+    def test_parallel_memory_stability(self):
+        """Grade B: Test memory stability under parallel load."""
+        import gc
+        import psutil
+        from concurrent.futures import ThreadPoolExecutor
+        
+        # Arrange
+        process = psutil.Process()
+        gc.collect()
+        initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+        
+        def memory_task(i):
+            # Allocate and free memory
+            data = "x" * 100000  # 100KB
+            result = len(data)
+            del data
+            return result
+        
+        # Act - Parallel memory operations
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(memory_task, i) for i in range(100)]
+            results = [f.result() for f in futures]
+        
+        gc.collect()
+        final_memory = process.memory_info().rss / 1024 / 1024  # MB
+        
+        # Assert
+        memory_growth = final_memory - initial_memory
+        assert memory_growth < 50, f"Memory grew by {memory_growth:.1f}MB"
+        assert all(r == 100000 for r in results), "All tasks should complete"
+

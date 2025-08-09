@@ -10,12 +10,12 @@ This document tracks all discovered bugs, their severity, impact, and resolution
 - **LOW**: Cosmetic or minor inconvenience
 
 ## Summary Statistics
-- **Total Bugs**: 91
-- **Active Bugs**: 30
+- **Total Bugs**: 110
+- **Active Bugs**: 49 (30 + 19 new from Grade A tests)
 - **Fixed Bugs**: 61
-- **Critical Bugs**: 4 (BUG-081, BUG-082, BUG-075, BUG-086)
-- **High Priority**: 10
-- **Medium Priority**: 13
+- **Critical Bugs**: 5 (BUG-081, BUG-082, BUG-075, BUG-086, BUG-108)
+- **High Priority**: 16 (10 + 6 new: BUG-102, BUG-103, BUG-105, BUG-109, BUG-110)
+- **Medium Priority**: 18 (13 + 5 new: BUG-104, BUG-106, BUG-107)
 - **Low Priority**: 4
 
 ## Active Bugs
@@ -296,6 +296,118 @@ This document tracks all discovered bugs, their severity, impact, and resolution
 - **Test**: `test_real_memory_usage_under_load`
 - **Evidence**: Memory monitoring shows gradual increase
 - **Fix Required**: Implement proper cleanup after request processing
+
+---
+
+## New Bugs Found by Grade A Security Tests (2025-08-07)
+
+### BUG-102: Race Condition in Circuit Breaker Implementation
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (llm_providers.py)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: Multiple threads can create different circuit breaker instances for same API key
+- **Impact**: Circuit breaker protection may not work correctly under high concurrency
+- **Test**: `test_race_condition_circuit_breaker`
+- **Evidence**: Multiple breaker instances created for same key during concurrent access
+- **Fix Required**: Add thread-safe locking mechanism for circuit breaker creation
+- **Business Impact**: Could lead to service instability during traffic spikes
+
+### BUG-103: Consensus Analysis Shows False Agreement
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (consensus analysis logic)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: System shows consensus for clearly conflicting responses (YES vs NO)
+- **Impact**: Users receive misleading information about model agreement
+- **Test**: `test_consensus_analysis_manipulation`
+- **Evidence**: Opposite answers ("YES" vs "NO") incorrectly shown as consensus
+- **Fix Required**: Implement proper conflict detection algorithm
+- **Business Impact**: Loss of trust in consensus feature, incorrect decision making
+
+### BUG-104: Token Counting Fails for Complex Unicode
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Backend (token_utils.py)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: Token counting underestimates complex emoji and Unicode characters
+- **Impact**: Billing discrepancies and unexpected token limit errors
+- **Test**: `test_token_counting_edge_cases`
+- **Evidence**: Family emoji (👨‍👩‍👧‍👦) counted as fewer tokens than actual API usage
+- **Fix Required**: Update token counting to handle multi-codepoint characters
+- **Business Impact**: Potential revenue loss or customer complaints about billing
+
+### BUG-105: Missing Input Size Validation
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (main.py)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: No validation for extremely large input sizes (10MB+)
+- **Impact**: DoS vulnerability through memory exhaustion
+- **Test**: `test_memory_exhaustion_attack`
+- **Evidence**: System accepts and processes 10MB+ payloads without limits
+- **Fix Required**: Implement request size limits (e.g., 1MB max)
+- **Business Impact**: Service outages from malicious or accidental large requests
+
+### BUG-106: Integer Overflow in Token Limits
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Backend (token validation)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: System doesn't properly handle integer overflow values in max_tokens
+- **Impact**: Unexpected behavior or crashes with large token values
+- **Test**: `test_integer_overflow`
+- **Evidence**: System accepts 2^63-1 as max_tokens without validation
+- **Fix Required**: Add bounds checking for numeric inputs
+- **Business Impact**: Potential service disruption
+
+### BUG-107: Unicode Normalization Security Issue
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Backend (input processing)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: Different Unicode representations handled inconsistently
+- **Impact**: Potential security bypass through homograph attacks
+- **Test**: `test_unicode_normalization_attacks`
+- **Evidence**: "admin" vs "аdmin" (Cyrillic 'a') treated differently
+- **Fix Required**: Implement Unicode normalization for all inputs
+- **Business Impact**: Security vulnerabilities in authentication/authorization
+
+### BUG-108: Data Leakage Between Concurrent Requests
+- **Severity**: CRITICAL
+- **Status**: NEEDS VERIFICATION
+- **Component**: Backend (request handling)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: Potential for data leakage between concurrent requests
+- **Impact**: Privacy breach - users could see other users' data
+- **Test**: `test_concurrent_request_isolation`
+- **Evidence**: Test designed to detect cross-request contamination
+- **Fix Required**: Ensure complete request isolation
+- **Business Impact**: Major privacy violation, regulatory compliance issues
+
+### BUG-109: Rate Limiting Can Be Bypassed
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (rate_limiting.py)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: Rate limiting may be bypassed using header manipulation
+- **Impact**: DoS protection can be circumvented
+- **Test**: `test_rate_limit_bypass_attempts`
+- **Evidence**: Different X-Forwarded-For headers may bypass limits
+- **Fix Required**: Implement proper client identification
+- **Business Impact**: Service abuse and potential outages
+
+### BUG-110: Memory Leak Under Parallel Load
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (memory management)
+- **Discovered**: 2025-08-07 via Grade A test
+- **Description**: Memory not properly released after parallel requests
+- **Impact**: Gradual memory exhaustion leading to crashes
+- **Test**: `test_parallel_request_resource_leak`
+- **Evidence**: Memory usage grows with parallel requests and doesn't recover
+- **Fix Required**: Implement proper resource cleanup
+- **Business Impact**: Service instability and downtime
 
 ### BUG-091: Ollama Integration Not Working with Backend
 - **Severity**: MEDIUM
@@ -1702,6 +1814,64 @@ In this session, we identified and fixed multiple critical bugs in the desktop a
 - **High Priority**: 20 (+3: BUG-115, BUG-116, BUG-118)
 - **Medium Priority**: 24 (+4: BUG-114 fixed, BUG-117, BUG-119, BUG-121)
 - **Low Priority**: 10 (+1: BUG-120)
+
+---
+
+## Newly Discovered Bugs (2025-08-08)
+
+### BUG-122: Circuit Breaker Map Not Initialized for Providers
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (`llm_providers.get_circuit_breaker`)
+- **Description**: Accessing `circuit_breakers[provider]` raises `KeyError: 'openai'` when provider key not pre-initialized.
+- **Evidence**: Failing tests with `KeyError: 'openai'` in `tests/test_regression_all_bugs.py` and others.
+- **Impact**: Breaks circuit breaker isolation tests and concurrency/race tests.
+- **Fix Required**: Ensure provider sub-maps are created lazily with proper locking before key access.
+
+### BUG-123: Backend Tests Reference Legacy `frontend/` Files
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Backend tests
+- **Description**: Tests attempt to open `../frontend/index.html`, `../frontend/workflow-builder.html`, and `../frontend/js/workflow-builder.js`, which do not exist in the modern layout.
+- **Evidence**: Multiple `FileNotFoundError` exceptions in workflow-related tests.
+- **Impact**: Test suite cannot validate workflow builder assumptions; false negatives.
+- **Fix Required**: Migrate tests to reference `ui/` app or provide fixtures/resources under test assets.
+
+### BUG-124: Playwright Fails to Locate "Launch Workflow Builder" Entry Point
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: UI (Playwright tests)
+- **Description**: All Playwright specs time out waiting for a button labeled "Launch Workflow Builder"; likely mismatch between app home route and test selectors.
+- **Evidence**: 50+ Playwright failures timing out on the same locator with baseURL `http://localhost:3001`.
+- **Impact**: E2E suite provides no signal; blocks browser-level regression coverage.
+- **Fix Required**: Align app routing/markup with tests or update tests to the current UI. Confirm baseURL and dev server config.
+
+### BUG-125: API Surface Mismatch Between Providers and Tests
+- **Severity**: HIGH
+- **Status**: ACTIVE
+- **Component**: Backend (`llm_providers.py`, `workflow_executor.py`, tests)
+- **Description**: Tests pass `max_tokens`/`temperature` to provider functions that do not accept them; type-checking shows numerous signature mismatches.
+- **Evidence**: mypy errors for unexpected keyword args; runtime test failures expecting arguments.
+- **Impact**: Provider calls fail; execution path cannot be validated.
+- **Fix Required**: Normalize function signatures across providers and call sites; update tests accordingly.
+
+### BUG-126: Structured Logging Type and Return Contracts Inconsistent
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Backend (`structured_logging.py`)
+- **Description**: Functions declared to return `str`/`MutableMapping[str, Any]` return `Any`; context manager typing issues.
+- **Evidence**: mypy errors (`no-any-return`, invalid `__exit__` return type).
+- **Impact**: Type safety reduced; potential subtle runtime issues.
+- **Fix Required**: Tighten return types, use `Literal[False]` for `__exit__`, and add precise annotations.
+
+### BUG-127: Test Environment Not Bypassing/Adjusting Rate Limits
+- **Severity**: MEDIUM
+- **Status**: ACTIVE
+- **Component**: Backend (`rate_limiting.py`)
+- **Description**: Full-suite runs repeatedly hit 429s; limits too strict for tests.
+- **Evidence**: Many integration/real tests failing with 429 under normal test load.
+- **Impact**: Masks real failures and slows iteration.
+- **Fix Required**: Bypass or relax limits under `TESTING` env; add per-suite quotas.
 
 ## Coding Standards Compliance
 

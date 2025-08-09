@@ -29,7 +29,7 @@ class TestStructuredLogging:
         log_file = tmp_path / "test.log"
         logger = setup_structured_logging("DEBUG", str(log_file))
 
-        assert logger is not None
+        assert logger is not None, "logger should not be None"
         assert log_file.exists()
 
     def test_get_logger_with_context(self):
@@ -37,7 +37,7 @@ class TestStructuredLogging:
         logger = get_logger("test_module", user_id="123", request_id="abc")
 
         # Logger should be bound with context
-        assert logger is not None
+        assert logger is not None, "logger should not be None"
 
     def test_request_context(self):
         """Test RequestContext context manager."""

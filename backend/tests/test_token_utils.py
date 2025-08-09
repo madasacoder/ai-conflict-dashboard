@@ -57,7 +57,7 @@ class TestCheckTokenLimits:
 
         # Should have warning for GPT-3.5
         gpt_warning = next((w for w in result["warnings"] if "GPT-3.5" in w["model"]), None)
-        assert gpt_warning is not None
+        assert gpt_warning is not None, "gpt_warning should not be None"
         assert gpt_warning["exceeds_by"] > 0
 
     def test_recommendations(self):

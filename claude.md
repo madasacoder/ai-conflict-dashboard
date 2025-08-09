@@ -7,7 +7,14 @@ This document defines explicit rules and instructions for AI coding assistants (
 ## 🚀 Project Philosophy
 The AI Conflict Dashboard transparently orchestrates multiple AI models, providing clear insights, consensus, and explicit conflict resolution, enabling informed editing decisions.
 
-**Current Status**: Development application with Phase 1 & 2 partially complete. 81% test coverage with 56 failing tests, has significant implementation gaps and quality issues. NOT production-ready.
+**Current Status (authoritative as of latest local run)**
+- Backend tests: 319 passed, 108 failed, 13 skipped, 23 errors (pytest)
+- Backend coverage (overall): ~51% (pytest-cov)
+- UI type-check: failing with ~800+ TypeScript errors (strict mode)
+- Playwright E2E: failing (selectors/entry-flow mismatch)
+- Security scans: issues present (Bandit findings in tooling scripts; npm audit not yet evaluated here)
+- Providers: OpenAI/Claude/Ollama implemented; Gemini/Grok are mock-only
+- Production readiness: NOT READY
 
 ---
 
@@ -31,55 +38,46 @@ The AI Conflict Dashboard transparently orchestrates multiple AI models, providi
 - Fix root causes, not tests.
 - Add regression tests for bug fixes.
 - Never skip or weaken tests.
-- Maintain 90%+ coverage for backend, 85%+ for frontend.
+- Quality gates are targets (not current): 90%+ backend coverage, 85%+ frontend coverage.
 
 ---
 
 ## 💻 Technical Guidelines
 
-### Frontend (Vanilla JavaScript + Bootstrap)
-- **Current Stack**: HTML5, Vanilla JavaScript, Bootstrap 5, Prism.js, DOMPurify
-- **Key Features**: Dark mode, file upload, model selection, Ollama support, checkboxes
-- **Testing**: Vitest + Playwright for e2e tests
-- **Code Style**: Modular JS, semantic HTML, accessible components
+### Frontend (Primary: React + TypeScript in `ui/`; Legacy: Vanilla in `frontend/`)
+- **Primary Stack (ui/)**: React 18, TypeScript (strict), Vite, React Flow, Zustand, DOMPurify
+- **Legacy (frontend/)**: HTML5 + Vanilla JS + Bootstrap; retained for historical context only
+- **Testing**: Vitest (unit), Playwright (E2E) under `ui/`
+- **Note**: Some backend tests still point to legacy `../frontend/*` files; these paths need migration to the modern `ui/` app or test updates.
 
 ### Backend (FastAPI Python 3.11+)
 - **Modern type hints**: `str | None`, `list[str]`, full annotations
-- **Circuit Breakers**: PyBreaker per-API-key isolation (has race condition issues)
-- **Logging**: Structured logging with `structlog` (JSON format)
-- **Testing**: pytest with 81% coverage (56 failing tests) ⚠️
-- **Security**: Rate limiting, CORS, XSS protection, timeout handling (some vulnerabilities remain)
+- **Circuit Breakers**: PyBreaker per-API-key isolation (race condition issues remain under concurrency)
+- **Logging**: Structured logging with `structlog` (JSON);
+  API key sanitization implemented but needs verification end-to-end
+- **Testing**: pytest; current suite has significant failures and some tests that assume a live server
+- **Security**: Rate limiting, CORS, XSS protection, timeout handling present but with gaps
 
 ---
 
 ## 📐 Current Project Structure
 ```
 ai-conflict-dashboard/
-├── frontend/
-│   ├── index.html          # Main UI (Vanilla JS + Bootstrap)
-│   ├── js/
-│   │   ├── xss-protection.js
-│   │   └── file-upload-fix.js
-│   ├── e2e/               # Playwright tests
-│   └── tests/             # Vitest tests
-├── backend/
-│   ├── main.py            # FastAPI app with Ollama support
-│   ├── llm_providers.py   # API integrations (OpenAI, Claude, Ollama) - Gemini and Grok are mock implementations
-│   ├── token_utils.py     # Text chunking
-│   ├── structured_logging.py # Logging config
-│   ├── cors_config.py     # CORS security
-│   ├── rate_limiting.py   # Rate limiter
-│   ├── memory_management.py # Memory controls
-│   ├── timeout_handler.py # Timeout handling
-│   ├── smart_chunking.py  # Smart text splitting
-│   ├── plugins/
-│   │   └── ollama_provider.py # Ollama integration
-│   └── tests/             # Test suite (156 tests, 56 failing)
-├── logs/                  # Application logs
-├── temporary_files/       # For temporary work (per rule #2)
-├── docs/                  # Comprehensive documentation
-├── CLAUDE.md             # This file
-└── README.md             # User documentation
+├── ui/                    # Primary web/desktop app (React + TS + Vite + Playwright)
+│   ├── src/
+│   ├── playwright-tests/
+│   ├── playwright.config.ts
+│   └── src-tauri/         # Desktop (Tauri)
+├── frontend/              # Legacy vanilla JS app (not primary)
+│   └── js/
+├── backend/               # FastAPI API server and tests
+│   ├── main.py
+│   ├── llm_providers.py   # OpenAI/Claude/Ollama implemented; Gemini/Grok mock-only
+│   ├── ...                # rate_limiting, smart_chunking, memory_management, etc.
+│   └── tests/
+├── docs/
+├── logs/
+└── temporary_files/
 ```
 
 ---
@@ -88,7 +86,7 @@ ai-conflict-dashboard/
 
 ### Backend (Current)
 - **Framework**: pytest + pytest-cov + pytest-asyncio
-- **Coverage**: 81% (56 failing tests) ⚠️
+- **Coverage (latest run)**: ~51% overall; significant module gaps
 - **Test Files**: 
   - test_api_analyze.py
   - test_llm_providers.py 
@@ -106,26 +104,25 @@ ai-conflict-dashboard/
 - **Biome**: High-performance alternative (10-100x faster)
 - **Vitest + Testing Library**: TypeScript-aware testing
 - **Security**: npm audit + Snyk integration
-- **Coverage**: 85%+ target with comprehensive test suite
+- **Coverage target**: 85%+ (current status below)
 
 ---
 
 ## 🔒 Security Standards
-- ✅ Input validation on all endpoints
-- ✅ No dynamic execution (`eval`, `exec`)
-- ✅ API keys never logged
-- ✅ Bandit security scanning (zero issues)
-- ✅ CORS properly configured
-- ✅ Type-safe throughout
+- Input validation on all endpoints (gaps remain; see BUGS/CRITICAL_ISSUES)
+- No dynamic execution (`eval`, `exec`)
+- API keys should never be logged (sanitization in place but must be validated end-to-end)
+- Bandit security scanning: issues present in scripts and dependencies; treat findings as backlog
+- CORS properly configured (env-based)
+- Type safety: enforced in principle; current UI strict errors need resolution
 
 ---
 
 ## 📖 Documentation Standards
-- ✅ Google-style docstrings for all Python functions
-- ✅ Comprehensive inline comments
-- ✅ Updated README with current features
-- ✅ Phase completion reports in docs/
-- ✅ Architecture decisions documented
+- Google-style docstrings for Python functions (work in progress)
+- Comments and ADRs where helpful
+- READMEs reflect current status (kept accurate; avoid aspirational claims)
+- Phase completion reports in `docs/` (truthful and dated)
 
 ---
 
@@ -150,24 +147,15 @@ The project implements a **comprehensive, free CLI toolchain** for TypeScript:
 - **Security**: npm audit + Snyk vulnerability scanning
 - **Testing**: Vitest/Jest with full TypeScript support
 
-#### **Quick TypeScript Commands**
+#### **Quick TypeScript Commands (ui/)**
 ```bash
-# Desktop App (React + TypeScript)
-cd desktop-app
-npm run type-check              # TypeScript validation
-npm run lint                     # ESLint + TypeScript
-npm run biome:check             # Fast alternative linting
-npm run quality                 # Full quality check
-npm run validate                # Type-check + lint + test
-
-# Frontend (Vanilla JS → TypeScript)
-cd frontend  
-npm run type-check              # TypeScript validation
-npm run check                   # All quality checks
-npm run check:biome             # Biome-based validation
-
-# Project-wide validation
-./validate-typescript.sh         # Comprehensive validation
+cd ui
+npm ci --no-audit --no-fund
+npm run type-check              # TypeScript validation (strict)
+npm run lint                    # ESLint + TypeScript
+npm run test -- --run           # Vitest unit tests
+npx playwright install
+npx playwright test             # Browser E2E tests
 ```
 
 #### **TypeScript Configuration Standards**
@@ -217,24 +205,22 @@ All code changes MUST pass these automated checks:
 
 #### **Python Backend**
 ```bash
-# Before committing Python code:
 cd backend
-./venv/bin/ruff check . --fix    # Auto-fix linting issues
-./venv/bin/black .               # Format code
-./venv/bin/mypy .                # Type checking
-./venv/bin/bandit -r .           # Security scan
-./venv/bin/pytest               # Run tests with 90%+ coverage
+./venv/bin/ruff check . --fix    # Lint (expect failures currently)
+./venv/bin/black .               # Format
+./venv/bin/mypy .                # Type check (expect failures currently)
+./venv/bin/bandit -r . -x venv   # Security scan
+./venv/bin/pytest                # Run tests (expect failures/errors)
 ```
 
-#### **JavaScript Frontend**
+#### **JavaScript/TypeScript Frontend (ui/)**
 ```bash
-# Before committing JavaScript code:
-cd frontend
+cd ui
 npm run lint:fix                 # Fix ESLint issues
 npm run format                   # Format with Prettier
-npm run security                 # Security scan
-npm test                         # Unit tests
-npm run test:e2e                 # E2E tests
+npm audit                        # Security scan
+npm test -- --run                # Unit tests (expect TS errors currently)
+npx playwright test              # E2E tests (expect selector/flow failures)
 ```
 
 #### **Rust Desktop App**
@@ -307,8 +293,8 @@ make security                    # Run all security scans
 | Desktop App      | React + TypeScript, Tauri, Vite, Vitest              |
 | Backend          | FastAPI, Python 3.11+, pytest, PyBreaker, structlog, google-generativeai |
 | TypeScript       | tsc (strict), ESLint + TS, Biome, Prettier, Snyk     |
-| Security         | Bandit (zero issues), npm audit, Snyk, input validation |
-| Code Quality     | Black, Ruff, ESLint, Biome (all passing), 90%+ coverage |
+| Security         | Bandit, npm audit, Snyk (issues outstanding), input validation |
+| Code Quality     | Black, Ruff, ESLint, Biome (targets; current runs failing) |
 | Documentation    | Google docstrings, JSDoc, Markdown, inline comments   |
 | Logging          | structlog with JSON output, request correlation       |
 | Error Handling   | Circuit breakers, graceful degradation                |
@@ -316,20 +302,18 @@ make security                    # Run all security scans
 | **Automation**   | **Pre-commit hooks, Makefile, CI/CD integration**     |
 | **Quality Gates**| **90% Python coverage, 85% JS coverage, 0 security issues** |
 
-### Key Metrics Achieved
-- Backend Test Coverage: 81% (56 failing tests) ⚠️
-- Security Issues: Multiple vulnerabilities found ⚠️
-- Response Time: <2s ✅
-- Code Quality: B- (good structure, implementation gaps) ⚠️
-- Documentation: Complete ✅
-- AI Models Supported: 3 real (OpenAI, Claude, Ollama), 2 mock (Gemini, Grok) ⚠️
+### Current Metrics (latest local run)
+- Backend tests: 319 passed, 108 failed, 23 errors; ~51% coverage
+- UI: Type-check failing with hundreds of strict errors; E2E flows not launching
+- Security: Findings outstanding (see `docs/BUGS.md` and `docs/CRITICAL_ISSUES.md`)
+- Providers: 3 real (OpenAI, Claude, Ollama), 2 mock (Gemini, Grok)
 
 ---
 
 ## 🏗️ Phase 3 Preparation
 
 When implementing Phase 3 features, maintain these standards:
-1. Keep test coverage above 90%
+1. Raise test coverage toward 90% (target)
 2. Add circuit breakers for new external services
 3. Use structured logging for all new endpoints
 4. Implement proper error handling
@@ -337,7 +321,7 @@ When implementing Phase 3 features, maintain these standards:
 
 ---
 
-This document ensures that the AI Conflict Dashboard maintains production-ready quality standards while remaining flexible for future enhancements.
+This document defines standards and reflects the current status. Keep it honest and aligned with real test/security results.
 
 **Last Updated**: August 2025
 **Status**: Development application, Phase 1 & 2 partially complete, NOT production-ready

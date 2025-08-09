@@ -1,5 +1,6 @@
 """Investigation tests for BUG-039: Ollama Integration Error."""
 
+from unittest.mock import patch, Mock, MagicMock, AsyncMock
 from pathlib import Path
 
 import pytest
@@ -39,7 +40,7 @@ class TestOllamaErrorInvestigation:
         """Test that Ollama is properly configured in main application."""
         main_py_path = Path("main.py")
 
-        with open(main_py_path) as f:
+        with main_py_path.open() as f:
             content = f.read()
 
         # Check for Ollama integration
@@ -152,7 +153,7 @@ class TestOllamaErrorInvestigation:
 
         for log_file in log_files:
             try:
-                with open(log_file, encoding="utf-8", errors="ignore") as f:
+                with Path(log_file).open(encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 # Look for Ollama-related errors
@@ -254,3 +255,21 @@ class TestOllamaErrorInvestigation:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+    @patch('plugins.ollama_provider.requests.post')
+    def test_ollama_connection_error(self, mock_post):
+        """Grade B: Test Ollama connection error handling."""
+        from plugins.ollama_provider import call_ollama
+        
+        # Arrange
+        mock_post.side_effect = ConnectionError("Cannot connect to Ollama")
+        
+        # Act
+        result = call_ollama("test prompt", model="llama2")
+        
+        # Assert
+        assert result is not None, "Should return result even on error"
+        assert "error" in result, "Should have error field"
+        assert "Cannot connect" in str(result["error"]), "Should contain error message"
+        assert result.get("response") is None, "Should not have response on error"
+

@@ -144,6 +144,35 @@ class TestEnhancedOpenAIIntegration:
             assert result["retry_count"] == 2, "Should indicate 2 retries"
 
 
+    @pytest.mark.asyncio
+    async def test_enhanced_error_handling(self):
+        """Grade B: Test enhanced error handling in LLM providers."""
+        from llm_providers import call_openai
+        from unittest.mock import patch, AsyncMock
+        
+        # Arrange - Mock various error scenarios
+        with patch('llm_providers._call_openai_api', new_callable=AsyncMock) as mock_api:
+            # Test different error types
+            errors = [
+                Exception("Generic error"),
+                ConnectionError("Network error"),
+                TimeoutError("Timeout"),
+                ValueError("Invalid response"),
+            ]
+            
+            for error in errors:
+                mock_api.side_effect = error
+                
+                # Act
+                result = await call_openai("test", "key")
+                
+                # Assert - Should handle gracefully
+                assert result is not None, f"Should return result for {error}"
+                assert "error" in result, f"Should have error field for {error}"
+                assert result["error"] is not None, f"Error should be populated for {error}"
+                assert "key" not in str(result["error"]), "API key should not be in error"
+
+
 class TestEnhancedCircuitBreaker:
     """Grade A tests for circuit breaker functionality."""
 
@@ -157,11 +186,9 @@ class TestEnhancedCircuitBreaker:
         assert breaker.fail_counter == 0, "Should have no failures"
 
         # Simulate failures to open breaker
-        for i in range(5):
-            try:
+        for _i in range(5):
+            with contextlib.suppress(Exception):
                 breaker.call(lambda: 1 / 0)  # Will always fail
-            except:
-                pass
 
         # Validate open state
         assert breaker.current_state == "open", "Should open after 5 failures"
@@ -269,7 +296,7 @@ class TestEnhancedMultiModelComparison:
         lengths = [len(r["response"]) for r in responses]
         avg_length = sum(lengths) / len(lengths)
         assert all(
-            abs(l - avg_length) / avg_length < 0.3 for l in lengths
+            abs(length - avg_length) / avg_length < 0.3 for length in lengths
         ), "Response lengths should be similar"
 
     @pytest.mark.asyncio

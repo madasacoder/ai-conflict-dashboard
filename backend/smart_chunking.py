@@ -176,7 +176,7 @@ class SmartChunker:
 
                     # Start new chunk with overlap
                     overlap_blocks = self._get_overlap_blocks(current_chunk)
-                    current_chunk = overlap_blocks + [block.content]
+                    current_chunk = [*overlap_blocks, block.content]
                     current_size = sum(len(b) for b in current_chunk) + len(current_chunk) * 2
 
             # Otherwise add to current chunk

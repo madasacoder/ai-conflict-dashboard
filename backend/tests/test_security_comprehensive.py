@@ -191,7 +191,7 @@ class TestRateLimitingComprehensive:
         # 16th should fail due to burst limit
         allowed, retry = limiter.check_rate_limit(identifier)
         assert not allowed
-        assert retry is not None
+        assert retry is not None, "retry should not be None"
 
     def test_rate_limiter_different_users(self):
         """Test rate limiting is per-user."""
@@ -430,8 +430,7 @@ class TestMemoryAndPerformance:
             client = TestClient(app)
             response = client.post("/api/analyze", json={"text": "test", "openai_key": "test-key"})
 
-            assert response.status_code == 200
-
+            assert response.status_code == 200, "Request should succeed"
         # Clear references
         del large_text
         del response

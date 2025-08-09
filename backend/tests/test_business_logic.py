@@ -6,7 +6,7 @@ These tests validate the core business functionality:
 - Enabling informed decision making
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from tests.assertion_helpers import (
     detect_conflicts,
@@ -18,7 +18,7 @@ class TestConflictDetection:
 
     def test_detect_opposite_recommendations(self):
         """Test detection of opposite buy/sell recommendations."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Based on the analysis, I recommend you BUY this stock. The fundamentals are strong.",
@@ -40,7 +40,7 @@ class TestConflictDetection:
 
     def test_detect_factual_disagreements(self):
         """Test detection of yes/no disagreements."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gemini-pro",
                 "response": "Yes, this is definitely a viable approach for your use case.",
@@ -61,7 +61,7 @@ class TestConflictDetection:
 
     def test_no_conflicts_in_agreement(self):
         """Test that aligned responses produce no conflicts."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "The data shows a positive trend with growth expected to continue.",
@@ -81,7 +81,7 @@ class TestConflictDetection:
 
     def test_multiple_conflicts_detected(self):
         """Test detection of multiple conflicts in responses."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Yes, you should buy this stock immediately.",
@@ -104,7 +104,7 @@ class TestConflictDetection:
 
     def test_conflict_detection_with_multiple_models(self):
         """Test conflict detection across 4+ models."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Buy the stock",
@@ -149,7 +149,7 @@ class TestConsensusAnalysis:
 
     def test_identify_consensus_among_models(self):
         """Test identification of consensus when majority agree."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "The investment is risky due to market volatility.",
@@ -176,7 +176,7 @@ class TestConsensusAnalysis:
 
     def test_no_consensus_with_conflicts(self):
         """Test that conflicting responses show no consensus."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Strongly bullish outlook",
@@ -201,7 +201,7 @@ class TestDecisionEnablement:
 
     def test_confidence_scoring(self):
         """Test that responses include confidence scoring."""
-        response: Dict[str, Any] = {
+        response: dict[str, Any] = {
             "model": "gpt-4",
             "response": "Buy recommendation",
             "tokens": {"prompt": 10, "completion": 5, "total": 15},
@@ -214,7 +214,7 @@ class TestDecisionEnablement:
 
     def test_response_ranking_by_relevance(self):
         """Test ranking of responses by relevance to query."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Direct answer to your specific question about Python",
@@ -237,7 +237,7 @@ class TestDecisionEnablement:
 
     def test_cost_effectiveness_analysis(self):
         """Test cost per quality analysis for responses."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "High quality detailed response",
@@ -281,7 +281,7 @@ class TestEdgeCases:
 
     def test_single_response_no_conflict(self):
         """Test that single response doesn't crash conflict detection."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Single response",
@@ -296,7 +296,7 @@ class TestEdgeCases:
 
     def test_empty_response_handling(self):
         """Test handling of empty or error responses."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "Valid response",
@@ -318,7 +318,7 @@ class TestEdgeCases:
 
     def test_unicode_and_special_chars(self):
         """Test conflict detection with unicode and special characters."""
-        responses: List[Dict[str, Any]] = [
+        responses: list[dict[str, Any]] = [
             {
                 "model": "gpt-4",
                 "response": "买入 (Buy) 📈 recommended",
@@ -341,7 +341,7 @@ class TestEdgeCases:
 # Helper functions that would exist in production
 
 
-def analyze_consensus(responses: List[Dict[str, Any]]) -> Dict[str, Any]:
+def analyze_consensus(responses: list[dict[str, Any]]) -> dict[str, Any]:
     """Analyze consensus among AI responses.
 
     This is a simplified version for testing.
@@ -386,7 +386,7 @@ def analyze_consensus(responses: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def create_llm_response(model: str, prompt: str, api_key: str) -> Dict[str, Any]:
+def create_llm_response(model: str, prompt: str, api_key: str) -> dict[str, Any]:
     """Create a mock LLM response for testing.
 
     In production, this would make actual API calls.

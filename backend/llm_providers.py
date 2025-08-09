@@ -35,6 +35,8 @@ circuit_breakers: dict[str, dict[str, CircuitBreaker]] = {
 }
 # Lock for thread-safe access to circuit breakers
 _circuit_breaker_lock = threading.Lock()
+# Additional locks for thread-safe breaker operations per breaker instance
+_breaker_operation_locks: dict[str, threading.Lock] = {}
 
 
 def get_circuit_breaker(provider: str, api_key: str) -> CircuitBreaker:
@@ -69,6 +71,10 @@ def get_circuit_breaker(provider: str, api_key: str) -> CircuitBreaker:
             # TODO: Fix callback implementation
 
             provider_breakers[api_key] = breaker
+            # Create operation lock for this breaker
+            breaker_key = f"{normalized_provider}_{api_key}"
+            _breaker_operation_locks[breaker_key] = threading.Lock()
+            
             logger.info(
                 f"Created new circuit breaker for {normalized_provider}",
                 provider=normalized_provider,
@@ -95,6 +101,32 @@ def on_circuit_close(breaker: CircuitBreaker) -> None:
     from structured_logging import log_circuit_breaker_event
 
     log_circuit_breaker_event(logger, breaker_name=breaker.name, state="closed", fail_count=0)
+
+
+def call_with_circuit_breaker(breaker: CircuitBreaker, func, provider: str, api_key: str):
+    """Thread-safe wrapper for circuit breaker calls.
+    
+    Args:
+        breaker: The circuit breaker instance
+        func: The function to call
+        provider: Provider name for lock lookup
+        api_key: API key for lock lookup
+        
+    Returns:
+        Result of func() call
+        
+    Raises:
+        Exception: If breaker is open or func fails
+    """
+    breaker_key = f"{provider}_{api_key}"
+    lock = _breaker_operation_locks.get(breaker_key)
+    
+    if lock:
+        with lock:
+            return breaker.call(func)
+    else:
+        # Fallback to regular call if lock not found
+        return breaker.call(func)
 
 
 async def call_openai(text: str, api_key: str | None = None, model: str = "gpt-3.5-turbo") -> dict:
@@ -161,12 +193,20 @@ async def _call_openai_with_breaker(
         dict with response
     """
 
-    @breaker
     def call_with_breaker():
         return _make_openai_call(text, api_key, model)
 
-    # Use asyncio.wait_for for timeout
-    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
+    # Use asyncio.wait_for for timeout with thread-safe wrapper
+    result = await asyncio.wait_for(
+        asyncio.to_thread(
+            call_with_circuit_breaker, 
+            breaker, 
+            call_with_breaker,
+            "openai",
+            api_key
+        ), 
+        timeout=TIMEOUT_SECONDS
+    )
     return result
 
 
@@ -241,7 +281,6 @@ async def _call_claude_with_breaker(
 ) -> dict:
     """Internal Claude function with circuit breaker."""
 
-    @breaker
     def call_with_breaker():
         client = anthropic.Anthropic(api_key=api_key)
 
@@ -258,7 +297,17 @@ async def _call_claude_with_breaker(
             "error": None,
         }
 
-    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
+    # Use thread-safe wrapper
+    result = await asyncio.wait_for(
+        asyncio.to_thread(
+            call_with_circuit_breaker, 
+            breaker, 
+            call_with_breaker,
+            "claude",
+            api_key
+        ), 
+        timeout=TIMEOUT_SECONDS
+    )
     return result
 
 
@@ -390,7 +439,6 @@ async def _call_gemini_with_breaker(
 ) -> dict:
     """Internal Gemini function with circuit breaker."""
 
-    @breaker
     def call_with_breaker():
         # Mock implementation for testing
         # In production, this would use google.generativeai
@@ -400,7 +448,17 @@ async def _call_gemini_with_breaker(
             "error": None,
         }
 
-    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
+    # Use thread-safe wrapper
+    result = await asyncio.wait_for(
+        asyncio.to_thread(
+            call_with_circuit_breaker, 
+            breaker, 
+            call_with_breaker,
+            "gemini",
+            api_key
+        ), 
+        timeout=TIMEOUT_SECONDS
+    )
     return result
 
 
@@ -457,7 +515,6 @@ async def _call_grok_with_breaker(
 ) -> dict:
     """Internal Grok function with circuit breaker."""
 
-    @breaker
     def call_with_breaker():
         # Mock implementation for testing
         # In production, this would use OpenAI-compatible endpoint
@@ -467,7 +524,17 @@ async def _call_grok_with_breaker(
             "error": None,
         }
 
-    result = await asyncio.wait_for(asyncio.to_thread(call_with_breaker), timeout=TIMEOUT_SECONDS)
+    # Use thread-safe wrapper
+    result = await asyncio.wait_for(
+        asyncio.to_thread(
+            call_with_circuit_breaker, 
+            breaker, 
+            call_with_breaker,
+            "grok",
+            api_key
+        ), 
+        timeout=TIMEOUT_SECONDS
+    )
     return result
 
 

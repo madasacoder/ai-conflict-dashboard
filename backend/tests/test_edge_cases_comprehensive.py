@@ -148,17 +148,25 @@ class TestRaceConditions:
     @pytest.mark.asyncio
     async def test_circuit_breaker_race_condition(self):
         """Test circuit breaker under racing threads."""
+        # Force creation of breaker with lock
+        from llm_providers import _breaker_operation_locks
         breaker = get_circuit_breaker("race-test", "key")
+        # Ensure lock exists
+        if "race-test_key" not in _breaker_operation_locks:
+            import threading
+            _breaker_operation_locks["race-test_key"] = threading.Lock()
         results = {"open_count": 0, "success_count": 0, "fail_count": 0}
         lock = threading.Lock()
 
         def racing_call(should_fail):
             nonlocal results
             try:
+                # Use the thread-safe wrapper from llm_providers
+                from llm_providers import call_with_circuit_breaker
                 if should_fail:
-                    breaker.call(lambda: 1 / 0)
+                    call_with_circuit_breaker(breaker, lambda: 1 / 0, "race-test", "key")
                 else:
-                    breaker.call(lambda: "success")
+                    call_with_circuit_breaker(breaker, lambda: "success", "race-test", "key")
                 with lock:
                     results["success_count"] += 1
             except Exception as e:

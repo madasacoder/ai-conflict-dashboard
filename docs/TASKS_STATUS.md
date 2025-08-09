@@ -32,12 +32,15 @@ Last updated: 2025-01-09
    - Status: DONE
 
 7. Align provider adapter/signatures and error handling (max_tokens, temperature, retries)
-   - Status: TODO
+   - Status: DONE (2025-01-09)
    - File(s): `backend/llm_providers.py`, `backend/plugins/ollama_provider.py`
+   - Fixed import issues and ensured consistent signatures
 
 8. Circuit breaker concurrency and deterministic state transitions under load
-   - Status: TODO
+   - Status: DONE (2025-01-09)
    - File(s): `backend/llm_providers.py`
+   - Implemented thread-safe wrapper for circuit breaker operations
+   - Added per-breaker operation locks to prevent race conditions
 
 9. Security hardening: API-key sanitization in all paths, injection defenses (SQL/XSS/XXE/cmd)
    - Status: TODO
@@ -59,7 +62,7 @@ Last updated: 2025-01-09
 12. Document discovered bugs in `docs/BUGS.md` as we fix/confirm
     - Status: ONGOING
 
-Summary: Phases = 3; Tasks = 12; Completed = 7; Partial = 1; In progress = 0; Blocked = 0; Remaining = 4.
+Summary: Phases = 3; Tasks = 12; Completed = 9; Partial = 1; In progress = 0; Blocked = 0; Remaining = 2.
 
 ## Current status (measured) - Updated 2025-01-09
 - Backend server: UP at `http://localhost:8000`; Ollama available with 12 models

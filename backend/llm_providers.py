@@ -14,7 +14,7 @@ import anthropic
 import openai
 from pybreaker import CircuitBreaker
 
-from structured_logging import get_logger
+from structured_logging import get_logger, sanitize_sensitive_data
 
 logger = get_logger(__name__)
 
@@ -174,8 +174,9 @@ async def call_openai(text: str, api_key: str | None = None, model: str = "gpt-3
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"OpenAI call failed: {e!s}", error=str(e))
-        return {"model": "openai", "response": "", "error": str(e)}
+        sanitized_error = sanitize_sensitive_data(str(e))
+        logger.error(f"OpenAI call failed: {sanitized_error}", error=sanitized_error)
+        return {"model": "openai", "response": "", "error": sanitized_error}
 
 
 async def _call_openai_with_breaker(
@@ -272,8 +273,9 @@ async def call_claude(
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"Claude call failed: {e!s}", error=str(e))
-        return {"model": "claude", "response": "", "error": str(e)}
+        sanitized_error = sanitize_sensitive_data(str(e))
+        logger.error(f"Claude call failed: {sanitized_error}", error=sanitized_error)
+        return {"model": "claude", "response": "", "error": sanitized_error}
 
 
 async def _call_claude_with_breaker(
@@ -430,8 +432,9 @@ async def call_gemini(
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"Gemini call failed: {e!s}", error=str(e))
-        return {"model": "gemini", "response": "", "error": str(e)}
+        sanitized_error = sanitize_sensitive_data(str(e))
+        logger.error(f"Gemini call failed: {sanitized_error}", error=sanitized_error)
+        return {"model": "gemini", "response": "", "error": sanitized_error}
 
 
 async def _call_gemini_with_breaker(
@@ -506,8 +509,9 @@ async def call_grok(text: str, api_key: str | None = None, model: str = "grok-2-
             "error": f"Request timeout ({TIMEOUT_SECONDS}s)",
         }
     except Exception as e:
-        logger.error(f"Grok call failed: {e!s}", error=str(e))
-        return {"model": "grok", "response": "", "error": str(e)}
+        sanitized_error = sanitize_sensitive_data(str(e))
+        logger.error(f"Grok call failed: {sanitized_error}", error=sanitized_error)
+        return {"model": "grok", "response": "", "error": sanitized_error}
 
 
 async def _call_grok_with_breaker(
@@ -567,9 +571,10 @@ async def call_ollama_fixed(text: str, model: str = "llama2", base_url: str | No
         return result
 
     except Exception as e:
-        logger.error(f"Ollama call failed: {e!s}", error=str(e))
+        sanitized_error = sanitize_sensitive_data(str(e))
+        logger.error(f"Ollama call failed: {sanitized_error}", error=sanitized_error)
         return {
             "model": f"ollama/{model}",
             "response": "",
-            "error": f"Ollama error: {e!s}",
+            "error": f"Ollama error: {sanitized_error}",
         }

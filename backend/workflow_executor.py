@@ -10,6 +10,7 @@ from typing import Any
 import structlog
 
 from llm_providers import call_claude, call_gemini, call_grok, call_ollama_fixed, call_openai
+from structured_logging import sanitize_sensitive_data
 
 # TokenCounter not needed for basic workflow execution
 
@@ -126,11 +127,12 @@ class WorkflowExecutor:
             return result
 
         except Exception as e:
-            logger.error("Node execution failed", node_id=node_id, error=str(e))
+            sanitized_error = sanitize_sensitive_data(str(e))
+            logger.error("Node execution failed", node_id=node_id, error=sanitized_error)
             self.results[node_id] = {
                 "type": node_type,
                 "status": "error",
-                "error": str(e),
+                "error": sanitized_error,
             }
 
             return None
@@ -226,7 +228,8 @@ class WorkflowExecutor:
                     responses[model] = {"error": f"No API key for {model}"}
 
             except Exception as e:
-                responses[model] = {"error": str(e)}
+                sanitized_error = sanitize_sensitive_data(str(e))
+                responses[model] = {"error": sanitized_error}
 
         return responses
 

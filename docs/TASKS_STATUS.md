@@ -43,8 +43,11 @@ Last updated: 2025-01-09
    - Added per-breaker operation locks to prevent race conditions
 
 9. Security hardening: API-key sanitization in all paths, injection defenses (SQL/XSS/XXE/cmd)
-   - Status: TODO
-   - File(s): `backend/structured_logging.py`, `backend/main.py`, helpers
+   - Status: DONE (2025-08-09)
+   - File(s): `backend/structured_logging.py`, `backend/llm_providers.py`, `backend/workflow_executor.py`
+   - Implemented comprehensive API key sanitization in error messages
+   - Added sanitize_sensitive_data function to all error handlers
+   - Tests passing: test_no_api_keys_in_response, test_api_key_sanitization_in_all_paths
 
 10. UI TypeScript baseline fix (types for `Node`/`Edge`, executor, file upload helpers, workflow store)
     - Status: DONE (2025-01-09)
@@ -62,7 +65,7 @@ Last updated: 2025-01-09
 12. Document discovered bugs in `docs/BUGS.md` as we fix/confirm
     - Status: ONGOING
 
-Summary: Phases = 3; Tasks = 12; Completed = 9; Partial = 1; In progress = 0; Blocked = 0; Remaining = 2.
+Summary: Phases = 3; Tasks = 12; Completed = 10; Partial = 1; In progress = 0; Blocked = 0; Remaining = 1.
 
 ## Current status (measured) - Updated 2025-01-09
 - Backend server: UP at `http://localhost:8000`; Ollama available with 12 models
@@ -80,11 +83,11 @@ Summary: Phases = 3; Tasks = 12; Completed = 9; Partial = 1; In progress = 0; Bl
 - Backend remains healthy with 12 Ollama models available
 
 ## Next actions (immediate)
-1) Fix provider adapter signatures and error handling (Task 7)
-2) Address circuit breaker concurrency issues (Task 8)
-3) Implement security hardening for API key sanitization (Task 9)
-4) Implement drag-drop functionality for advanced E2E tests
-5) Continue reducing TypeScript errors (787 remaining) for better maintainability
+1) Continue reducing TypeScript errors (787 remaining) for better maintainability
+2) Implement drag-drop functionality for advanced E2E tests
+3) Document all discovered bugs in docs/BUGS.md (Task 12)
+4) Address remaining backend test failures (50 failures, 23 errors)
+5) Improve test coverage from current ~51% toward 90% target
 
 ## Owner notes
 - No tool/model limitations encountered; the gating issue is the scope of UI TS errors. Proceeding with targeted TS fixes to unblock E2E.

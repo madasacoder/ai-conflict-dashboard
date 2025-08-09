@@ -437,7 +437,7 @@ class TestEnhancedSecurity:
             assert sensitive_key[-10:] not in result.get("error", ""), "Key suffix exposed"
 
             # Verify sanitized version is present
-            assert "sk-1234..." in result.get("error", "") or "API key" in result.get(
+            assert "***REDACTED***" in result.get("error", "") or "API key" in result.get(
                 "error", ""
             ), "Should have sanitized reference"
 
